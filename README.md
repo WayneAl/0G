@@ -70,7 +70,13 @@ pnpm -r test
 ./demo/run.sh             # dry run — the full x402 handshake, no money moves
 ./demo/run.sh --live      # real payments, real listings
 ./demo/run.sh --live 6 5 1  # stage order
+./demo/run.sh --offline   # recorded runs, no network at all
 ```
+
+`--offline` replays only what crossed a network — the RPC read, agent B's response, the
+transaction hashes. Agent A re-verifies the recorded seal for real and signs a fresh seal A
+over it, so scenes ⑤ and ⑥, which are refused before anything reaches a chain, are as live
+offline as on. Only ①'s registry outcome is quoted from the recording, and the output says so.
 
 ## The six scenes
 
@@ -87,6 +93,21 @@ pnpm -r test
 contract — because "nobody is watching" means Agent A has to be able to reject Agent B on its
 own. [`demo/mitm.ts`](demo/mitm.ts) is a real proxy that rewrites the verdict and leaves the
 signature untouched; both agents behave correctly and the forgery still dies.
+
+## Verify a seal yourself
+
+[`verifier/index.html`](verifier/index.html) — a single page that takes a seal and runs every
+check in your browser: recompute the canonical digest from the seal's own bytes, recover the
+signer, walk down into the embedded audit seal, and show the TEE attestation it carries.
+Nothing is taken on trust from whoever handed you the seal.
+
+Three recorded seals are built in, matching the three scenes shown on stage: a full valid
+chain, an audit seal that claims an attested tier and carries no attestation, and one whose
+verdict was rewritten in flight with the signature left untouched.
+
+The page's canonicalization is a reimplementation of `packages/seal/src/canonical.ts`, and is
+checked to produce byte-identical digests — otherwise every signature would fail here for the
+wrong reason.
 
 ## Design decisions worth a sentence each
 
