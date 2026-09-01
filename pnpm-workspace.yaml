@@ -2,3 +2,4 @@ packages:
   - "packages/*"
   - "agent-a"
   - "agent-b"
+  - "demo"

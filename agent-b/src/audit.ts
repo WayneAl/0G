@@ -14,14 +14,18 @@ export function makeAuditor(config: AgentBConfig) {
     apiKey: config.og.apiKey,
     network: config.og.network,
     ...(config.og.model ? { model: config.og.model } : {}),
-    // Only ever downgraded deliberately, to demonstrate what it costs (scene ⑤).
-    ...(config.og.degradeToStandard ? { trustMode: "standard" as const } : {}),
   });
 
   return {
     model: client.model,
     async run(request: AuditRequestPayload): Promise<InferenceResult> {
-      return client.audit({ token: request.token, artifact: request.artifact });
+      const result = await client.audit({ token: request.token, artifact: request.artifact });
+      if (config.og.skipAttestation) {
+        // Scene ⑤: the seal still claims `verified`, but carries no evidence.
+        // Agent A must refuse it, and the payment is already spent either way.
+        return { ...result, attestation: null };
+      }
+      return result;
     },
   };
 }

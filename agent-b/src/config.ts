@@ -24,11 +24,16 @@ export interface AgentBConfig {
     apiKey: string;
     model: string | undefined;
     /**
-     * Demo scene ⑤. Running "standard" buys cheaper inference with no attestation,
-     * so the seal comes back without evidence and Agent A refuses it. Off by default;
-     * the flag exists to make the failure demonstrable, not convenient.
+     * Demo scene ⑤: an agent that took the money and skipped the verifiable part.
+     *
+     * Ideally this would point at a `standard`-tier provider that returns no
+     * attestation. The 0G testnet catalog has no such provider — both models
+     * there are TEE-attested (NOTES.md §A3/§B) — so the skip is simulated one
+     * layer up: the attestation is dropped from the result while the seal still
+     * claims `verified`. That is precisely the lie Agent A's sixth check exists
+     * to catch, and it is honest about being a simulation.
      */
-    degradeToStandard: boolean;
+    skipAttestation: boolean;
   };
 }
 
@@ -51,7 +56,7 @@ export function loadConfig(): AgentBConfig {
       network: mainnet ? "mainnet" : "testnet",
       apiKey: required(mainnet ? "MAINNET_API_KEY" : "TESTNET_API_KEY"),
       model: process.env["OG_MODEL"],
-      degradeToStandard: process.env["AGENT_B_DEGRADE"] === "1",
+      skipAttestation: process.env["AGENT_B_SKIP_ATTESTATION"] === "1",
     },
   };
 }

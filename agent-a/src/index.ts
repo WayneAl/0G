@@ -1,5 +1,5 @@
 import { config as loadEnv } from "dotenv";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, toHex } from "viem";
@@ -31,6 +31,10 @@ interface Args {
   sourcePath: string | null;
   /** Replaces the RPC read with a recorded artifact. Backs --offline (spec §10). */
   artifactFile: string | null;
+  /** Write the composed seal A here, so a later run can replay it. */
+  emitSeal: string | null;
+  /** Skip underwriting and present an already-issued seal A. Demo scene ③. */
+  sealFile: string | null;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -55,6 +59,8 @@ function parseArgs(argv: string[]): Args {
     registry: registry ? (registry.toLowerCase() as `0x${string}`) : null,
     sourcePath: flag("source") ?? null,
     artifactFile: flag("artifact-file") ?? null,
+    emitSeal: flag("emit-seal") ?? null,
+    sealFile: flag("seal-file") ?? null,
   };
 }
 
@@ -82,6 +88,18 @@ async function main(): Promise<void> {
 
   console.log(`underwriting ${args.token}  requested LTV ${args.ltvBps} bps`);
   console.log(`mode: ${args.live ? "LIVE (real payment)" : "DRY RUN (no payment; pass --live to spend)"}\n`);
+
+  // Replay path: present a seal that already exists, against whatever token the
+  // caller names. Nothing stops someone doing this, which is exactly why the
+  // seal binds its subject and the registry checks it (demo scene ③).
+  if (args.sealFile) {
+    step("R", `replaying seal from ${args.sealFile}`);
+    const replayed = JSON.parse(readFileSync(args.sealFile, "utf8")) as SealA;
+    step("R", `seal subject is ${replayed.subject}; listing it against ${args.token}`);
+    if (!args.registry) return fail("NO_REGISTRY", "pass --registry <address> or set REGISTRY_ADDRESS");
+    await submit(replayed, args.token, args.ltvBps, args.registry, agentA);
+    return;
+  }
 
   // (2) Free RPC read. No paid data purchase (spec §11).
   const source = args.sourcePath ? readFileSync(args.sourcePath, "utf8") : null;
@@ -198,6 +216,10 @@ async function main(): Promise<void> {
   };
   const sealA = await signSealA(unsignedA, agentA);
   step("6", `seal A signed · embeds seal B · maxLtvBps ${sealA.verdict.maxLtvBps}`);
+  if (args.emitSeal) {
+    writeFileSync(args.emitSeal, JSON.stringify(sealA, null, 2));
+    step("6", `seal A written to ${args.emitSeal}`);
+  }
 
   if (!args.settle) {
     console.log(`\n${JSON.stringify(sealA, null, 2)}`);
@@ -208,13 +230,23 @@ async function main(): Promise<void> {
 
   // (7) Present it to the contract.
   step("7", `listing on CollateralRegistry ${args.registry}`);
+  await submit(sealA, args.token, args.ltvBps, args.registry, agentA);
+}
+
+async function submit(
+  seal: SealA,
+  token: `0x${string}`,
+  ltvBps: number,
+  registry: `0x${string}`,
+  account: ReturnType<typeof privateKeyToAccount>,
+): Promise<void> {
   try {
-    const result = await listWithSeal(sealA, args.ltvBps, { registry: args.registry, account: agentA });
+    const result = await listWithSeal(seal, token, ltvBps, { registry, account });
     console.log(`\n✓ EXECUTED  ltv=${result.listed.ltvBps}bps  tx=${result.txHash}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const named = msg.match(/(SEAL_SUBJECT_MISMATCH|AUDIT_FAILED|LTV_EXCEEDS_ATTESTED|SEAL_EXPIRED|NO_SEAL|BAD_SIGNATURE)/);
-    return fail(named?.[1] ?? "LIST_FAILED", named ? "reverted by CollateralRegistry" : msg.slice(0, 300));
+    fail(named?.[1] ?? "LIST_FAILED", named ? "reverted by CollateralRegistry" : msg.slice(0, 300));
   }
 }
 

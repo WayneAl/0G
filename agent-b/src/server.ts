@@ -61,7 +61,8 @@ app.get("/agent", (_req, res) => {
     network: config.network,
     model: auditor.model,
     ogNetwork: config.og.network,
-    trustMode: config.og.degradeToStandard ? "standard" : "verified",
+    trustMode: "verified",
+    skipsAttestation: config.og.skipAttestation,
   });
 });
 
@@ -115,7 +116,7 @@ app.listen(config.port, () => {
   console.log(`  payTo        ${config.payToAddress}  (${config.priceUsd}, ${config.network})`);
   console.log(`  facilitator  ${config.facilitatorUrl}`);
   console.log(`  inference    ${auditor.model} on 0G ${config.og.network}`);
-  if (config.og.degradeToStandard) {
-    console.log(`  !! AGENT_B_DEGRADE=1 -- standard tier, seals will carry no attestation`);
+  if (config.og.skipAttestation) {
+    console.log(`  !! AGENT_B_SKIP_ATTESTATION=1 -- seals will claim verified and carry no evidence`);
   }
 });

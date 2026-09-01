@@ -86,6 +86,15 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@22.20.1)(tsx@4.23.13)
 
+  demo:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.1
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.13
+
   packages/og:
     dependencies:
       '@acu/seal':

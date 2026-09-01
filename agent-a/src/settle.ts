@@ -62,6 +62,14 @@ const chain = {
  */
 export async function listWithSeal(
   seal: SealA,
+  /**
+   * The token being listed. Passed separately from the seal on purpose: the
+   * contract takes them as two independent arguments, and the entire point of
+   * subject binding is that they are allowed to disagree. Deriving this from
+   * `seal.subject` would quietly make a replay impossible to demonstrate — and
+   * impossible to detect.
+   */
+  token: `0x${string}`,
   ltvBps: number,
   opts: SettleOptions,
 ): Promise<SettleResult> {
@@ -77,18 +85,18 @@ export async function listWithSeal(
     address: opts.registry,
     abi: REGISTRY_ABI,
     functionName: "list",
-    args: [seal.subject, ltvBps, proof],
+    args: [token, ltvBps, proof],
     account: opts.account,
   });
 
   const txHash = await wallet.writeContract(request);
-  await pub.waitForTransactionReceipt({ hash: txHash });
+  await pub.waitForTransactionReceipt({ hash: txHash, timeout: 120_000, pollingInterval: 1_000 });
 
   const [active, listedLtv, sealHash, expiresAt] = await pub.readContract({
     address: opts.registry,
     abi: REGISTRY_ABI,
     functionName: "listings",
-    args: [seal.subject],
+    args: [token],
   });
 
   return { txHash, listed: { active, ltvBps: listedLtv, sealHash, expiresAt } };
