@@ -55,13 +55,22 @@ wait_for() { # port, name
 agent_a() { pnpm --silent --filter @acu/agent-a start -- "$@" 2>&1; }
 
 # Asserts the run's final line. $1 = expected marker, rest = the CLI args.
+#
+# Without --live, agent A stops at the quote and never reaches a verdict, so a dry
+# run can only assert that the x402 handshake and the budget gate worked. Say that
+# rather than pretending the outcomes were checked.
 expect() {
   local want="$1"; shift
+  [ -z "$LIVE" ] && want="○ DRY RUN"
   local out; out="$(agent_a "$@")"
-  local got; got="$(echo "$out" | grep -oE '^[✓✗] [A-Z_]+' | tail -1)"
+  local got; got="$(echo "$out" | grep -oE '^(✓ [A-Z_]+|✗ [A-Z_]+|○ DRY RUN)' | tail -1)"
   echo "$out" | grep -E '^\[[0-9R]\] ' | sed 's/^/     /'
   if [ "$got" = "$want" ]; then
-    echo "     => $got  ✅ as expected"
+    if [ -z "$LIVE" ]; then
+      echo "     => quoted and gated, stopped before signing  ✅ (dry run: outcome not exercised)"
+    else
+      echo "     => $got  ✅ as expected"
+    fi
     return 0
   fi
   echo "     => ${got:-<no verdict>}  ❌ expected $want"
@@ -141,7 +150,12 @@ for n in "${SCENES[@]}"; do run_scene "$n"; done
 echo
 echo "════════════════════════════════════════════════════════════════"
 if [ "$FAILED" -eq 0 ]; then
-  echo " all scenes behaved as expected"
+  if [ -z "$LIVE" ]; then
+    echo " handshake and budget gate green on every scene."
+    echo " Re-run with --live to exercise the verdicts."
+  else
+    echo " all scenes behaved as expected"
+  fi
 else
   echo " SOME SCENES DID NOT BEHAVE AS EXPECTED — see ❌ above"
 fi
