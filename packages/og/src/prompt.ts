@@ -25,11 +25,22 @@ Judge only the contract's risk to a lender. Weigh:
 - privileged roles that survive after deployment (owner, minter, pauser)
 - supply controls that let a holder be diluted or frozen
 
+Underwriting bands. maxLtvBps is the loan-to-value ceiling in basis points
+(7500 = 75%). Use this rubric, not your own scale:
+- 7500-8000 ALLOW: fixed supply, no owner or ownership renounced, no upgrade
+  path, no transfer hook, no pause, no mint after deploy.
+- 5000-7000 ALLOW: as above but retains a privileged role limited to parameters
+  that cannot freeze, seize, tax or dilute a holder.
+- 0 DENY: any lever that lets someone freeze, seize, dilute, tax, pause or
+  replace the logic. An upgradeable proxy is always DENY, however clean the
+  current implementation looks -- it can be replaced tomorrow.
+Thin evidence is not itself a reason to deny; judge what the evidence shows.
+
 Reply with a single JSON object and nothing else. No markdown fence, no preamble.
 Schema, exactly these four keys:
 {"action":"ALLOW"|"DENY","maxLtvBps":<integer 0-10000>,"findings":[<string>],"reasoning":<string>}
 
-Set action to DENY and maxLtvBps to 0 for any contract a lender could be trapped by.
+action must be DENY whenever maxLtvBps is 0, and ALLOW whenever it is above 0.
 Findings must be short snake_case tags. Emit no key outside the schema.`;
 
 /** Fences the untrusted artifact. Any nested closing tag is defanged. */

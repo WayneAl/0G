@@ -26,6 +26,15 @@ const REGISTRY_ABI = [
       { name: "expiresAt", type: "uint64" },
     ],
   },
+  // Custom errors must be in the ABI or viem hands back a bare selector, and the
+  // demo's whole point is that the contract says *why* it refused.
+  { type: "error", name: "SEAL_SUBJECT_MISMATCH", inputs: [] },
+  { type: "error", name: "AUDIT_FAILED", inputs: [] },
+  { type: "error", name: "LTV_EXCEEDS_ATTESTED", inputs: [] },
+  { type: "error", name: "SEAL_EXPIRED", inputs: [] },
+  { type: "error", name: "ZERO_ADDRESS", inputs: [] },
+  { type: "error", name: "NO_SEAL", inputs: [] },
+  { type: "error", name: "BAD_SIGNATURE", inputs: [] },
 ] as const;
 
 export interface SettleOptions {
