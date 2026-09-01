@@ -124,7 +124,13 @@ Agent A 照樣拒絕 —— 這個框架其實更誠實:擋的是「章沒帶證
 
 ## E. 尚未解除的阻擋項
 
-1. **0G API key 未取得** —— 需錢包連線 + 儲值,測試網 `pc.testnet.0g.ai`、
-   主網 `pc.0g.ai`,Dashboard → API Keys → Create,拿到 `sk-` 開頭的 key。
-   Phase 1 不受影響,Phase 2 起卡住。
+1. **測試網帳戶餘額為 0** —— `TESTNET_API_KEY` 已取得且**認證有效**(2026-09-01 實測:
+   打到餘額檢查才被擋,回 `402 payment_error / insufficient_balance`,不是 401,
+   代表 key 本身沒問題)。需在 **pc.0g.ai → Dashboard → Deposit** 簽一筆鏈上交易儲值。
+   測試網 payment layer 合約:`0x0AD9690e0b34aB2d493DE02cDF149ee34f6C9939`。
+   儲值後跑 `pnpm --filter @acu/og smoke` 驗證。
+   - 順帶查到:`/v1/account/balance` 要的是 **`mk-` 管理金鑰**,不是 `sk-` 推理金鑰,
+     所以拿 `sk-` 打會回 403 `insufficient_scope`(這是預期行為,不是設定錯誤)。
+   - **測試網速率限制(實測 response header):10 req/min、50 req/day。**
+     Phase 2 驗收要求 3 個代幣 × 10 次 = 30 次,一天內做得完但沒有太多重跑空間。
 2. 本機 Foundry 是 0.2.0(2024-03-28 建置),偏舊,建議 `foundryup`。

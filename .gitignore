@@ -8,3 +8,4 @@ contracts/cache/
 contracts/broadcast/
 *.log
 .DS_Store
+contracts/lib/
