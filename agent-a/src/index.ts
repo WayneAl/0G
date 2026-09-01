@@ -18,6 +18,7 @@ import { makeBudgetGate, BudgetExceededError } from "./budget.js";
 import { fetchTokenArtifact, makeOgClient, renderArtifact } from "./chain.js";
 import { hireAuditor, HireError } from "./hire.js";
 import { listWithSeal } from "./settle.js";
+import { loadFixture, fixtureRequest } from "./replay.js";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });
 
@@ -35,6 +36,8 @@ interface Args {
   emitSeal: string | null;
   /** Skip underwriting and present an already-issued seal A. Demo scene ③. */
   sealFile: string | null;
+  /** Replay a recorded run. The venue wifi is going to die (spec §10). */
+  offline: string | null;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -61,6 +64,7 @@ function parseArgs(argv: string[]): Args {
     artifactFile: flag("artifact-file") ?? null,
     emitSeal: flag("emit-seal") ?? null,
     sealFile: flag("seal-file") ?? null,
+    offline: flag("offline") ?? null,
   };
 }
 
@@ -100,6 +104,8 @@ async function main(): Promise<void> {
     await submit(replayed, args.token, args.ltvBps, args.registry, agentA);
     return;
   }
+
+  if (args.offline) return runOffline(args, agentA, agentAId, agentBId, agentBSealSigner, network);
 
   // (2) Free RPC read. No paid data purchase (spec §11).
   const source = args.sourcePath ? readFileSync(args.sourcePath, "utf8") : null;
@@ -231,6 +237,94 @@ async function main(): Promise<void> {
   // (7) Present it to the contract.
   step("7", `listing on CollateralRegistry ${args.registry}`);
   await submit(sealA, args.token, args.ltvBps, args.registry, agentA);
+}
+
+/**
+ * Replays a recorded run. Only the network hops are canned; every check Agent A
+ * makes is executed for real against the recorded seal — see replay.ts.
+ */
+async function runOffline(
+  args: Args,
+  agentA: ReturnType<typeof privateKeyToAccount>,
+  agentAId: string,
+  agentBId: string,
+  agentBSealSigner: `0x${string}`,
+  network: `${string}:${string}`,
+): Promise<void> {
+  const f = loadFixture(args.offline!);
+  step("2", `OFFLINE · replaying ${f.label} recorded ${f.recordedAt}`);
+  const request = fixtureRequest(f);
+  step("3", `quote ${f.quote.humanPrice} to ${f.quote.payTo} (replayed) · settlement ${f.settlementTx ?? "n/a"}`);
+  step("4", `agent B returned ${f.audit.action} maxLtvBps=${f.audit.maxLtvBps} (replayed)`);
+
+  // Real verification of the recorded seal. This is the part that must not be faked.
+  step("5", "verifying seal B  [live cryptography, not replayed]");
+  let sealB: SealB;
+  try {
+    sealB = await verifySealB(f.sealB, {
+      expectedSubject: request.token,
+      expectedRequest: auditRequestHash(request),
+      resolver: new StaticAgentIdResolver({ [agentBId]: agentBSealSigner }),
+      // The recording has a fixed issue time; judge expiry against it, not against
+      // whenever the demo happens to run.
+      now: request.requestedAt,
+    });
+  } catch (err) {
+    if (err instanceof SealVerificationError) {
+      return fail("DELEGATE_SEAL_INVALID", `${err.failure} — refusing to compose seal A. Nothing was submitted on chain.`);
+    }
+    throw err;
+  }
+  step("5", `seal B valid · signer ${agentBSealSigner} · attestation ${sealB.inference.teeAttestation ? "present" : "ABSENT"}`);
+
+  step("6", "composing seal A  [signed live]");
+  const sealA = await signSealA(
+    {
+      version: 1,
+      type: "underwriting",
+      agentId: agentAId,
+      subject: request.token,
+      delegations: [
+        {
+          agentId: agentBId,
+          service: "code-audit",
+          priceAtomic: f.quote.amountAtomic,
+          network,
+          settlementTx: (f.settlementTx as `0x${string}` | null) ?? null,
+          seal: sealB,
+          sealVerified: true,
+        },
+      ],
+      ownAnalysis: {
+        liquidityDepthUsd: "0",
+        top10HolderPct: 0,
+        sourceHash: keccak256(toHex(request.artifact)),
+      },
+      verdict: {
+        action: sealB.verdict.action,
+        maxLtvBps: sealB.verdict.maxLtvBps,
+        expiresAt: sealB.expiresAt,
+      },
+    },
+    agentA,
+  );
+  step("6", `seal A signed · embeds seal B · maxLtvBps ${sealA.verdict.maxLtvBps}`);
+  if (args.emitSeal) writeFileSync(args.emitSeal, JSON.stringify(sealA, null, 2));
+
+  if (!args.settle) {
+    console.log("\n○ --no-settle: seal A printed, nothing submitted on chain.");
+    return;
+  }
+  if (!f.listing) return fail("NO_RECORDED_LISTING", "this fixture never reached the registry");
+
+  step("7", `registry outcome replayed from ${f.listing.txHash}`);
+  if (f.listing.outcome === "EXECUTED") {
+    console.log(`\n✓ EXECUTED  ltv=${f.listing.ltvBps}bps  tx=${f.listing.txHash}  (replayed)`);
+  } else {
+    console.log(`\n✗ ${f.listing.outcome}`);
+    console.log(`  reverted by CollateralRegistry (replayed from ${f.listing.txHash})`);
+    process.exit(1);
+  }
 }
 
 async function submit(

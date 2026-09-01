@@ -1,0 +1,55 @@
+{
+  "recordedAt": "2026-09-01T15:46:31.214Z",
+  "label": "CleanUSD — verdict rewritten in flight",
+  "token": "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8",
+  "request": {
+    "token": "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8",
+    "artifact": "address: 0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8\nname: \"Clean USD\"\nsymbol: \"CUSD\"\ndecimals: 18\ntotalSupply: 1000000000000000000000000\nowner: (no owner() method -- ownership may be renounced or absent)\nruntimeBytecodeSize: 1825 bytes\nruntimeBytecodeHash: 0x1f93556347a2937ae0c477262ea46912ac4178948fe0dbe3a12c50dd133a7e8f\nselectorsPresentInBytecode: (none of the watched set)\n\nsource:\n// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\nimport {ERC20} from \"@openzeppelin/contracts/token/ERC20/ERC20.sol\";\n\n/// @notice The benign case. Fixed supply, no owner, no hooks, no upgrade path.\n/// Nothing here can take a lender's collateral away after the fact.\ncontract CleanUSD is ERC20 {\n    constructor(address holder) ERC20(\"Clean USD\", \"CUSD\") {\n        _mint(holder, 1_000_000e18);\n    }\n}\n",
+    "requestedAt": 1788277573,
+    "nonce": "91f6b4e51d885c269319c27887caf55d"
+  },
+  "quote": {
+    "amountAtomic": "10000",
+    "payTo": "0xc1dba83fd85838542b09ec44e6372485f6ee2d9e",
+    "humanPrice": "0.010000 USDC"
+  },
+  "audit": {
+    "action": "ALLOW",
+    "maxLtvBps": 9000,
+    "findings": [],
+    "reasoning": "Fixed supply, no owner, no hooks, no upgrade path.",
+    "costNeuron": "1220250000000000"
+  },
+  "sealB": {
+    "version": 1,
+    "type": "audit",
+    "agentId": "2",
+    "subject": "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8",
+    "request": "0xbab8215771b2808913f0db726ba418fa5a4774051a9af1ba31f9ae584811406c",
+    "inference": {
+      "model": "qwen2.5-omni",
+      "trustMode": "verified",
+      "providerAddress": "0xa48f01287233509fd694a22bf840225062e67836",
+      "promptHash": "0xff524ac4abbb1ed55a0c4115d027f59ebd7492042442103ca25460f3cae5203f",
+      "responseHash": "0x0a0023fecfcdf930efcef0e390aa600e52a23d1dd06bfc6f2cf2622a7d0b18f6",
+      "teeAttestation": {
+        "chatId": "c24e1e77-251b-4006-83bf-fe4f36353795",
+        "teeVerified": true,
+        "teeSignerAddress": null,
+        "signature": null,
+        "signedTextHash": "0x0a0023fecfcdf930efcef0e390aa600e52a23d1dd06bfc6f2cf2622a7d0b18f6",
+        "signatureEndpoint": null
+      }
+    },
+    "findings": [],
+    "verdict": {
+      "action": "ALLOW",
+      "maxLtvBps": 9000
+    },
+    "issuedAt": 1788277578,
+    "expiresAt": 1788363978,
+    "signature": "0xb771b38bb325de7a03789f728aff6332409317d3e37d3846625823420abead36714aea09ac7e65745b6a2c5816a51fe926cc8e209fd3d6cfb30dae88963bc42d1b"
+  },
+  "settlementTx": "0x9ca251201b245a2b83665f6cf31c76e87a2133ed7bf44181b132f0f655f92a48",
+  "listing": null
+}

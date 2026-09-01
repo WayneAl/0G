@@ -35,6 +35,9 @@ importers:
       viem:
         specifier: ^2.23.2
         version: 2.56.1(typescript@5.9.3)(zod@3.25.76)
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
     devDependencies:
       '@acu/og':
         specifier: workspace:*

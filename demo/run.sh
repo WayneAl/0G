@@ -5,6 +5,11 @@
 #   ./demo/run.sh              dry run: the x402 handshake, no money moves
 #   ./demo/run.sh --live       real payments on Base Sepolia, real listings on 0G
 #   ./demo/run.sh --live 6 5 1 just those scenes, in that order (the stage order)
+#   ./demo/run.sh --offline    recorded runs, no network at all
+#
+# In --offline, scenes ⑤ and ⑥ are not replayed at all beyond the recorded seal:
+# they are refused by live signature checks that never touch a chain. Only the
+# registry outcome in ① is quoted from the recording, and it says so.
 #
 # Every scene asserts the outcome it expects, so a green run means the failures
 # failed for the right reason -- not that they merely failed.
@@ -14,10 +19,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 LIVE=""
+OFFLINE=""
 SCENES=()
 for arg in "$@"; do
   case "$arg" in
     --live) LIVE="--live" ;;
+    --offline) OFFLINE=1 ;;
     [1-6]) SCENES+=("$arg") ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
@@ -80,10 +87,11 @@ expect() {
 
 echo "════════════════════════════════════════════════════════════════"
 echo " Attested Collateral Underwriter — six scenes"
-echo " mode: ${LIVE:-dry run (no payment)}"
+echo " mode: ${OFFLINE:+offline (recorded, no network)}${OFFLINE:-${LIVE:-dry run (no payment)}}"
 echo " registry: $REGISTRY_ADDRESS on 0G testnet (16602)"
 echo "════════════════════════════════════════════════════════════════"
 
+if [ -z "$OFFLINE" ]; then
 echo; echo "── starting agents ──"
 lsof -ti:4021 2>/dev/null | xargs kill -9 2>/dev/null
 lsof -ti:4022 2>/dev/null | xargs kill -9 2>/dev/null
@@ -99,8 +107,22 @@ wait_for 4021 "agent B" || exit 1
 wait_for 4022 "agent B (no attestation)" || exit 1
 wait_for 4099 "man in the middle" || exit 1
 echo "  agent B :4021 · agent B without attestation :4022 · MITM :4099"
+fi
 
 FAILED=0
+
+REPLAY="$ROOT/demo/fixtures/replay"
+run_offline_scene() {
+  local n="$1" fixture="$2" want="$3" ltv="$4" title="$5"
+  echo
+  echo "$title"
+  if [ ! -f "$REPLAY/$fixture" ]; then
+    echo "     => no recording yet ($fixture) — record it with: pnpm --filter @acu/agent-a record"
+    return 0
+  fi
+  expect "$want" "$CLEAN_USD" --ltv "$ltv" --offline "$REPLAY/$fixture" || FAILED=1
+}
+
 run_scene() {
   local n="$1"
   echo
@@ -144,6 +166,28 @@ run_scene() {
     ;;
   esac
 }
+
+if [ -n "$OFFLINE" ]; then
+  # Nothing to start: offline touches no socket.
+  LIVE="--live"   # so expect() asserts real verdicts, which offline does produce
+  echo; echo "── offline: replaying recordings, no services started ──"
+  for n in "${SCENES[@]}"; do
+    case "$n" in
+    1) run_offline_scene 1 clean.json "✓ EXECUTED" 7000 \
+         "① CleanUSD — chain outcome replayed, seal verified live" ;;
+    5) run_offline_scene 5 clean-noattest.json "✗ DELEGATE_SEAL_INVALID" 7000 \
+         "⑤ agent B skipped the proof — refused by a live check, nothing replayed" ;;
+    6) run_offline_scene 6 clean-tampered.json "✗ DELEGATE_SEAL_INVALID" 9000 \
+         "⑥ verdict rewritten in flight — refused by a live signature check" ;;
+    *) echo; echo "scene $n has no recording yet (needs Router quota to record)" ;;
+    esac
+  done
+  echo
+  echo "════════════════════════════════════════════════════════════════"
+  [ "$FAILED" -eq 0 ] && echo " offline scenes behaved as expected" || echo " SOME OFFLINE SCENES FAILED"
+  echo "════════════════════════════════════════════════════════════════"
+  exit "$FAILED"
+fi
 
 for n in "${SCENES[@]}"; do run_scene "$n"; done
 
