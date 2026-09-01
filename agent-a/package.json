@@ -1,0 +1,23 @@
+{
+  "name": "@acu/agent-a",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@acu/seal": "workspace:*",
+    "@x402/core": "^2.24.0",
+    "@x402/evm": "^2.24.0",
+    "@x402/fetch": "^2.24.0",
+    "viem": "^2.23.2"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
+    "vitest": "^3.0.5"
+  }
+}

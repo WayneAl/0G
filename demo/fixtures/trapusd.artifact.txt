@@ -1,0 +1,9 @@
+address: 0x2222222222222222222222222222222222222222
+name: "Trap USD"
+symbol: "TUSD"
+decimals: 18
+totalSupply: 1000000000000000000000000
+owner: 0xB2D772D3F6c5412514c39321c411CD9a9607c597
+runtimeBytecodeSize: 6142 bytes
+runtimeBytecodeHash: 0x9f2c1d7a4b3e8f05c6d9a1b2e3f4c5d6a7b8e9f0c1d2a3b4e5f6c7d8a9b0e1f2
+selectorsPresentInBytecode: setBlacklist(address,bool), upgradeTo(address), setTransferFeeBps(uint256), transferOwnership(address)
