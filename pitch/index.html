@@ -1,0 +1,606 @@
+<title>Every Hop Leaves a Seal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+/* ── Committed dark deck: it is projected in a dim room, so it does not follow
+      the viewer's theme. Every colour is painted explicitly. ───────────────── */
+:root {
+  --ground:    #0b0f14;
+  --surface:   #141b24;
+  --surface-2: #1b2431;
+  --line:      #232d3b;
+  --line-soft: #19212c;
+  --ink:       #e6ebf2;
+  --muted:     #8493a6;
+  --dim:       #5d6b7e;
+  --accent:    #9186ff;
+  --accent-2:  #6f63e8;
+  --accent-soft:#1c1b3a;
+  --pass:      #3cbf95;
+  --pass-soft: #0f2a23;
+  --fail:      #f0656e;
+  --fail-soft: #2c1519;
+  --warn:      #d9a548;
+  --warn-soft: #2a2113;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --display: "Archivo", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.02em; }
+p { margin: 0; }
+.mono, code { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ── Shell ─────────────────────────────────────────────────────────────────── */
+.shell { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+.viewport { flex: 1; position: relative; overflow: hidden; display: grid; place-items: center; }
+.stage {
+  width: 1280px; height: 720px;
+  position: relative;
+  transform-origin: center center;
+  background: var(--ground);
+}
+
+/* ── Slides ────────────────────────────────────────────────────────────────── */
+.slide {
+  position: absolute; inset: 0;
+  padding: 62px 76px 76px;
+  display: flex; flex-direction: column;
+}
+.slide[hidden] { display: none !important; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--dim);
+}
+.slide > .eyebrow { margin-bottom: 26px; }
+.slide h2 { font-size: 44px; font-weight: 700; line-height: 1.06; }
+.slide .lede { font-size: 19px; line-height: 1.5; color: var(--muted); max-width: 66ch; margin-top: 14px; }
+
+/* footer rail: slide number + running progress */
+.rail {
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 76px 22px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--dim);
+}
+.ticks { display: flex; gap: 5px; flex: 1; }
+.tick { height: 3px; flex: 1; background: var(--line-soft); border-radius: 2px; transition: background .18s; }
+.tick.done { background: var(--line); }
+.tick.now  { background: var(--accent); }
+.rail .keys { color: var(--dim); }
+.rail .keys b { color: var(--muted); font-weight: 500; }
+
+/* ── Slide 1 ───────────────────────────────────────────────────────────────── */
+.hero { justify-content: center; gap: 0; }
+.quote {
+  font-family: var(--display); font-weight: 500;
+  font-size: 27px; line-height: 1.34; letter-spacing: -0.015em;
+  color: var(--muted); max-width: 30ch;
+  border-left: 2px solid var(--accent); padding-left: 24px;
+}
+.quote em { color: var(--ink); font-style: normal; font-weight: 600; }
+.quote .src { display: block; margin-top: 14px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; flex: 1; }
+.built { font-family: var(--display); font-size: 20px; font-weight: 600; color: var(--pass); letter-spacing: -0.01em; }
+.hero h1 { font-size: 62px; font-weight: 700; line-height: 1.02; margin: 16px 0 20px; }
+.hero .tag { font-size: 20px; color: var(--muted); }
+.hero .tag b { color: var(--ink); font-weight: 600; }
+.hero-meta { margin-top: 34px; display: flex; flex-direction: column; gap: 7px; font-family: var(--mono); font-size: 12.5px; color: var(--dim); }
+.hero-meta span b { color: var(--muted); font-weight: 500; }
+
+/* ── Generic content blocks ────────────────────────────────────────────────── */
+.body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: start; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 20px 22px; }
+.panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.panel p { font-size: 14.5px; line-height: 1.5; color: var(--muted); }
+.panel.bad { border-left: 2px solid var(--fail); }
+.panel .who { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-top: 12px; }
+
+.kicker { font-size: 22px; font-weight: 600; font-family: var(--display); letter-spacing: -0.015em; }
+.kicker.pass { color: var(--pass); }
+.kicker.fail { color: var(--fail); }
+
+/* definition list used for "what a seal carries" and 0G integration */
+.deflist { display: flex; flex-direction: column; gap: 16px; }
+.deflist .row { display: grid; grid-template-columns: 190px 1fr; gap: 18px; align-items: baseline; }
+.deflist dt { font-family: var(--display); font-size: 15.5px; font-weight: 600; color: var(--ink); }
+.deflist dd { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted); }
+.deflist dd code { color: var(--accent); font-size: 13px; }
+
+/* ── Seal-in-seal figure ───────────────────────────────────────────────────── */
+.sealbox {
+  border: 1px solid var(--line); border-radius: 3px;
+  background: var(--surface); font-family: var(--mono); font-size: 13px; line-height: 1.75;
+}
+.sealbox .hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px; border-bottom: 1px solid var(--line);
+  background: var(--surface-2); color: var(--muted);
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+}
+.sealbox .hd b { color: var(--ink); font-weight: 600; letter-spacing: .06em; }
+.sealbox .bd { padding: 12px 14px; }
+.sealbox .k { color: var(--dim); }
+.sealbox .v { color: var(--ink); }
+.sealbox .v.cap { color: var(--warn); }
+.sealbox .v.deny { color: var(--fail); }
+.sealbox .v.ok { color: var(--pass); }
+.sealbox .nested { margin: 8px 0 4px; border: 1px solid var(--accent-2); border-radius: 3px; background: var(--accent-soft); }
+.sealbox .nested .hd { background: transparent; border-bottom: 1px solid var(--accent-2); color: var(--accent); }
+.sealbox .nested .hd b { color: var(--accent); }
+
+/* ── Scenes table ──────────────────────────────────────────────────────────── */
+.scenes { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.scenes th {
+  text-align: left; font-family: var(--mono); font-size: 11px; font-weight: 500;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--dim);
+  padding: 0 14px 9px; border-bottom: 1px solid var(--line);
+}
+.scenes td { padding: 11px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.scenes tr.hot td { background: var(--fail-soft); }
+.scenes tr.hot td:first-child { box-shadow: inset 2px 0 0 var(--fail); }
+.scenes .n { font-size: 17px; color: var(--muted); width: 34px; }
+.scenes tr.hot .n { color: var(--fail); }
+.scenes .verdict { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.scenes .verdict.ok { color: var(--pass); }
+.scenes .verdict.no { color: var(--fail); }
+.scenes .where { font-family: var(--mono); font-size: 12px; color: var(--dim); white-space: nowrap; }
+.scenes .where.agent { color: var(--accent); }
+
+.callout {
+  margin-top: 22px; border-left: 2px solid var(--accent); padding-left: 18px;
+  font-size: 16px; line-height: 1.5; color: var(--muted); max-width: 84ch;
+}
+.callout b { color: var(--ink); font-weight: 600; }
+
+/* ── Address / stat strips ─────────────────────────────────────────────────── */
+.strip { display: flex; gap: 0; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.strip .cell { flex: 1; padding: 14px 18px; border-right: 1px solid var(--line); background: var(--surface); }
+.strip .cell:last-child { border-right: 0; }
+.strip .cell .l { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.strip .cell .v { font-family: var(--mono); font-size: 14px; color: var(--ink); margin-top: 5px; }
+.strip .cell .v small { color: var(--muted); font-size: 12px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.stat .num { font-family: var(--display); font-size: 38px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
+.stat .num.pass { color: var(--pass); }
+.stat .lbl { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+
+/* ── Flow diagram ──────────────────────────────────────────────────────────── */
+.figwrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+.figwrap svg { width: 100%; height: auto; max-height: 380px; }
+
+/* ── Notes drawer (outside the scaled stage, so it stays readable) ─────────── */
+.notes {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 16px 24px 18px;
+  display: flex; gap: 20px; align-items: flex-start;
+  max-height: 32vh; overflow-y: auto;
+}
+.notes[hidden] { display: none !important; }
+.notes .clock {
+  font-family: var(--mono); font-size: 12px; color: var(--accent);
+  border: 1px solid var(--accent-2); border-radius: 2px; padding: 4px 9px; white-space: nowrap;
+}
+.notes .txt { font-size: 14.5px; line-height: 1.65; color: var(--ink); max-width: 90ch; }
+.notes .txt strong { color: var(--accent); font-weight: 600; }
+.notes .txt .say { color: var(--ink); }
+.notes .txt .do { display: block; margin-top: 6px; color: var(--muted); font-size: 13.5px; }
+
+/* ── Focus / motion ────────────────────────────────────────────────────────── */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ── Print → PDF: every slide on its own landscape page ────────────────────── */
+@page { size: 1280px 720px; margin: 0; }
+@media print {
+  body { overflow: visible; background: #fff; }
+  .shell { display: block; height: auto; }
+  .viewport { display: block; overflow: visible; }
+  .rail, .notes { display: none !important; }
+  .stage { transform: none !important; width: 1280px; height: auto; }
+  .slide, .slide[hidden] {
+    display: flex !important;
+    position: relative; inset: auto;
+    width: 1280px; height: 720px;
+    break-after: page; page-break-after: always;
+  }
+}
+</style>
+
+<div class="shell">
+  <div class="viewport" id="viewport">
+    <div class="stage" id="stage">
+
+      <!-- ① Hook -->
+      <section class="slide hero" data-notes="0:00–0:20|開場直接引用活動命題那一句,唸完停半拍,再說「<strong>我們把它做出來了</strong>」。<span class='do'>然後一句話帶過定位:錢在 Base,證明在 0G。不要在這頁講技術。</span>">
+        <div class="eyebrow">0G Taipei Hackathon · Track C — On-Chain Agent / DApp</div>
+        <div class="hero-grid">
+          <div>
+            <blockquote class="quote">
+              When agents call each other with nobody watching, “I trust you” stops being a usable
+              security model: <em>every hop needs a proof.</em>
+              <span class="src">— the brief</span>
+            </blockquote>
+          </div>
+          <div>
+            <div class="built">We built it.</div>
+            <h1>Attested Collateral Underwriter</h1>
+            <p class="tag">Money on <b>Base</b>. Proof on <b>0G</b>.</p>
+            <div class="hero-meta">
+              <span><b>Agent A</b> underwrites · <b>Agent B</b> audits · A pays B over x402</span>
+              <span><b>0G Compute Router</b> runs the inference in a TEE and it is sealed</span>
+              <span><b>CollateralRegistry</b> lists nothing without a seal · 0G testnet 16602</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ② The problem -->
+      <section class="slide" data-notes="0:20–0:40|問題只講一件事:<strong>A 憑什麼相信 B?</strong><span class='do'>三張卡不要逐字唸,指著說「這三種失敗,『我信你』一種都擋不住」。最後一句是關鍵句:今天這件事發生在 Discord 跟 Notion,鏈上只看得到結果。</span>">
+        <div class="eyebrow">The gap</div>
+        <h2>Agent A wants to hire Agent B.<br>Nobody is watching.</h2>
+        <p class="lede">Three ways that goes wrong — and “I trust you” catches none of them.</p>
+        <div class="body">
+          <div class="cols3">
+            <div class="panel bad">
+              <h3>B takes the fee</h3>
+              <p>Charges for a verifiable audit, runs something cheaper, returns an answer that looks identical.</p>
+              <div class="who">no evidence attached</div>
+            </div>
+            <div class="panel bad">
+              <h3>Someone rewrites the answer</h3>
+              <p>A proxy flips <code class="mono">DENY</code> to <code class="mono">ALLOW</code> in flight. Both agents behave perfectly.</p>
+              <div class="who">nothing binds verdict to signer</div>
+            </div>
+            <div class="panel bad">
+              <h3>The answer is reused</h3>
+              <p>A clean token’s approval is presented to list a different, hostile token.</p>
+              <div class="who">nothing binds answer to subject</div>
+            </div>
+          </div>
+          <p class="callout">Today this happens in Discord and Notion, and the chain sees only the outcome.
+            <b>We make every hop leave a seal.</b></p>
+        </div>
+      </section>
+
+      <!-- ③ The mechanism -->
+      <section class="slide" data-notes="0:40–1:10|照著箭頭走一遍,語速放慢。<span class='do'>重點在最後那個紅框:<strong>信任邊界在 Agent A,不在合約</strong>。「中間沒有人在看」的意思就是 A 必須自己有能力拒絕 B —— 不能推給合約擋。這句話講完再翻頁。</span>">
+        <div class="eyebrow">How one hop works</div>
+        <h2>A pays B, B proves it, A checks B, then the chain hears about it</h2>
+        <div class="figwrap">
+          <svg viewBox="0 0 1128 330" role="img" aria-label="Agent A pays Agent B over x402; Agent B runs inference on the 0G Compute Router in a TEE and returns seal B; Agent A verifies seal B and composes seal A around it; the registry lists the token against seal A">
+            <defs>
+              <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#5d6b7e"></path>
+              </marker>
+              <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9186ff"></path>
+              </marker>
+            </defs>
+
+            <!-- Agent A -->
+            <rect x="0" y="96" width="212" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="20" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="19" font-weight="600">Agent A</text>
+            <text x="20" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13">Underwriter · Agentic ID</text>
+            <text x="20" y="172" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="12">reads token from 0G RPC</text>
+
+            <!-- A -> B -->
+            <line x1="212" y1="128" x2="330" y2="128" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <text x="222" y="118" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5">x402 · $0.01</text>
+            <text x="222" y="103" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="11">USDC · Base Sepolia</text>
+            <line x1="330" y1="164" x2="212" y2="164" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <text x="228" y="182" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5">seal B</text>
+
+            <!-- Agent B -->
+            <rect x="330" y="96" width="212" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="350" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="19" font-weight="600">Agent B</text>
+            <text x="350" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13">Code Auditor · Agentic ID</text>
+            <text x="350" y="172" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="12">signs its own verdict</text>
+
+            <!-- B -> Router -->
+            <line x1="436" y1="96" x2="436" y2="52" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <rect x="330" y="0" width="330" height="52" rx="3" fill="#1c1b3a" stroke="#6f63e8"></rect>
+            <text x="348" y="24" fill="#9186ff" font-family="Archivo, sans-serif" font-size="15" font-weight="600">0G Compute Router</text>
+            <text x="348" y="42" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5">trust mode verified · verify_tee · TDX attested</text>
+
+            <!-- B -> A verify -->
+            <line x1="542" y1="144" x2="660" y2="144" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+
+            <!-- Agent A verifies -->
+            <rect x="660" y="76" width="240" height="136" rx="3" fill="#141b24" stroke="#6f63e8"></rect>
+            <text x="680" y="104" fill="#9186ff" font-family="Archivo, sans-serif" font-size="16" font-weight="600">Agent A verifies seal B</text>
+            <text x="680" y="128" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12">signature · live Agentic ID</text>
+            <text x="680" y="148" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12">subject · request binding</text>
+            <text x="680" y="168" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12">expiry · TEE attestation</text>
+            <text x="680" y="194" fill="#f0656e" font-family="IBM Plex Mono, monospace" font-size="12">any check fails → refuse, stop</text>
+
+            <!-- verify -> registry -->
+            <line x1="900" y1="144" x2="960" y2="144" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+            <text x="906" y="132" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5">seal A ⊃ seal B</text>
+
+            <!-- Registry -->
+            <rect x="960" y="96" width="168" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="980" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="17" font-weight="600">Registry</text>
+            <text x="980" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13">0G testnet 16602</text>
+            <text x="980" y="172" fill="#3cbf95" font-family="IBM Plex Mono, monospace" font-size="12">list() or revert</text>
+
+            <!-- bottom note -->
+            <line x1="660" y1="248" x2="900" y2="248" stroke="#232d3b" stroke-width="1"></line>
+            <text x="660" y="278" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="15" font-weight="600">The trust boundary is here —</text>
+            <text x="660" y="300" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="14">not at the contract.</text>
+          </svg>
+        </div>
+      </section>
+
+      <!-- ④ The seal -->
+      <section class="slide" data-notes="1:10–1:30|指著圖說:<strong>章 A 把整張章 B 整個包進去,這就是章鏈</strong>。合約只驗最外層,但任何人都可以往下走一層自己重驗。<span class='do'>這是 repo 裡真的一張章,不是示意圖。右邊四條一條一句話,最重要的是第一條:章帶的是<strong>額度上限,不是一個 boolean</strong> —— 審核員說 75%,合約就不會讓你用 80% 上架(那就是第 ④ 幕)。</span>">
+        <div class="eyebrow">The artifact</div>
+        <h2>A seal carries a credit limit, not a thumbs-up</h2>
+        <div class="body">
+          <div class="cols2" style="gap:44px">
+            <div>
+            <div class="sealbox">
+              <div class="hd"><span>seal <b>A</b> — underwriting</span><span>signed by Agent A</span></div>
+              <div class="bd">
+                <div><span class="k">subject</span> <span class="v">0xdb08ce…ff9eb8</span> <span class="k">CleanUSD</span></div>
+                <div><span class="k">maxLtvBps</span> <span class="v cap">7500</span> <span class="k">· expiresAt</span> <span class="v">+24h</span></div>
+                <div><span class="k">delegations[0]</span> <span class="k">code-audit · 10000 atomic</span></div>
+                <div class="nested">
+                  <div class="hd"><span>seal <b>B</b> — audit</span><span>signed by Agent B</span></div>
+                  <div class="bd">
+                    <div><span class="k">model</span> <span class="v">qwen2.5-omni</span></div>
+                    <div><span class="k">trustMode</span> <span class="v ok">verified</span></div>
+                    <div><span class="k">teeAttestation</span> <span class="v">c24e1e77…</span> <span class="v ok">teeVerified ✓</span></div>
+                    <div><span class="k">findings</span> <span class="v">[]</span></div>
+                    <div><span class="k">verdict</span> <span class="v ok">ALLOW · 7500</span></div>
+                  </div>
+                </div>
+                <div><span class="k">settlementTx</span> <span class="v">0x9ca251…f92a48</span> <span class="k">Base Sepolia</span></div>
+                <div><span class="k">signature</span> <span class="v">0xcc5e72…7ca51b</span></div>
+              </div>
+            </div>
+            <p class="eyebrow" style="margin-top:12px">an actual seal from this repo — verifier/example-sealA.json</p>
+            </div>
+            <dl class="deflist">
+              <div class="row"><dt>A cap, not a boolean</dt>
+                <dd><code>maxLtvBps</code> is a credit limit. The auditor said 75% — the contract will not list at 80%.</dd></div>
+              <div class="row"><dt>Subject binding</dt>
+                <dd>A seal names the token it is about, so it cannot be replayed onto another one.</dd></div>
+              <div class="row"><dt>Seals expire</dt>
+                <dd>An upgradeable contract that is clean today is not clean next week.</dd></div>
+              <div class="row"><dt>The chain is a chain</dt>
+                <dd>Seal A embeds seal B whole. The contract verifies only seal A — anyone can walk down and re-verify the hop below, right down to re-fetching the TEE signature from the provider.</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑤ Six scenes -->
+      <section class="slide" data-notes="1:30–2:10|<strong>這是全場最重要的一頁,分配最多時間。</strong>前四幕快速帶過:合約擋得住。<span class='do'>停在 ⑤ 和 ⑥:這兩幕是<strong>在 Agent A 就被拒絕的,東西根本沒碰到鏈</strong>。⑥ 的 MITM 是真的 proxy,真的改了 verdict、簽章原封不動 —— 兩個 agent 都表現正常,偽造還是死了。最後一句:六幕每一幕都會 assert 預期結果,綠燈才算過。</span>">
+        <div class="eyebrow">Live demo · <span class="mono">./demo/run.sh --live</span></div>
+        <h2>Six scenes. Every one asserts its own outcome.</h2>
+        <div class="body">
+          <table class="scenes">
+            <thead>
+              <tr><th></th><th>Scene</th><th>Outcome</th><th>Refused where</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="n">①</td><td>CleanUSD at LTV 7000 — the baseline</td><td class="verdict ok">✓ EXECUTED</td><td class="where">listed</td></tr>
+              <tr><td class="n">②</td><td>TrapUSD — the auditor says DENY, A relays it unsoftened</td><td class="verdict no">✗ AUDIT_FAILED</td><td class="where">contract</td></tr>
+              <tr><td class="n">③</td><td>CleanUSD’s seal replayed to list TrapUSD</td><td class="verdict no">✗ SEAL_SUBJECT_MISMATCH</td><td class="where">contract</td></tr>
+              <tr><td class="n">④</td><td>CleanUSD at LTV 8000 — more leverage than attested</td><td class="verdict no">✗ LTV_EXCEEDS_ATTESTED</td><td class="where">contract</td></tr>
+              <tr class="hot"><td class="n">⑤</td><td>Agent B takes the fee, skips the verifiable inference</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
+              <tr class="hot"><td class="n">⑥</td><td>Man in the middle rewrites seal B’s verdict, signature untouched</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
+            </tbody>
+          </table>
+          <p class="callout">⑤ and ⑥ are the ones that matter. They are refused <b>at Agent A, before anything reaches a contract</b> —
+            because “nobody is watching” means A has to be able to reject B on its own.
+            <span class="mono" style="color:var(--dim)">demo/mitm.ts</span> is a real proxy: both agents behave correctly and the forgery still dies.</p>
+        </div>
+      </section>
+
+      <!-- ⑥ 0G integration -->
+      <section class="slide" data-notes="2:10–2:30|評審要聽的是「真的接了、不是只改 base_url」。<span class='do'>講第一條就好:<code>verify_tee</code> 是 body 頂層欄位、chatId 從 <code>ZG-Res-Key</code> header 回來 —— <strong>所以我們用 raw fetch 不用 SDK,因為 SDK 剛好把證據藏掉</strong>。這句話很有說服力。下面地址不用唸,指一下就好。</span>">
+        <div class="eyebrow">Where the 0G integration is</div>
+        <h2>Compute, Agentic ID and the chain — all three, all load-bearing</h2>
+        <div class="body">
+          <dl class="deflist" style="margin-bottom:26px">
+            <div class="row"><dt>Compute Router</dt>
+              <dd><code>POST /v1/chat/completions</code> with <code>X-0G-Provider-Trust-Mode: verified</code> and <code>verify_tee: true</code>.
+                The attestation comes back as the <code>ZG-Res-Key</code> header and <code>x_0g_trace.tee_verified</code> — raw <code>fetch</code>, on purpose, because that is exactly what an SDK hides.</dd></div>
+            <div class="row"><dt>Third-party check</dt>
+              <dd>Anyone can <code>GET /v1/proxy/signature/{chatId}</code> and verify it as EIP-191 against the provider’s on-chain TEE signer. We do not ask you to trust the Router either.</dd></div>
+            <div class="row"><dt>Agentic ID</dt>
+              <dd>Both agents hold one. The ERC-7857 tokenId is a field in every seal, and A checks that B’s is live before accepting its work.</dd></div>
+            <div class="row"><dt>0G chain</dt>
+              <dd>Reads — bytecode, ERC-20 metadata, owner, watched selectors. Writes — <code>CollateralRegistry.list</code>.</dd></div>
+          </dl>
+          <div class="strip">
+            <div class="cell"><div class="l">CollateralRegistry · 16602</div><div class="v">0xC1AAfd71…7B46a65E</div></div>
+            <div class="cell"><div class="l">Inference</div><div class="v">qwen2.5-omni <small>TDX · dstack</small></div></div>
+            <div class="cell"><div class="l">Payment</div><div class="v">x402 v2 <small>eip155:84532</small></div></div>
+            <div class="cell"><div class="l">Cost per audit</div><div class="v">$0.01 <small>+ $0.0009 inference</small></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑦ Verifier -->
+      <section class="slide" data-notes="2:30–2:45|如果現場有時間就<strong>直接開頁面貼一張章當眾驗</strong>(這是加分項)。<span class='do'>一句話講完:這頁不是「顯示」一張章,是<strong>檢查</strong>它 —— 從章自己的 bytes 重算 digest、recover 出簽章者、再往下走進內嵌的章 B。第三顆範例是被改過 verdict 的那張,現場點它會紅。</span>">
+        <div class="eyebrow">Bring your own seal</div>
+        <h2>A page that checks a seal instead of displaying one</h2>
+        <p class="lede">Paste a seal. Everything is recomputed in your browser, from the seal’s own bytes — nothing is taken on trust from whoever handed it to you.</p>
+        <div class="body">
+          <div class="cols3">
+            <div class="panel">
+              <h3>Recompute, don’t read</h3>
+              <p>The canonical digest is rebuilt from the seal’s bytes and the signer is recovered from it. A reimplementation of <code class="mono">canonical.ts</code>, checked byte-for-byte against it.</p>
+            </div>
+            <div class="panel">
+              <h3>Walk down the chain</h3>
+              <p>Open seal A, then open the audit seal embedded inside it, and see the TEE attestation that one carries.</p>
+            </div>
+            <div class="panel">
+              <h3>Three recorded seals</h3>
+              <p>A valid chain; an audit seal claiming an attested tier with no attestation; and one whose verdict was rewritten in flight with the signature left alone.</p>
+            </div>
+          </div>
+          <p class="callout"><span class="mono">verifier/index.html</span> — one file, no build step, runs offline.
+            <b>Hand it a seal on stage and it will tell you the truth about it.</b></p>
+        </div>
+      </section>
+
+      <!-- ⑧ Honest -->
+      <section class="slide" data-notes="2:45–3:00|<strong>這頁是我們和其他隊伍的差別,不要跳過。</strong><span class='do'>先給數字:30 次全對、確定性判定。然後說最重要的一句 —— <strong>章保證的是可追溯,不是判斷正確</strong>。舉 InjectionUSD:模型 10/10 都答對 DENY,但理由是錯的,它看到注入就短路、根本沒去審合約。<strong>而我們知道這件事,正是因為有章把理由記下來。</strong>沒有章的系統,這個問題查不出來。</span>">
+        <div class="eyebrow">What we can and cannot claim</div>
+        <h2>A seal proves traceability. It does not prove the judgement was right.</h2>
+        <div class="body">
+          <div class="stats" style="margin-bottom:28px">
+            <div class="stat"><div class="num pass">30/30</div><div class="lbl">runs agree — 3 tokens × 10, deterministic verdict and cap</div></div>
+            <div class="stat"><div class="num">85</div><div class="lbl">tests — 20 Foundry incl. a 256-run fuzz, 65 TypeScript</div></div>
+            <div class="stat"><div class="num">3.5s</div><div class="lbl">p50 inference latency, TEE-attested every run</div></div>
+            <div class="stat"><div class="num">0</div><div class="lbl">private keys in the repo; every scene asserts its outcome</div></div>
+          </div>
+          <div class="cols2">
+            <div class="panel" style="border-left:2px solid var(--warn)">
+              <h3>The one we found ourselves</h3>
+              <p>On <code class="mono">InjectionUSD</code> the model returned <code class="mono">DENY</code> 10 times out of 10 — and every time for the wrong reason. It saw the injection, short-circuited, and never audited the contract at all. Same string in a clean token and it would misfire.</p>
+              <div class="who">we know this only because the seal records the reasoning</div>
+            </div>
+            <div>
+              <p class="lede" style="margin-top:0">We are not replacing audits with AI. We are turning a pre-screen into an on-chain
+                auditable, attributable, <b style="color:var(--ink);font-weight:600">expiring</b> credential.</p>
+              <p class="lede" style="font-size:15px">Also stated plainly in the README: a TEE is not trustlessness, the seal does not cover the invoice,
+                and holder concentration is left <code class="mono">null</code> rather than invented — there is no indexer on this testnet.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑨ Close -->
+      <section class="slide hero" data-notes="收尾|回到第一頁那句話收:<strong>每一跳都需要證明 —— 每一跳都出章。</strong><span class='do'>然後把 repo 網址留在畫面上,不要再多講。留時間給 Q&amp;A。</span>">
+        <div class="eyebrow">Attested Collateral Underwriter · 0G Taipei Hackathon</div>
+        <div class="hero-grid">
+          <div>
+            <h1 style="font-size:56px">Every hop leaves a seal.</h1>
+            <p class="tag" style="margin-top:18px">Agents can hire agents with nobody watching —<br>because A can reject B on its own.</p>
+          </div>
+          <div>
+            <div class="strip" style="flex-direction:column">
+              <div class="cell" style="border-right:0;border-bottom:1px solid var(--line)">
+                <div class="l">Run it</div>
+                <div class="v">./demo/run.sh --live</div>
+                <div class="v" style="color:var(--muted)">./demo/run.sh --offline</div>
+              </div>
+              <div class="cell" style="border-right:0;border-bottom:1px solid var(--line)">
+                <div class="l">Verify a seal yourself</div>
+                <div class="v">verifier/index.html</div>
+              </div>
+              <div class="cell" style="border-right:0">
+                <div class="l">Deployed · 0G testnet 16602</div>
+                <div class="v">0xC1AAfd71480Ebc92C7F9fcC4d24272bd7B46a65E</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="rail">
+    <span class="mono" id="counter">01 / 09</span>
+    <span class="ticks" id="ticks"></span>
+    <span class="keys"><b>←→</b> move · <b>N</b> notes · <b>F</b> full screen · <b>⌘P</b> PDF</span>
+  </div>
+
+  <aside class="notes" id="notes" hidden>
+    <span class="clock" id="noteClock">0:00</span>
+    <div class="txt" id="noteText"></div>
+  </aside>
+</div>
+
+<script>
+(function () {
+  var slides   = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var stage    = document.getElementById('stage');
+  var viewport = document.getElementById('viewport');
+  var counter  = document.getElementById('counter');
+  var ticksEl  = document.getElementById('ticks');
+  var notes    = document.getElementById('notes');
+  var noteText = document.getElementById('noteText');
+  var noteClock= document.getElementById('noteClock');
+  var i = 0;
+
+  slides.forEach(function () {
+    var t = document.createElement('span');
+    t.className = 'tick';
+    ticksEl.appendChild(t);
+  });
+  var ticks = Array.prototype.slice.call(ticksEl.children);
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, k) { s.hidden = k !== i; });
+    ticks.forEach(function (t, k) {
+      t.className = 'tick' + (k === i ? ' now' : (k < i ? ' done' : ''));
+    });
+    counter.textContent = pad(i + 1) + ' / ' + pad(slides.length);
+    var raw = slides[i].getAttribute('data-notes') || '|';
+    var cut = raw.indexOf('|');
+    noteClock.textContent = raw.slice(0, cut);
+    noteText.innerHTML = raw.slice(cut + 1);
+    try { location.hash = String(i + 1); } catch (e) {}
+  }
+
+  function fit() {
+    var k = Math.min(viewport.clientWidth / 1280, viewport.clientHeight / 720);
+    stage.style.transform = 'scale(' + k + ')';
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter') { e.preventDefault(); show(i + 1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'Backspace') { e.preventDefault(); show(i - 1); }
+    else if (k === 'Home') { e.preventDefault(); show(0); }
+    else if (k === 'End') { e.preventDefault(); show(slides.length - 1); }
+    else if (k === 'n' || k === 'N') { notes.hidden = !notes.hidden; requestAnimationFrame(fit); }
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) { document.exitFullscreen(); }
+      else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }
+    }
+  });
+
+  viewport.addEventListener('click', function (e) {
+    show(i + (e.clientX < viewport.clientWidth * 0.25 ? -1 : 1));
+  });
+
+  window.addEventListener('resize', fit);
+  if (window.ResizeObserver) { new ResizeObserver(fit).observe(viewport); }
+
+  var start = parseInt((location.hash || '').replace('#', ''), 10);
+  show(isNaN(start) ? 0 : start - 1);
+  fit();
+})();
+</script>
