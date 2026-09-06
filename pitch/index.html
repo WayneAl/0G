@@ -273,9 +273,9 @@ p { margin: 0; }
             <h1>Attested Collateral Underwriter</h1>
             <p class="tag" data-zh="錢在 <b>Base</b>,證明在 <b>0G</b>。">Money on <b>Base</b>. Proof on <b>0G</b>.</p>
             <div class="hero-meta">
-              <span data-zh="<b>Agent A</b> 承作 · <b>Agent B</b> 審核 · A 用 x402 付錢雇 B"><b>Agent A</b> underwrites · <b>Agent B</b> audits · A pays B over x402</span>
-              <span data-zh="<b>0G Compute Router</b> 在 TEE 裡跑推理,結果出章"><b>0G Compute Router</b> runs the inference in a TEE and it is sealed</span>
-              <span data-zh="<b>CollateralRegistry</b> 見不到章就不上架 · 0G 測試網 16602"><b>CollateralRegistry</b> lists nothing without a seal · 0G testnet 16602</span>
+              <span data-zh="<b>Agent A</b> 做准入預審 · <b>Agent B</b> 做原始碼審核 · A 用 x402 付錢請 B"><b>Agent A</b> underwrites · <b>Agent B</b> audits · A pays B over x402</span>
+              <span data-zh="推理跑在 <b>0G Compute Router</b> 的 TEE 裡,結果簽成章"><b>0G Compute Router</b> runs the inference in a TEE and it is sealed</span>
+              <span data-zh="<b>CollateralRegistry</b> 見章才上架 · 0G testnet 16602"><b>CollateralRegistry</b> lists nothing without a seal · 0G testnet 16602</span>
             </div>
           </div>
         </div>
@@ -283,36 +283,36 @@ p { margin: 0; }
 
       <!-- ② The problem -->
       <section class="slide" data-notes="0:20–0:40|問題只講一件事:<strong>A 憑什麼相信 B?</strong><span class='do'>三張卡不要逐字唸,指著說「這三種失敗,『我信你』一種都擋不住」。最後一句是關鍵句:今天這件事發生在 Discord 跟 Notion,鏈上只看得到結果。</span>">
-        <div class="eyebrow" data-zh="缺口">The gap</div>
-        <h2 data-zh="Agent A 想雇用 Agent B。<br>中間沒有人在看。">Agent A wants to hire Agent B.<br>Nobody is watching.</h2>
-        <p class="lede" data-zh="三種出錯的方式 —— 而「我信你」一種都擋不住。">Three ways that goes wrong — and “I trust you” catches none of them.</p>
+        <div class="eyebrow" data-zh="問題在哪">The gap</div>
+        <h2 data-zh="Agent A 要雇 Agent B 做事。<br>中間沒有人在看。">Agent A wants to hire Agent B.<br>Nobody is watching.</h2>
+        <p class="lede" data-zh="會出事的地方有三個,「我信你」一個都擋不住。">Three ways that goes wrong — and “I trust you” catches none of them.</p>
         <div class="body">
           <div class="cols3">
             <div class="panel bad">
-              <h3 data-zh="B 收了錢">B takes the fee</h3>
-              <p data-zh="收的是可驗證審核的錢,實際跑了更便宜的東西,回傳的答案長得一模一樣。">Charges for a verifiable audit, runs something cheaper, returns an answer that looks identical.</p>
-              <div class="who" data-zh="沒有任何證據附在上面">no evidence attached</div>
+              <h3 data-zh="B 收錢不辦事">B takes the fee</h3>
+              <p data-zh="收的是可驗證推理的價錢,實際跑的是便宜貨,回傳的答案看起來完全一樣。">Charges for a verifiable audit, runs something cheaper, returns an answer that looks identical.</p>
+              <div class="who" data-zh="答案上沒附任何證據">no evidence attached</div>
             </div>
             <div class="panel bad">
-              <h3 data-zh="有人改了答案">Someone rewrites the answer</h3>
-              <p data-zh="一個 proxy 在傳輸途中把 <code class='mono'>DENY</code> 改成 <code class='mono'>ALLOW</code>。兩個 agent 的行為都完全正常。">A proxy flips <code class="mono">DENY</code> to <code class="mono">ALLOW</code> in flight. Both agents behave perfectly.</p>
-              <div class="who" data-zh="verdict 沒有綁到簽章者">nothing binds verdict to signer</div>
+              <h3 data-zh="答案在半路被改掉">Someone rewrites the answer</h3>
+              <p data-zh="中間一個 proxy 把 <code class='mono'>DENY</code> 改成 <code class='mono'>ALLOW</code>。兩邊的 agent 都沒做錯任何事。">A proxy flips <code class="mono">DENY</code> to <code class="mono">ALLOW</code> in flight. Both agents behave perfectly.</p>
+              <div class="who" data-zh="判定和簽章者沒綁在一起">nothing binds verdict to signer</div>
             </div>
             <div class="panel bad">
-              <h3 data-zh="答案被重複使用">The answer is reused</h3>
-              <p data-zh="拿一枚乾淨代幣的核准,去上架另一枚有問題的代幣。">A clean token’s approval is presented to list a different, hostile token.</p>
-              <div class="who" data-zh="答案沒有綁到標的">nothing binds answer to subject</div>
+              <h3 data-zh="答案被拿去重複使用">The answer is reused</h3>
+              <p data-zh="拿乾淨代幣的核准,去上架另一枚有問題的代幣。">A clean token’s approval is presented to list a different, hostile token.</p>
+              <div class="who" data-zh="答案和標的沒綁在一起">nothing binds answer to subject</div>
             </div>
           </div>
-          <p class="callout" data-zh="今天這件事發生在 Discord 和 Notion 裡,鏈上只看得到結果。<b>我們讓每一跳都留下一張章。</b>">Today this happens in Discord and Notion, and the chain sees only the outcome.
+          <p class="callout" data-zh="今天這些決定都發生在 Discord 和 Notion 裡,鏈上只看得到結果。<b>我們讓每一跳都留下一張章。</b>">Today this happens in Discord and Notion, and the chain sees only the outcome.
             <b>We make every hop leave a seal.</b></p>
         </div>
       </section>
 
       <!-- ③ The mechanism -->
       <section class="slide" data-notes="0:40–1:10|照著箭頭走一遍,語速放慢。<span class='do'>重點在最後那個紅框:<strong>信任邊界在 Agent A,不在合約</strong>。「中間沒有人在看」的意思就是 A 必須自己有能力拒絕 B —— 不能推給合約擋。這句話講完再翻頁。</span>">
-        <div class="eyebrow" data-zh="一跳是怎麼運作的">How one hop works</div>
-        <h2 data-zh="A 付錢給 B,B 出證明,A 驗 B,然後鏈才聽說這件事">A pays B, B proves it, A checks B, then the chain hears about it</h2>
+        <div class="eyebrow" data-zh="一跳怎麼走">How one hop works</div>
+        <h2 data-zh="A 付錢、B 出證明、A 驗過 B,鏈才會知道這件事">A pays B, B proves it, A checks B, then the chain hears about it</h2>
         <div class="figwrap">
           <svg viewBox="0 0 1128 330" role="img" aria-label="Agent A pays Agent B over x402; Agent B runs inference on the 0G Compute Router in a TEE and returns seal B; Agent A verifies seal B and composes seal A around it; the registry lists the token against seal A">
             <defs>
@@ -327,7 +327,7 @@ p { margin: 0; }
             <!-- Agent A -->
             <rect x="0" y="96" width="212" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
             <text x="20" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="19" font-weight="600">Agent A</text>
-            <text x="20" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13" data-zh="承作方 · Agentic ID">Underwriter · Agentic ID</text>
+            <text x="20" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13" data-zh="准入預審 · Agentic ID">Underwriter · Agentic ID</text>
             <text x="20" y="172" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="從 0G RPC 讀代幣資料">reads token from 0G RPC</text>
 
             <!-- A -> B -->
@@ -341,7 +341,7 @@ p { margin: 0; }
             <rect x="330" y="96" width="212" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
             <text x="350" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="19" font-weight="600">Agent B</text>
             <text x="350" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13" data-zh="原始碼審核 · Agentic ID">Code Auditor · Agentic ID</text>
-            <text x="350" y="172" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="自己簽自己的判定">signs its own verdict</text>
+            <text x="350" y="172" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="判定由自己簽章">signs its own verdict</text>
 
             <!-- B -> Router -->
             <line x1="436" y1="96" x2="436" y2="52" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
@@ -355,10 +355,10 @@ p { margin: 0; }
             <!-- Agent A verifies -->
             <rect x="660" y="76" width="240" height="136" rx="3" fill="#141b24" stroke="#6f63e8"></rect>
             <text x="680" y="104" fill="#9186ff" font-family="Archivo, sans-serif" font-size="16" font-weight="600" data-zh="Agent A 驗證章 B">Agent A verifies seal B</text>
-            <text x="680" y="128" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="簽章 · Agentic ID 是活的">signature · live Agentic ID</text>
-            <text x="680" y="148" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="標的綁定 · 請求綁定">subject · request binding</text>
-            <text x="680" y="168" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="未過期 · TEE 證明">expiry · TEE attestation</text>
-            <text x="680" y="194" fill="#f0656e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="任一項不過 → 拒絕組章,中止">any check fails → refuse, stop</text>
+            <text x="680" y="128" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="簽章有效 · Agentic ID 還活著">signature · live Agentic ID</text>
+            <text x="680" y="148" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="標的相符 · 請求相符">subject · request binding</text>
+            <text x="680" y="168" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="沒過期 · 有 TEE 證明">expiry · TEE attestation</text>
+            <text x="680" y="194" fill="#f0656e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="任何一項不過 → 拒絕,到此為止">any check fails → refuse, stop</text>
 
             <!-- verify -> registry -->
             <line x1="900" y1="144" x2="960" y2="144" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
@@ -381,12 +381,12 @@ p { margin: 0; }
       <!-- ④ The seal -->
       <section class="slide" data-notes="1:10–1:30|指著圖說:<strong>章 A 把整張章 B 整個包進去,這就是章鏈</strong>。合約只驗最外層,但任何人都可以往下走一層自己重驗。<span class='do'>這是 repo 裡真的一張章,不是示意圖。右邊四條一條一句話,最重要的是第一條:章帶的是<strong>額度上限,不是一個 boolean</strong> —— 審核員說 75%,合約就不會讓你用 80% 上架(那就是第 ④ 幕)。</span>">
         <div class="eyebrow" data-zh="章長什麼樣">The artifact</div>
-        <h2 data-zh="章帶的是一條信用額度,不是一個「通過」">A seal carries a credit limit, not a thumbs-up</h2>
+        <h2 data-zh="章上寫的是額度上限,不是一個「通過」">A seal carries a credit limit, not a thumbs-up</h2>
         <div class="body">
           <div class="cols2" style="gap:44px">
             <div>
             <div class="sealbox">
-              <div class="hd"><span data-zh="章 <b>A</b> — 承作">seal <b>A</b> — underwriting</span><span data-zh="由 Agent A 簽署">signed by Agent A</span></div>
+              <div class="hd"><span data-zh="章 <b>A</b> — 准入">seal <b>A</b> — underwriting</span><span data-zh="由 Agent A 簽署">signed by Agent A</span></div>
               <div class="bd">
                 <div><span class="k">subject</span> <span class="v">0xdb08ce…ff9eb8</span> <span class="k">CleanUSD</span></div>
                 <div><span class="k">maxLtvBps</span> <span class="v cap">7500</span> <span class="k">· expiresAt</span> <span class="v">+24h</span></div>
@@ -405,17 +405,17 @@ p { margin: 0; }
                 <div><span class="k">signature</span> <span class="v">0xcc5e72…7ca51b</span></div>
               </div>
             </div>
-            <p class="eyebrow" style="margin-top:12px" data-zh="這是 repo 裡真的一張章 —— verifier/example-sealA.json">an actual seal from this repo — verifier/example-sealA.json</p>
+            <p class="eyebrow" style="margin-top:12px" data-zh="repo 裡真實的一張章 —— verifier/example-sealA.json">an actual seal from this repo — verifier/example-sealA.json</p>
             </div>
             <dl class="deflist">
-              <div class="row"><dt data-zh="上限,不是 boolean">A cap, not a boolean</dt>
-                <dd data-zh="<code>maxLtvBps</code> 是一條信用額度。審核員說 75%,合約就不會讓你在 80% 上架。"><code>maxLtvBps</code> is a credit limit. The auditor said 75% — the contract will not list at 80%.</dd></div>
+              <div class="row"><dt data-zh="額度,不是 boolean">A cap, not a boolean</dt>
+                <dd data-zh="<code>maxLtvBps</code> 就是信用額度。審核說 75%,合約就不會讓你用 80% 上架。"><code>maxLtvBps</code> is a credit limit. The auditor said 75% — the contract will not list at 80%.</dd></div>
               <div class="row"><dt data-zh="標的綁定">Subject binding</dt>
-                <dd data-zh="章上寫明它是關於哪一枚代幣,所以不能被搬到另一枚上面用。">A seal names the token it is about, so it cannot be replayed onto another one.</dd></div>
+                <dd data-zh="章上寫死它是哪一枚代幣的章,搬到別的代幣上就失效。">A seal names the token it is about, so it cannot be replayed onto another one.</dd></div>
               <div class="row"><dt data-zh="章會過期">Seals expire</dt>
                 <dd data-zh="今天乾淨的可升級合約,下週不一定還乾淨。">An upgradeable contract that is clean today is not clean next week.</dd></div>
-              <div class="row"><dt data-zh="章鏈成立">The chain is a chain</dt>
-                <dd data-zh="章 A 把整張章 B 包進去。合約只驗章 A —— 但任何人都可以往下走一層自己重驗,一路驗到跟 provider 重新拿 TEE 簽章。">Seal A embeds seal B whole. The contract verifies only seal A — anyone can walk down and re-verify the hop below, right down to re-fetching the TEE signature from the provider.</dd></div>
+              <div class="row"><dt data-zh="章裡有章">The chain is a chain</dt>
+                <dd data-zh="章 A 把整張章 B 原封不動包進去。合約只驗章 A,但任何人都能往下多走一層自己驗,一路驗到跟 provider 重新拿 TEE 簽章為止。">Seal A embeds seal B whole. The contract verifies only seal A — anyone can walk down and re-verify the hop below, right down to re-fetching the TEE signature from the provider.</dd></div>
             </dl>
           </div>
         </div>
@@ -424,22 +424,22 @@ p { margin: 0; }
       <!-- ⑤ Six scenes -->
       <section class="slide" data-notes="1:30–2:10|<strong>這是全場最重要的一頁,分配最多時間。</strong>前四幕快速帶過:合約擋得住。<span class='do'>停在 ⑤ 和 ⑥:這兩幕是<strong>在 Agent A 就被拒絕的,東西根本沒碰到鏈</strong>。⑥ 的 MITM 是真的 proxy,真的改了 verdict、簽章原封不動 —— 兩個 agent 都表現正常,偽造還是死了。最後一句:六幕每一幕都會 assert 預期結果,綠燈才算過。</span>">
         <div class="eyebrow" data-zh="現場 Demo · <span class='mono'>./demo/run.sh --live</span>">Live demo · <span class="mono">./demo/run.sh --live</span></div>
-        <h2 data-zh="六幕。每一幕都自己 assert 該有的結果。">Six scenes. Every one asserts its own outcome.</h2>
+        <h2 data-zh="六幕,每一幕都 assert 自己該有的結果。">Six scenes. Every one asserts its own outcome.</h2>
         <div class="body">
           <table class="scenes">
             <thead>
               <tr><th></th><th data-zh="場景">Scene</th><th data-zh="結果">Outcome</th><th data-zh="擋在哪">Refused where</th></tr>
             </thead>
             <tbody>
-              <tr><td class="n">①</td><td data-zh="CleanUSD,LTV 7000 —— 基準線">CleanUSD at LTV 7000 — the baseline</td><td class="verdict ok">✓ EXECUTED</td><td class="where" data-zh="已上架">listed</td></tr>
-              <tr><td class="n">②</td><td data-zh="TrapUSD —— 審核員說 DENY,A 原封不動轉達">TrapUSD — the auditor says DENY, A relays it unsoftened</td><td class="verdict no">✗ AUDIT_FAILED</td><td class="where" data-zh="合約">contract</td></tr>
+              <tr><td class="n">①</td><td data-zh="CleanUSD、LTV 7000 —— 正常流程">CleanUSD at LTV 7000 — the baseline</td><td class="verdict ok">✓ EXECUTED</td><td class="where" data-zh="已上架">listed</td></tr>
+              <tr><td class="n">②</td><td data-zh="TrapUSD —— 審核說 DENY,A 照實轉達">TrapUSD — the auditor says DENY, A relays it unsoftened</td><td class="verdict no">✗ AUDIT_FAILED</td><td class="where" data-zh="合約">contract</td></tr>
               <tr><td class="n">③</td><td data-zh="拿 CleanUSD 的章去上架 TrapUSD">CleanUSD’s seal replayed to list TrapUSD</td><td class="verdict no">✗ SEAL_SUBJECT_MISMATCH</td><td class="where" data-zh="合約">contract</td></tr>
-              <tr><td class="n">④</td><td data-zh="CleanUSD 開到 LTV 8000 —— 比章上准的槓桿更高">CleanUSD at LTV 8000 — more leverage than attested</td><td class="verdict no">✗ LTV_EXCEEDS_ATTESTED</td><td class="where" data-zh="合約">contract</td></tr>
-              <tr class="hot"><td class="n">⑤</td><td data-zh="Agent B 收了錢,跳過可驗證的推理">Agent B takes the fee, skips the verifiable inference</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
-              <tr class="hot"><td class="n">⑥</td><td data-zh="中間人改寫章 B 的 verdict,簽章原封不動">Man in the middle rewrites seal B’s verdict, signature untouched</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
+              <tr><td class="n">④</td><td data-zh="CleanUSD 想開到 LTV 8000 —— 超過章上准的額度">CleanUSD at LTV 8000 — more leverage than attested</td><td class="verdict no">✗ LTV_EXCEEDS_ATTESTED</td><td class="where" data-zh="合約">contract</td></tr>
+              <tr class="hot"><td class="n">⑤</td><td data-zh="Agent B 收了錢,卻沒跑可驗證的推理">Agent B takes the fee, skips the verifiable inference</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
+              <tr class="hot"><td class="n">⑥</td><td data-zh="中間人把章 B 的判定改掉,簽章沒動">Man in the middle rewrites seal B’s verdict, signature untouched</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
             </tbody>
           </table>
-          <p class="callout" data-zh="⑤ 和 ⑥ 才是重點。它們是<b>在 Agent A 就被拒絕的,東西根本沒碰到合約</b> —— 因為「中間沒有人在看」的意思,就是 A 必須自己有能力拒絕 B。<span class='mono' style='color:var(--dim)'>demo/mitm.ts</span> 是一個真的 proxy:兩個 agent 都表現正常,偽造還是死了。">⑤ and ⑥ are the ones that matter. They are refused <b>at Agent A, before anything reaches a contract</b> —
+          <p class="callout" data-zh="⑤ 和 ⑥ 才是重點:它們<b>在 Agent A 這一關就被擋下來,根本沒碰到合約</b> —— 「中間沒有人在看」的意思,就是 A 得自己有辦法拒絕 B。<span class='mono' style='color:var(--dim)'>demo/mitm.ts</span> 是一個真的 proxy,兩個 agent 都沒做錯事,偽造照樣死。">⑤ and ⑥ are the ones that matter. They are refused <b>at Agent A, before anything reaches a contract</b> —
             because “nobody is watching” means A has to be able to reject B on its own.
             <span class="mono" style="color:var(--dim)">demo/mitm.ts</span> is a real proxy: both agents behave correctly and the forgery still dies.</p>
         </div>
@@ -447,19 +447,19 @@ p { margin: 0; }
 
       <!-- ⑥ 0G integration -->
       <section class="slide" data-notes="2:10–2:30|評審要聽的是「真的接了、不是只改 base_url」。<span class='do'>講第一條就好:<code>verify_tee</code> 是 body 頂層欄位、chatId 從 <code>ZG-Res-Key</code> header 回來 —— <strong>所以我們用 raw fetch 不用 SDK,因為 SDK 剛好把證據藏掉</strong>。這句話很有說服力。下面地址不用唸,指一下就好。</span>">
-        <div class="eyebrow" data-zh="0G 的整合點在哪">Where the 0G integration is</div>
-        <h2 data-zh="Compute、Agentic ID、鏈 —— 三個都用了,而且都是承重的">Compute, Agentic ID and the chain — all three, all load-bearing</h2>
+        <div class="eyebrow" data-zh="0G 接在哪裡">Where the 0G integration is</div>
+        <h2 data-zh="Compute、Agentic ID、鏈上合約 —— 三個都接了,拔掉任何一個系統就不成立">Compute, Agentic ID and the chain — all three, all load-bearing</h2>
         <div class="body">
           <dl class="deflist" style="margin-bottom:26px">
             <div class="row"><dt data-zh="Compute Router">Compute Router</dt>
-              <dd data-zh="<code>POST /v1/chat/completions</code>,帶 <code>X-0G-Provider-Trust-Mode: verified</code> 與 <code>verify_tee: true</code>。證明從 <code>ZG-Res-Key</code> header 和 <code>x_0g_trace.tee_verified</code> 回來 —— 這裡刻意用 raw <code>fetch</code> 而不是 SDK,因為 SDK 藏掉的正好就是這些證據。"><code>POST /v1/chat/completions</code> with <code>X-0G-Provider-Trust-Mode: verified</code> and <code>verify_tee: true</code>.
+              <dd data-zh="<code>POST /v1/chat/completions</code>,帶 <code>X-0G-Provider-Trust-Mode: verified</code> 和 <code>verify_tee: true</code>。證明從 <code>ZG-Res-Key</code> header 和 <code>x_0g_trace.tee_verified</code> 回來。這裡故意用 raw <code>fetch</code> 不用 SDK —— SDK 幫你藏掉的,剛好就是這些證據。"><code>POST /v1/chat/completions</code> with <code>X-0G-Provider-Trust-Mode: verified</code> and <code>verify_tee: true</code>.
                 The attestation comes back as the <code>ZG-Res-Key</code> header and <code>x_0g_trace.tee_verified</code> — raw <code>fetch</code>, on purpose, because that is exactly what an SDK hides.</dd></div>
             <div class="row"><dt data-zh="第三方複驗">Third-party check</dt>
-              <dd data-zh="任何人都可以 <code>GET /v1/proxy/signature/{chatId}</code>,用 EIP-191 對 provider 在鏈上的 TEE 簽章者驗簽。連 Router 我們也不要求你信。">Anyone can <code>GET /v1/proxy/signature/{chatId}</code> and verify it as EIP-191 against the provider’s on-chain TEE signer. We do not ask you to trust the Router either.</dd></div>
+              <dd data-zh="任何人都能 <code>GET /v1/proxy/signature/{chatId}</code>,拿 provider 鏈上登記的 TEE 簽章地址做 EIP-191 驗簽。你連 Router 都不用信。">Anyone can <code>GET /v1/proxy/signature/{chatId}</code> and verify it as EIP-191 against the provider’s on-chain TEE signer. We do not ask you to trust the Router either.</dd></div>
             <div class="row"><dt data-zh="Agentic ID">Agentic ID</dt>
-              <dd data-zh="兩個 agent 各持一個。ERC-7857 的 tokenId 是每一張章上的欄位,而 A 在接受 B 的工作之前,會先確認 B 的 ID 是活的。">Both agents hold one. The ERC-7857 tokenId is a field in every seal, and A checks that B’s is live before accepting its work.</dd></div>
+              <dd data-zh="兩個 agent 各有一個。ERC-7857 的 tokenId 寫在每一張章上,A 收下 B 的結果之前,會先確認 B 的 ID 還活著。">Both agents hold one. The ERC-7857 tokenId is a field in every seal, and A checks that B’s is live before accepting its work.</dd></div>
             <div class="row"><dt data-zh="0G 鏈">0G chain</dt>
-              <dd data-zh="讀 —— bytecode、ERC-20 metadata、owner、被監看的 selector。寫 —— <code>CollateralRegistry.list</code>。">Reads — bytecode, ERC-20 metadata, owner, watched selectors. Writes — <code>CollateralRegistry.list</code>.</dd></div>
+              <dd data-zh="讀:bytecode、ERC-20 metadata、owner、要盯的 selector。寫:<code>CollateralRegistry.list</code>。">Reads — bytecode, ERC-20 metadata, owner, watched selectors. Writes — <code>CollateralRegistry.list</code>.</dd></div>
           </dl>
           <div class="strip">
             <div class="cell"><div class="l">CollateralRegistry · 16602</div><div class="v">0xC1AAfd71…7B46a65E</div></div>
@@ -472,50 +472,50 @@ p { margin: 0; }
 
       <!-- ⑦ Verifier -->
       <section class="slide" data-notes="2:30–2:45|如果現場有時間就<strong>直接開頁面貼一張章當眾驗</strong>(這是加分項)。<span class='do'>一句話講完:這頁不是「顯示」一張章,是<strong>檢查</strong>它 —— 從章自己的 bytes 重算 digest、recover 出簽章者、再往下走進內嵌的章 B。第三顆範例是被改過 verdict 的那張,現場點它會紅。</span>">
-        <div class="eyebrow" data-zh="帶你自己的章來">Bring your own seal</div>
-        <h2 data-zh="一個檢查章的頁面,不是一個顯示章的頁面">A page that checks a seal instead of displaying one</h2>
-        <p class="lede" data-zh="貼上一張章。所有東西都在你的瀏覽器裡、從章自己的 bytes 重新算過 —— 對交章給你的那個人,不做任何信任假設。">Paste a seal. Everything is recomputed in your browser, from the seal’s own bytes — nothing is taken on trust from whoever handed it to you.</p>
+        <div class="eyebrow" data-zh="自己帶章來驗">Bring your own seal</div>
+        <h2 data-zh="這頁是驗章的,不是展示章的">A page that checks a seal instead of displaying one</h2>
+        <p class="lede" data-zh="貼一張章進來,所有東西在你的瀏覽器裡、從章本身的 bytes 重算 —— 交章給你的人說什麼,一個字都不信。">Paste a seal. Everything is recomputed in your browser, from the seal’s own bytes — nothing is taken on trust from whoever handed it to you.</p>
         <div class="body">
           <div class="cols3">
             <div class="panel">
               <h3 data-zh="重算,不是照讀">Recompute, don’t read</h3>
-              <p data-zh="canonical digest 由章自己的 bytes 重建,簽章者從它 recover 出來。這是 <code class='mono'>canonical.ts</code> 的重寫版,而且驗證過兩邊逐 byte 相同。">The canonical digest is rebuilt from the seal’s bytes and the signer is recovered from it. A reimplementation of <code class="mono">canonical.ts</code>, checked byte-for-byte against it.</p>
+              <p data-zh="從章的 bytes 重算 canonical digest,再從簽章 recover 出簽章者。這是 <code class='mono'>canonical.ts</code> 的另一份實作,兩邊算出的 digest 逐 byte 對過。">The canonical digest is rebuilt from the seal’s bytes and the signer is recovered from it. A reimplementation of <code class="mono">canonical.ts</code>, checked byte-for-byte against it.</p>
             </div>
             <div class="panel">
               <h3 data-zh="往下走一層">Walk down the chain</h3>
-              <p data-zh="打開章 A,再打開嵌在裡面的審核章,看它帶著的那份 TEE 證明。">Open seal A, then open the audit seal embedded inside it, and see the TEE attestation that one carries.</p>
+              <p data-zh="打開章 A,再打開包在裡面的章 B,看它帶的 TEE 證明。">Open seal A, then open the audit seal embedded inside it, and see the TEE attestation that one carries.</p>
             </div>
             <div class="panel">
-              <h3 data-zh="三張錄下來的章">Three recorded seals</h3>
-              <p data-zh="一條完整有效的章鏈;一張聲稱 attested、卻沒帶證明的審核章;以及一張 verdict 在傳輸中被改、簽章卻沒動的。">A valid chain; an audit seal claiming an attested tier with no attestation; and one whose verdict was rewritten in flight with the signature left alone.</p>
+              <h3 data-zh="內建三張真實的章">Three recorded seals</h3>
+              <p data-zh="一條完整有效的章鏈;一張自稱 attested 卻沒帶證明的審核章;一張判定在半路被改、簽章卻沒動的。">A valid chain; an audit seal claiming an attested tier with no attestation; and one whose verdict was rewritten in flight with the signature left alone.</p>
             </div>
           </div>
-          <p class="callout" data-zh="<span class='mono'>verifier/index.html</span> —— 一個檔案、不用 build、離線也能跑。<b>現場遞一張章給它,它會告訴你關於這張章的實話。</b>"><span class="mono">verifier/index.html</span> — one file, no build step, runs offline.
+          <p class="callout" data-zh="<span class='mono'>verifier/index.html</span> —— 一個檔案、不用 build、離線能跑。<b>現場丟一張章給它,它會告訴你這張章的真話。</b>"><span class="mono">verifier/index.html</span> — one file, no build step, runs offline.
             <b>Hand it a seal on stage and it will tell you the truth about it.</b></p>
         </div>
       </section>
 
       <!-- ⑧ Honest -->
       <section class="slide" data-notes="2:45–3:00|<strong>這頁是我們和其他隊伍的差別,不要跳過。</strong><span class='do'>先給數字:30 次全對、確定性判定。然後說最重要的一句 —— <strong>章保證的是可追溯,不是判斷正確</strong>。舉 InjectionUSD:模型 10/10 都答對 DENY,但理由是錯的,它看到注入就短路、根本沒去審合約。<strong>而我們知道這件事,正是因為有章把理由記下來。</strong>沒有章的系統,這個問題查不出來。</span>">
-        <div class="eyebrow" data-zh="我們敢聲稱什麼,不敢聲稱什麼">What we can and cannot claim</div>
-        <h2 data-zh="章保證的是可追溯。它不保證那個判斷是對的。">A seal proves traceability. It does not prove the judgement was right.</h2>
+        <div class="eyebrow" data-zh="我們敢說什麼、不敢說什麼">What we can and cannot claim</div>
+        <h2 data-zh="章保證的是可追溯,不是判斷正確。">A seal proves traceability. It does not prove the judgement was right.</h2>
         <div class="body">
           <div class="stats" style="margin-bottom:28px">
-            <div class="stat"><div class="num pass">30/30</div><div class="lbl" data-zh="次一致 —— 3 種代幣 × 10 次,判定與額度都是確定性的">runs agree — 3 tokens × 10, deterministic verdict and cap</div></div>
-            <div class="stat"><div class="num">85</div><div class="lbl" data-zh="個測試 —— Foundry 20 含一個 256 run 的 fuzz,TypeScript 65">tests — 20 Foundry incl. a 256-run fuzz, 65 TypeScript</div></div>
-            <div class="stat"><div class="num">3.5s</div><div class="lbl" data-zh="推理延遲 p50,每一次都通過 TEE 驗證">p50 inference latency, TEE-attested every run</div></div>
-            <div class="stat"><div class="num">0</div><div class="lbl" data-zh="把私鑰寫進 repo;每一幕都 assert 自己的結果">private keys in the repo; every scene asserts its outcome</div></div>
+            <div class="stat"><div class="num pass">30/30</div><div class="lbl" data-zh="次結果一致 —— 3 種代幣 × 10 次,判定和額度每次都一樣">runs agree — 3 tokens × 10, deterministic verdict and cap</div></div>
+            <div class="stat"><div class="num">85</div><div class="lbl" data-zh="個測試 —— Foundry 20(含 256 輪 fuzz)、TypeScript 65">tests — 20 Foundry incl. a 256-run fuzz, 65 TypeScript</div></div>
+            <div class="stat"><div class="num">3.5s</div><div class="lbl" data-zh="推理延遲中位數,30 次全部 TEE 驗證通過">p50 inference latency, TEE-attested every run</div></div>
+            <div class="stat"><div class="num">0</div><div class="lbl" data-zh="把私鑰寫進 repo;六幕每一幕都 assert 結果">private keys in the repo; every scene asserts its outcome</div></div>
           </div>
           <div class="cols2">
             <div class="panel" style="border-left:2px solid var(--warn)">
-              <h3 data-zh="我們自己抓到的那一個">The one we found ourselves</h3>
-              <p data-zh="在 <code class='mono'>InjectionUSD</code> 上,模型 10 次有 10 次回 <code class='mono'>DENY</code> —— 而且每一次的理由都是錯的。它看到注入就短路了,根本沒去審那份合約。同樣的字串塞進一枚乾淨的代幣,它會誤殺。">On <code class="mono">InjectionUSD</code> the model returned <code class="mono">DENY</code> 10 times out of 10 — and every time for the wrong reason. It saw the injection, short-circuited, and never audited the contract at all. Same string in a clean token and it would misfire.</p>
-              <div class="who" data-zh="我們知道這件事,唯一的原因是章把理由記了下來">we know this only because the seal records the reasoning</div>
+              <h3 data-zh="我們自己抓到的問題">The one we found ourselves</h3>
+              <p data-zh="<code class='mono'>InjectionUSD</code> 這枚代幣,模型 10 次都回 <code class='mono'>DENY</code> —— 答對了,但理由全錯。它看到注入就直接短路,根本沒去審合約。同一段字串塞進乾淨的代幣,它會誤殺。">On <code class="mono">InjectionUSD</code> the model returned <code class="mono">DENY</code> 10 times out of 10 — and every time for the wrong reason. It saw the injection, short-circuited, and never audited the contract at all. Same string in a clean token and it would misfire.</p>
+              <div class="who" data-zh="我們查得出來,只因為章把理由記了下來">we know this only because the seal records the reasoning</div>
             </div>
             <div>
               <p class="lede" style="margin-top:0" data-zh="我們不是用 AI 取代審計。我們把預審結果變成鏈上可稽核、可追責、<b style='color:var(--ink);font-weight:600'>會過期</b>的憑證。">We are not replacing audits with AI. We are turning a pre-screen into an on-chain
                 auditable, attributable, <b style="color:var(--ink);font-weight:600">expiring</b> credential.</p>
-              <p class="lede" style="font-size:15px" data-zh="README 裡也照樣寫明:TEE 不等於 trustless;章不涵蓋帳單;持有人集中度留 <code class='mono'>null</code> 而不是編一個 —— 這條測試網上沒有 indexer。">Also stated plainly in the README: a TEE is not trustlessness, the seal does not cover the invoice,
+              <p class="lede" style="font-size:15px" data-zh="README 裡也直接寫明:TEE 不等於 trustless;章不涵蓋帳單;持有人集中度沒有 indexer 可查,就留 <code class='mono'>null</code>,不編數字。">Also stated plainly in the README: a TEE is not trustlessness, the seal does not cover the invoice,
                 and holder concentration is left <code class="mono">null</code> rather than invented — there is no indexer on this testnet.</p>
             </div>
           </div>
@@ -528,7 +528,7 @@ p { margin: 0; }
         <div class="hero-grid">
           <div>
             <h1 class="close" data-zh="每一跳都留下一張章。">Every hop leaves a seal.</h1>
-            <p class="tag" style="margin-top:18px" data-zh="Agent 可以雇用 Agent、中間沒有人在看 ——<br>因為 A 有能力自己拒絕 B。">Agents can hire agents with nobody watching —<br>because A can reject B on its own.</p>
+            <p class="tag" style="margin-top:18px" data-zh="Agent 可以放心雇 Agent,中間不用有人在看 ——<br>因為 A 自己就能拒絕 B。">Agents can hire agents with nobody watching —<br>because A can reject B on its own.</p>
           </div>
           <div>
             <div class="strip" style="flex-direction:column">
@@ -542,7 +542,7 @@ p { margin: 0; }
                 <div class="v">verifier/index.html</div>
               </div>
               <div class="cell" style="border-right:0">
-                <div class="l" data-zh="已部署 · 0G 測試網 16602">Deployed · 0G testnet 16602</div>
+                <div class="l" data-zh="已部署 · 0G testnet 16602">Deployed · 0G testnet 16602</div>
                 <div class="v">0xC1AAfd71480Ebc92C7F9fcC4d24272bd7B46a65E</div>
               </div>
             </div>
