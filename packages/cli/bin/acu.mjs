@@ -8,4 +8,11 @@
 import { register } from "tsx/esm/api";
 register();
 const { main } = await import("../src/index.ts");
-process.exit(await main(process.argv.slice(2)));
+try {
+  process.exit(await main(process.argv.slice(2)));
+} catch (err) {
+  // Everything a user can act on is already a printed refusal with a code. What
+  // reaches here is a broken environment, and the stack is the useful part.
+  console.error(err instanceof Error ? err.stack : err);
+  process.exit(1);
+}

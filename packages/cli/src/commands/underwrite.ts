@@ -6,8 +6,10 @@ import { configDir, readUserConfig, resolve, type UserConfig } from "@acu/config
 import {
   signSealA,
   verifySealB,
+  Directory,
   StaticAgentIdResolver,
   HttpAgentIdResolver,
+  resolverFromDirectory,
   SealVerificationError,
   auditRequestHash,
   type AgentIdResolver,
@@ -95,6 +97,8 @@ export interface CliConfig {
   auditorSigner: `0x${string}` | null;
   allowedPayTo: `0x${string}`[] | null;
   directoryUrl: string;
+  /** ACU_DIRECTORY_JSON — an inline directory, for a run with no network. */
+  directoryJson: string | null;
   registry: `0x${string}` | null;
   network: `${string}:${string}`;
   rpcUrl: string;
@@ -149,6 +153,7 @@ export function resolveCliConfig(env: NodeJS.ProcessEnv = process.env, file?: Us
             .filter((s) => s !== "")
             .map((s) => lower<`0x${string}`>(s)),
     directoryUrl: resolve(envOf(env, "ACU_DIRECTORY_URL"), user.directoryUrl, `${webUrl}/directory.json`),
+    directoryJson: envOf(env, "ACU_DIRECTORY_JSON") ?? null,
     registry: registry === null ? null : lower<`0x${string}`>(registry),
     network: resolve(
       envOf(env, "ACU_PAYMENT_NETWORK", "PAYMENT_NETWORK"),
@@ -184,17 +189,37 @@ export async function auditorTrust(
       allowedPayTo: config.allowedPayTo ?? [config.auditorSigner],
     };
   }
+
+  if (config.directoryJson !== null) {
+    const inline = Directory.parse(JSON.parse(config.directoryJson));
+    return { resolver: resolverFromDirectory(inline), allowedPayTo: payToOf(config, inline) };
+  }
+
   const resolver = new HttpAgentIdResolver(config.directoryUrl);
-  const directory = await resolver.directory();
+  let directory: Directory;
+  try {
+    directory = await resolver.directory();
+  } catch (err) {
+    // A directory nobody can fetch is a configuration problem with three named
+    // fixes, not a stack trace for a first-time user to decode.
+    throw new Error(
+      `NO_DIRECTORY: ${config.directoryUrl} — ${err instanceof Error ? err.message : String(err)}. ` +
+        `Set ACU_DIRECTORY_URL, ACU_DIRECTORY_JSON, or name the auditor's signer with ACU_AUDITOR_SIGNER.`,
+    );
+  }
   return {
     resolver,
-    // Nobody named a payee, so the auditors this agent already knows about are
-    // the only addresses it may ever pay.
-    allowedPayTo:
-      config.allowedPayTo ??
-      directory.agents.filter((a) => a.role === "auditor").map((a) => lower<`0x${string}`>(a.signer)),
+    allowedPayTo: payToOf(config, directory),
   };
 }
+
+/**
+ * Nobody named a payee, so the auditors this agent already knows about are the
+ * only addresses it may ever pay.
+ */
+const payToOf = (config: CliConfig, directory: Directory): `0x${string}`[] =>
+  config.allowedPayTo ??
+  directory.agents.filter((a) => a.role === "auditor").map((a) => lower<`0x${string}`>(a.signer));
 
 /** What every command says when there is no key to sign with. */
 export const NEXT_STEP_INIT = "Run: npx @acu/cli init";
@@ -208,6 +233,11 @@ export const NEXT_STEP_INIT = "Run: npx @acu/cli init";
  * whenever there is no real key.
  */
 export const DRY_RUN_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001" as const;
+
+const detailOf = (err: unknown): string => (err instanceof Error ? err.message : String(err));
+
+/** The code is printed on its own line; carrying it in the detail too is noise. */
+export const withoutCode = (message: string): string => message.replace(/^[A-Z_]+: /, "");
 
 const step = (n: string, msg: string) => console.log(`[${n}] ${msg}`);
 const fail = (code: string, detail: string): number => {
@@ -281,14 +311,26 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
 
   if (args.offline) {
     if (!hasKey) return fail("NO_KEY", `replaying a run still signs a seal A. ${NEXT_STEP_INIT}`);
-    const agentBSealSigner = config.auditorSigner ?? (await trust().then((t) => t.resolver.resolve(agentBId)));
+    let agentBSealSigner: `0x${string}` | null;
+    try {
+      agentBSealSigner = config.auditorSigner ?? (await trust().then((t) => t.resolver.resolve(agentBId)));
+    } catch (err) {
+      return fail("NO_DIRECTORY", withoutCode(detailOf(err)));
+    }
     if (agentBSealSigner === null) {
       return fail("NO_AUDITOR_SIGNER", `agent ${agentBId} is not in ${config.directoryUrl}; set ACU_AUDITOR_SIGNER`);
     }
     return runOffline(args, agentA, agentAId, agentBId, agentBSealSigner, network);
   }
 
-  const { resolver, allowedPayTo } = await trust();
+  let trusted: Awaited<ReturnType<typeof auditorTrust>>;
+  try {
+    trusted = await trust();
+  } catch (err) {
+    return fail("NO_DIRECTORY", withoutCode(detailOf(err)));
+  }
+  const { resolver, allowedPayTo } = trusted;
+
   const emitSeal = args.emitSeal;
   const deps: UnderwriteDeps = {
     account: agentA,
@@ -329,17 +371,37 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
         }),
   };
 
-  const result = await underwrite(
-    {
-      token: args.token,
-      ltvBps: args.ltvBps,
-      // (2) Free RPC read. No paid data purchase (spec §11).
-      source: args.sourcePath ? readFileSync(args.sourcePath, "utf8") : null,
-      settle: args.settle,
-      publish: args.publish,
-    },
-    deps,
-  );
+  // Which step was in flight when something threw. The library returns refusals
+  // and throws only for a broken environment, so this is how a dead auditor is
+  // told apart from a dead RPC once the throw has escaped.
+  let stage: Stage = "read";
+  const onStep = deps.onStep;
+  deps.onStep = (e) => {
+    stage = e.stage;
+    onStep?.(e);
+  };
+
+  let result: Awaited<ReturnType<typeof underwrite>>;
+  try {
+    result = await underwrite(
+      {
+        token: args.token,
+        ltvBps: args.ltvBps,
+        // (2) Free RPC read. No paid data purchase (spec §11).
+        source: args.sourcePath ? readFileSync(args.sourcePath, "utf8") : null,
+        settle: args.settle,
+        publish: args.publish,
+      },
+      deps,
+    );
+  } catch (err) {
+    // A dead RPC is a broken environment and stays an exception, which is the
+    // judgement `underwrite()` itself makes. A dead auditor is an ordinary
+    // Tuesday and gets a code the reader can act on.
+    if (stage === "read") throw err;
+    if (stage !== "quote" && stage !== "hire") throw err;
+    return fail("AUDITOR_UNREACHABLE", `${args.endpoint} — ${detailOf(err)}`);
+  }
 
   if (!result.ok) return fail(result.code, result.detail);
 

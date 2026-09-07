@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { main } from "../src/index.js";
-import { resolveCliConfig, DEFAULT_AUDITOR_URL } from "../src/commands/underwrite.js";
+import { auditorTrust, resolveCliConfig, DEFAULT_AUDITOR_URL } from "../src/commands/underwrite.js";
 
 const home = (): NodeJS.ProcessEnv => ({ ACU_HOME: mkdtempSync(join(tmpdir(), "acu-cli-")) });
 
@@ -124,5 +124,40 @@ describe("config resolution — env > file > default", () => {
   it("puts the budget ledger next to the config, not in the package", () => {
     const env = home();
     expect(resolveCliConfig(env).ledgerPath).toBe(join(env["ACU_HOME"] as string, "budget-ledger.json"));
+  });
+});
+
+describe("who agent B is", () => {
+  const SIGNER = "0xC1Dba83fd85838542b09ec44e6372485f6EE2D9E";
+
+  it("takes a named signer without touching a directory at all", async () => {
+    const { resolver, allowedPayTo } = await auditorTrust(
+      resolveCliConfig({ ...home(), ACU_AUDITOR_SIGNER: SIGNER }),
+    );
+    expect(await resolver.resolve("2")).toBe(SIGNER);
+    expect(allowedPayTo).toEqual([SIGNER]);
+  });
+
+  it("reads an inline directory, and pays only the auditors in it", async () => {
+    const directory = JSON.stringify({
+      agents: [{ agentId: "2", signer: SIGNER, role: "auditor" }],
+    });
+    const { resolver, allowedPayTo } = await auditorTrust(
+      resolveCliConfig({ ...home(), ACU_DIRECTORY_JSON: directory }),
+    );
+    expect(await resolver.resolve("2")).toBe(SIGNER.toLowerCase());
+    expect(allowedPayTo).toEqual([SIGNER.toLowerCase()]);
+  });
+
+  it("names three fixes instead of throwing when the directory cannot be fetched", async () => {
+    // Port 1 is not a port anything listens on: reachably absent, no socket
+    // leaves the machine.
+    const env = { ...home(), ACU_DIRECTORY_URL: "http://127.0.0.1:1/directory.json" };
+    await expect(auditorTrust(resolveCliConfig(env))).rejects.toThrow(/^NO_DIRECTORY: /);
+
+    const { io, text } = capture(env);
+    expect(await main(["quote", "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8"], io)).toBe(1);
+    expect(text()).toContain("✗ NO_DIRECTORY");
+    expect(text()).toContain("ACU_AUDITOR_SIGNER");
   });
 });
