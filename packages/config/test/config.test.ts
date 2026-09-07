@@ -104,6 +104,22 @@ describe("writeUserConfig", () => {
     expect(readUserConfig(env)).toMatchObject({ agentKey: KEY, agentId: "9" });
   });
 
+  it("still refuses to merge into a file it cannot parse", () => {
+    const env = home();
+    writeFileSync(configPath(env), "{ truncated");
+    expect(() => writeUserConfig({ agentId: "1" }, env)).toThrow(/CONFIG_MALFORMED/);
+  });
+
+  it("replaces an unparseable file when the caller says that is the point", () => {
+    // `acu init --force` on a truncated config: refusing to write would leave
+    // the user with no way back at all.
+    const env = home();
+    writeFileSync(configPath(env), "{ truncated");
+    expect(writeUserConfig({ agentKey: KEY }, env, { replaceUnreadable: true }).agentKey).toBe(KEY);
+    expect(readUserConfig(env).agentKey).toBe(KEY);
+    expect(statSync(configPath(env)).mode & 0o777).toBe(0o600);
+  });
+
   it("clears a field when the patch says null", () => {
     const env = home();
     writeUserConfig({ auditorUrl: "http://localhost:4021/audit" }, env);

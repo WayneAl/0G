@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, toHex } from "viem";
-import { configDir, readUserConfig, resolve, type UserConfig } from "@acu/config";
+import { configDir, configPath, readUserConfig, resolve, type UserConfig } from "@acu/config";
 import {
   signSealA,
   verifySealB,
@@ -124,6 +124,23 @@ const envOf = (env: NodeJS.ProcessEnv, ...names: string[]): string | undefined =
 
 const lower = <T extends string>(value: string): T => value.toLowerCase() as T;
 
+const HEX_KEY = /^0x[0-9a-fA-F]{64}$/;
+
+/**
+ * A key that is present and malformed is a fault; a key that is absent is not.
+ *
+ * Checked here rather than left to viem, which answers "invalid private key,
+ * expected hex or 32 bytes" from five frames down and cannot say where the bad
+ * value came from. Pasting a key into the wrong shell variable is an ordinary
+ * mistake, and the fix depends entirely on which of the two places it landed in.
+ * The value itself is never echoed — it is a secret even when it is wrong.
+ */
+function requireKey(value: string, fromEnv: boolean, env: NodeJS.ProcessEnv): `0x${string}` {
+  if (HEX_KEY.test(value.trim())) return lower<`0x${string}`>(value.trim());
+  const where = fromEnv ? "ACU_AGENT_KEY (or AGENT_A_PRIVATE_KEY)" : `agentKey in ${configPath(env)}`;
+  throw new Error(`BAD_KEY: ${where} must be a 0x-prefixed 32-byte private key`);
+}
+
 export function resolveCliConfig(env: NodeJS.ProcessEnv = process.env, file?: UserConfig): CliConfig {
   const user = file ?? readUserConfig(env);
   const webUrl = resolve(envOf(env, "ACU_WEB_URL"), user.webUrl, DEFAULT_WEB_URL);
@@ -137,7 +154,7 @@ export function resolveCliConfig(env: NodeJS.ProcessEnv = process.env, file?: Us
   const payTo = envOf(env, "ACU_ALLOWED_PAYTO", "AGENT_B_PAYTO");
 
   return {
-    agentKey: key === null ? null : lower<`0x${string}`>(key),
+    agentKey: key === null ? null : requireKey(key, envOf(env, "ACU_AGENT_KEY", "AGENT_A_PRIVATE_KEY") !== undefined, env),
     agentId: resolve(envOf(env, "ACU_AGENT_ID", "AGENT_A_ID"), user.agentId, "1"),
     auditorAgentId: resolve(envOf(env, "ACU_AUDITOR_AGENT_ID", "AGENT_B_ID"), null, "2"),
     auditorUrl: resolve(envOf(env, "ACU_AUDITOR_URL", "AGENT_B_URL"), user.auditorUrl, DEFAULT_AUDITOR_URL),

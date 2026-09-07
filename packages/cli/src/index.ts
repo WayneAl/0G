@@ -1,3 +1,4 @@
+import { configPath } from "@acu/config";
 import { init } from "./commands/init.js";
 import { status } from "./commands/status.js";
 import { quote } from "./commands/quote.js";
@@ -50,6 +51,28 @@ export async function main(argv: string[], overrides: Partial<Io> = {}): Promise
     return 0;
   }
 
+  try {
+    return await route(command, rest, io);
+  } catch (err) {
+    // The two faults that can come out of *any* command, because every command
+    // reads the config first. A stack trace here would be the package failing at
+    // the one job it was created to do.
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.startsWith("CONFIG_MALFORMED:")) {
+      io.out("✗ CONFIG_MALFORMED");
+      io.out(`  ${configPath(io.env)} — fix it or delete it, then run acu init`);
+      return 1;
+    }
+    if (message.startsWith("BAD_KEY:")) {
+      io.out("✗ BAD_KEY");
+      io.out(`  ${message.replace(/^BAD_KEY: /, "")}`);
+      return 1;
+    }
+    throw err;
+  }
+}
+
+async function route(command: string, rest: string[], io: Io): Promise<number> {
   switch (command) {
     case "init":
       return init(rest, io);

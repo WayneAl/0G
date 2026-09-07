@@ -27,8 +27,10 @@ export function init(argv: string[], io: Io): number {
   const force = argv.includes("--force");
   const supplied = flag("key");
 
-  const existing = readUserConfig(io.env);
-  if (existing.agentKey !== null && !force) {
+  // Read only when the answer can change anything. `--force` exists for the
+  // case where the file is unreadable, so it must not begin by reading it.
+  const existing = force ? null : readUserConfig(io.env);
+  if (existing !== null && existing.agentKey !== null) {
     const address = addressOf(existing.agentKey, io);
     io.out(`A key is already configured: ${address ?? "(unreadable — the file holds something that is not a key)"}`);
     io.out(`  ${configPath(io.env)}`);
@@ -57,7 +59,9 @@ export function init(argv: string[], io: Io): number {
   // The address doubles as the agent id: nobody has minted an Agentic ID yet
   // (ERC-7857 is [ONSITE]), and claiming the reference agent's "1" would make
   // this agent's seals read as forgeries of someone else's.
-  writeUserConfig({ agentKey: key, agentId: account.address.toLowerCase() }, io.env);
+  writeUserConfig({ agentKey: key, agentId: account.address.toLowerCase() }, io.env, {
+    replaceUnreadable: force,
+  });
 
   io.out(`agent address  ${account.address}`);
   io.out(`config         ${configPath(io.env)}  (0600)`);

@@ -103,8 +103,18 @@ export function readUserConfig(env: NodeJS.ProcessEnv = process.env): UserConfig
  * carried through untouched, so a newer version of the CLI writing a field an
  * older one has never heard of does not lose it. An explicit `null` in the patch
  * clears a field — that is how you take something back out.
+ *
+ * `replaceUnreadable` is the escape hatch for a file that will not parse: the
+ * merge has nothing to merge with, so it starts from empty and overwrites. Only
+ * `acu init --force` passes it, because that is the one command whose whole job
+ * is to replace what is there — refusing to write over a truncated file would
+ * leave the user with no way back at all.
  */
-export function writeUserConfig(patch: Partial<UserConfig>, env: NodeJS.ProcessEnv = process.env): UserConfig {
+export function writeUserConfig(
+  patch: Partial<UserConfig>,
+  env: NodeJS.ProcessEnv = process.env,
+  opts: { replaceUnreadable?: boolean } = {},
+): UserConfig {
   const dir = configDir(env);
   const path = configPath(env);
 
@@ -114,7 +124,7 @@ export function writeUserConfig(patch: Partial<UserConfig>, env: NodeJS.ProcessE
   // what it must be rather than what the shell's umask left behind.
   chmodSync(dir, 0o700);
 
-  const merged: Record<string, unknown> = { ...(readRaw(path) ?? {}) };
+  const merged: Record<string, unknown> = { ...(existing(path, opts.replaceUnreadable === true) ?? {}) };
   for (const [key, value] of Object.entries(patch)) {
     if (value === null) delete merged[key];
     else if (value !== undefined) merged[key] = value;
@@ -151,6 +161,21 @@ export function writeUserConfig(patch: Partial<UserConfig>, env: NodeJS.ProcessE
 export function resolve<T>(envValue: string | undefined, fileValue: T | null, fallback: T): T {
   if (envValue !== undefined && envValue.trim() !== "") return envValue.trim() as unknown as T;
   return fileValue ?? fallback;
+}
+
+/**
+ * What is already on disk, or nothing when it cannot be used as a base.
+ *
+ * A file that will not parse is still an error to everyone except a caller that
+ * has said it means to replace it.
+ */
+function existing(path: string, replaceUnreadable: boolean): Record<string, unknown> | null {
+  try {
+    return readRaw(path);
+  } catch (err) {
+    if (replaceUnreadable && err instanceof Error && err.message.startsWith("CONFIG_MALFORMED:")) return null;
+    throw err;
+  }
 }
 
 /** The file as it literally is, or null when there is none. */
