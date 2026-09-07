@@ -20,30 +20,18 @@ importers:
 
   agent-a:
     dependencies:
+      '@acu/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
       '@acu/seal':
         specifier: workspace:*
         version: link:../packages/seal
-      '@acu/storage':
-        specifier: workspace:*
-        version: link:../packages/storage
       '@acu/underwriter':
         specifier: workspace:*
         version: link:../packages/underwriter
-      '@x402/core':
-        specifier: ^2.24.0
-        version: 2.24.0
-      '@x402/evm':
-        specifier: ^2.24.0
-        version: 2.24.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@x402/fetch':
-        specifier: ^2.24.0
-        version: 2.24.0
       viem:
         specifier: ^2.23.2
         version: 2.56.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      zod:
-        specifier: ^3.24.2
-        version: 3.25.76
     devDependencies:
       '@acu/og':
         specifier: workspace:*
@@ -141,6 +129,37 @@ importers:
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.25
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.1)(tsx@4.23.13)
+
+  packages/cli:
+    dependencies:
+      '@acu/config':
+        specifier: workspace:*
+        version: link:../config
+      '@acu/seal':
+        specifier: workspace:*
+        version: link:../seal
+      '@acu/storage':
+        specifier: workspace:*
+        version: link:../storage
+      '@acu/underwriter':
+        specifier: workspace:*
+        version: link:../underwriter
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.13
+      viem:
+        specifier: ^2.23.2
+        version: 2.56.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.1
+        version: 22.20.1
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@22.20.1)(tsx@4.23.13)
