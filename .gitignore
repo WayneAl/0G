@@ -17,3 +17,6 @@ web/public/pitch/
 
 # Copied into each package by prepack so the text ships in the tarball.
 packages/*/LICENSE
+
+# Never commit a registry token.
+.npmrc
