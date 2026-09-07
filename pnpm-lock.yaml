@@ -93,10 +93,29 @@ importers:
         version: 3.2.7(@types/node@22.20.1)(tsx@4.23.13)
 
   demo:
+    dependencies:
+      '@x402/core':
+        specifier: ^2.24.0
+        version: 2.24.0
+      '@x402/evm':
+        specifier: ^2.24.0
+        version: 2.24.0(typescript@5.9.3)
+      '@x402/express':
+        specifier: ^2.24.0
+        version: 2.24.0(express@4.22.2)(typescript@5.9.3)
+      express:
+        specifier: ^4.21.2
+        version: 4.22.2
     devDependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
       '@types/node':
         specifier: ^22.13.1
         version: 22.20.1
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
       tsx:
         specifier: ^4.19.2
         version: 4.23.13

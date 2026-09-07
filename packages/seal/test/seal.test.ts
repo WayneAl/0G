@@ -124,13 +124,26 @@ describe("seal B — the six checks of spec §6.2", () => {
     expect((err as SealVerificationError).failure).toBe("ATTESTATION_MISSING");
   });
 
-  it("6b. allows a standard-tier seal to omit attestation", async () => {
+  it("6b. a standard-tier seal may omit attestation, where standard is accepted at all", async () => {
     const base = unsignedSealB();
     const seal = await signSealB(
       { ...base, inference: { ...base.inference, trustMode: "standard", teeAttestation: null } },
       agentB,
     );
-    await expect(verifySealB(seal, ctxB)).resolves.toBeTruthy();
+    await expect(
+      verifySealB(seal, { ...ctxB, acceptTrustModes: ["standard", "verified"] }),
+    ).resolves.toBeTruthy();
+  });
+
+  it("7. rejects an honest standard-tier seal by default — attested inference is a rule, not a preference (demo scene ⑦)", async () => {
+    const base = unsignedSealB();
+    const seal = await signSealB(
+      { ...base, inference: { ...base.inference, trustMode: "standard", teeAttestation: null } },
+      agentB,
+    );
+    const err = await verifySealB(seal, ctxB).catch((e: SealVerificationError) => e);
+    expect(err).toBeInstanceOf(SealVerificationError);
+    expect((err as SealVerificationError).failure).toBe("TRUST_MODE_INSUFFICIENT");
   });
 });
 

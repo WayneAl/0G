@@ -477,9 +477,9 @@ p { margin: 0; }
       </section>
 
       <!-- ⑤ Six scenes -->
-      <section class="slide" data-notes="1:30–2:10|<strong>這是全場最重要的一頁,分配最多時間。</strong>前四幕快速帶過:合約擋得住。<span class='do'>停在 ⑤ 和 ⑥:這兩幕是<strong>在 Agent A 就被拒絕的,東西根本沒碰到鏈</strong>。⑥ 的 MITM 是真的 proxy,真的改了 verdict、簽章原封不動 —— 兩個 agent 都表現正常,偽造還是死了。最後一句:六幕每一幕都會 assert 預期結果,綠燈才算過。</span>">
+      <section class="slide" data-notes="1:30–2:10|<strong>這是全場最重要的一頁,分配最多時間。</strong>前四幕快速帶過:合約擋得住。<span class='do'>停在 ⑤⑥⑦:這三幕是<strong>在 Agent A 就被拒絕的,東西根本沒碰到鏈</strong>。⑥ 的 MITM 是真的 proxy,真的改了 verdict、簽章原封不動 —— 兩個 agent 都表現正常,偽造還是死了。⑦ 回答「B 為什麼要用 0G」:一個普通的 x402 API 收同樣的錢、回同樣的 ALLOW,但沒有一樣能驗 —— x402 管付錢,0G 管答案值不值錢。最後一句:七幕每一幕都會 assert 預期結果,綠燈才算過。</span>">
         <div class="eyebrow" data-zh="現場 Demo · <span class='mono'>./demo/run.sh --live</span>">Live demo · <span class="mono">./demo/run.sh --live</span></div>
-        <h2 data-zh="六幕,每一幕都 assert 自己該有的結果。">Six scenes. Every one asserts its own outcome.</h2>
+        <h2 data-zh="七幕,每一幕都 assert 自己該有的結果。">Seven scenes. Every one asserts its own outcome.</h2>
         <div class="body">
           <table class="scenes">
             <thead>
@@ -492,11 +492,12 @@ p { margin: 0; }
               <tr><td class="n">④</td><td data-zh="CleanUSD 想開到 LTV 8000 —— 超過章上准的額度">CleanUSD at LTV 8000 — more leverage than attested</td><td class="verdict no">✗ LTV_EXCEEDS_ATTESTED</td><td class="where" data-zh="合約">contract</td></tr>
               <tr class="hot"><td class="n">⑤</td><td data-zh="Agent B 收了錢,卻沒跑可驗證的推理">Agent B takes the fee, skips the verifiable inference</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
               <tr class="hot"><td class="n">⑥</td><td data-zh="中間人把章 B 的判定改掉,簽章沒動">Man in the middle rewrites seal B’s verdict, signature untouched</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
+              <tr class="hot"><td class="n">⑦</td><td data-zh="B 不是 agent —— 普通的 x402 API,收同樣的錢,回一個沒簽章的 ALLOW">B is not an agent — a plain x402 API, same fee, answers ALLOW unsigned</td><td class="verdict no">✗ DELEGATE_SEAL_INVALID</td><td class="where agent">Agent A</td></tr>
             </tbody>
           </table>
-          <p class="callout" data-zh="⑤ 和 ⑥ 才是重點:它們<b>在 Agent A 這一關就被擋下來,根本沒碰到合約</b> —— 「中間沒有人在看」的意思,就是 A 得自己有辦法拒絕 B。<span class='mono' style='color:var(--dim)'>demo/mitm.ts</span> 是一個真的 proxy,兩個 agent 都沒做錯事,偽造照樣死。">⑤ and ⑥ are the ones that matter. They are refused <b>at Agent A, before anything reaches a contract</b> —
-            because “nobody is watching” means A has to be able to reject B on its own.
-            <span class="mono" style="color:var(--dim)">demo/mitm.ts</span> is a real proxy: both agents behave correctly and the forgery still dies.</p>
+          <p class="callout" data-zh="⑤、⑥、⑦ 才是重點:它們<b>在 Agent A 這一關就被擋下來,根本沒碰到合約</b> —— 「中間沒有人在看」的意思,就是 A 得自己有辦法拒絕 B。⑥ 的 <span class='mono' style='color:var(--dim)'>mitm.ts</span> 是真的 proxy,偽造照樣死;⑦ 是有章之前的世界:錢收走了、ALLOW 也回來了,A 手上卻沒有一樣能驗。x402 決定 B 收不收得到錢,0G 決定 B 的答案值不值錢。">⑤, ⑥ and ⑦ are the ones that matter. They are refused <b>at Agent A, before anything reaches a contract</b> —
+            because “nobody is watching” means A has to be able to reject B on its own. ⑥’s <span class="mono" style="color:var(--dim)">mitm.ts</span> is a real proxy and the forgery still dies;
+            ⑦ is the world before seals: the fee clears, an ALLOW comes back, and A holds nothing it can check. x402 decides whether B gets paid; 0G decides whether B’s answer is worth anything.</p>
         </div>
       </section>
 
@@ -557,7 +558,7 @@ p { margin: 0; }
         <div class="body">
           <div class="stats" style="margin-bottom:28px">
             <div class="stat"><div class="num pass">30/30</div><div class="lbl" data-zh="次結果一致 —— 3 種代幣 × 10 次,判定和額度每次都一樣">runs agree — 3 tokens × 10, deterministic verdict and cap</div></div>
-            <div class="stat"><div class="num">85</div><div class="lbl" data-zh="個測試 —— Foundry 20(含 256 輪 fuzz)、TypeScript 65">tests — 20 Foundry incl. a 256-run fuzz, 65 TypeScript</div></div>
+            <div class="stat"><div class="num">86</div><div class="lbl" data-zh="個測試 —— Foundry 20(含 256 輪 fuzz)、TypeScript 66">tests — 20 Foundry incl. a 256-run fuzz, 66 TypeScript</div></div>
             <div class="stat"><div class="num">3.5s</div><div class="lbl" data-zh="推理延遲中位數,30 次全部 TEE 驗證通過">p50 inference latency, TEE-attested every run</div></div>
             <div class="stat"><div class="num">0</div><div class="lbl" data-zh="把私鑰寫進 repo;六幕每一幕都 assert 結果">private keys in the repo; every scene asserts its outcome</div></div>
           </div>

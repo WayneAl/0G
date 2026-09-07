@@ -32,7 +32,7 @@ agent-b/          Code Auditor — paid endpoint, 0G Router inference, signs sea
 packages/og/      0G Compute Router client with TEE attestation capture; Direct stub
 packages/seal/    seal schema, canonical encoding, signing, verification, on-chain ABI
 contracts/        CollateralRegistry · IProofVerifier · StubVerifier · three mock tokens
-demo/             run.sh (six scenes) · mitm.ts (verdict-rewriting proxy) · fixtures
+demo/             run.sh (seven scenes) · mitm.ts (verdict-rewriting proxy) · plain-x402.ts (an x402 API that is not an agent) · fixtures
 verifier/         single-page seal verifier, runs entirely in the browser
 pitch/            nine-slide deck, same palette as the verifier, 中/EN on one key
 NOTES.md          deviations from the build spec and the stability run, with evidence
@@ -119,8 +119,8 @@ the existing contracts.
 ```
 
 `run.sh` starts Agent B on `:4021`, a second Agent B with attestation switched off on
-`:4022`, and the man-in-the-middle proxy on `:4099`, then runs Agent A once per scene and
-asserts the final line. A dry run stops at the x402 quote and the budget gate and says so,
+`:4022`, the man-in-the-middle proxy on `:4099`, and an ordinary x402 API that is not an agent
+on `:4023`, then runs Agent A once per scene and asserts the final line. A dry run stops at the x402 quote and the budget gate and says so,
 rather than pretending the verdicts were checked.
 
 `--offline` replays only what crossed a network — the RPC read, agent B's response, the
@@ -140,7 +140,7 @@ pnpm --filter @acu/agent-a start -- <token> [flags]
 | `--live` | spend real USDC and settle on chain; the default is a dry run |
 | `--no-settle` | underwrite and sign, but do not call the registry |
 | `--source <file>` | supply the token's source (0G testnet has no verified-source API) |
-| `--endpoint <url>` | which Agent B to hire; scenes ⑤ and ⑥ point this at `:4022` and `:4099` |
+| `--endpoint <url>` | which Agent B to hire; scenes ⑤, ⑥ and ⑦ point this at `:4022`, `:4099` and `:4023` |
 | `--emit-seal <file>` | write the composed seal A out, for the verifier or a later replay |
 | `--seal-file <file>` | skip underwriting and present an existing seal A — scene ③ |
 | `--offline <fixture>` | replay a recording from `demo/fixtures/replay/` |
@@ -159,7 +159,7 @@ at replay. `stability` calls the inference layer directly, so what it measures i
 model's consistency on the exact artifact Agent A would send; the payment path is exercised
 by `run.sh`.
 
-## The six scenes
+## The seven scenes
 
 | | Scene | Outcome | Where it is refused |
 |---|---|---|---|
@@ -169,11 +169,21 @@ by `run.sh`.
 | ④ | CleanUSD at LTV 8000 | `✗ LTV_EXCEEDS_ATTESTED` | contract |
 | ⑤ | Agent B takes the fee, skips verifiable inference | `✗ DELEGATE_SEAL_INVALID` | **Agent A** |
 | ⑥ | Man in the middle rewrites seal B's verdict | `✗ DELEGATE_SEAL_INVALID` | **Agent A** |
+| ⑦ | B is not an agent — a plain x402 API, same fee, answers `ALLOW` unsigned | `✗ DELEGATE_SEAL_INVALID` | **Agent A** |
 
-⑤ and ⑥ are the ones that matter. They are refused **at Agent A**, before anything reaches a
-contract — because "nobody is watching" means Agent A has to be able to reject Agent B on its
+⑤, ⑥ and ⑦ are the ones that matter. They are refused **at Agent A**, before anything reaches
+a contract — because "nobody is watching" means Agent A has to be able to reject Agent B on its
 own. [`demo/mitm.ts`](demo/mitm.ts) is a real proxy that rewrites the verdict and leaves the
 signature untouched; both agents behave correctly and the forgery still dies.
+[`demo/plain-x402.ts`](demo/plain-x402.ts) is the world before seals: an ordinary x402 API
+that is not an agent — same fee, same protocol, same facilitator — answering `ALLOW` as a JSON
+body. The payment clears, and Agent A has nothing it can verify or embed, so it refuses. x402
+decides whether B gets paid; 0G decides whether B's answer is worth anything.
+
+The rule behind ⑦ is explicit in [`verify.ts`](packages/seal/src/verify.ts): on top of the
+six checks, Agent A embeds only `verified`-tier seals. An honest `standard` seal — B ran the
+model somewhere ordinary and said so — is still a valid seal; it is just not an audit A will
+act on. Without that rule, "B used 0G" would be a preference, not something enforced.
 
 ## What a seal is
 
@@ -226,7 +236,7 @@ wrong reason.
 
 [`pitch/index.html`](pitch/index.html) — nine slides, three minutes, on the verifier's
 palette so the projector and the laptop are visibly one thing. Slides carry real values: the
-seal figure is `verifier/example-sealA.json` field for field, and the six scenes are the six
+seal figure is `verifier/example-sealA.json` field for field, and the seven scenes are the seven
 `run.sh` asserts.
 
 | Key | Does |
@@ -338,7 +348,7 @@ Recorded in [`NOTES.md`](NOTES.md), with how each was verified. The three that m
 Foundry     20   registry revert paths, a 256-run fuzz that the attested cap always binds,
                  and a cross-language test that a proof signed by viem decodes in Solidity
                  to the same Verdict
-TypeScript  65   seal tamper cases, all six delegate checks, the injection boundary,
+TypeScript  66   seal tamper cases, the six delegate checks and the attested-tier rule, the injection boundary,
                  strict-schema rejection, and the budget gate
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The six scenes. Each prints one line of verdict.
+# The seven scenes. Each prints one line of verdict.
 #
 #   ./demo/run.sh              dry run: the x402 handshake, no money moves
 #   ./demo/run.sh --live       real payments on Base Sepolia, real listings on 0G
@@ -9,7 +9,8 @@
 #
 # In --offline, scenes ⑤ and ⑥ are not replayed at all beyond the recorded seal:
 # they are refused by live signature checks that never touch a chain. Only the
-# registry outcome in ① is quoted from the recording, and it says so.
+# registry outcome in ① is quoted from the recording, and it says so. Scene ⑦
+# needs nothing but localhost, so it has no recording and runs in every other mode.
 #
 # Every scene asserts the outcome it expects, so a green run means the failures
 # failed for the right reason -- not that they merely failed.
@@ -25,11 +26,11 @@ for arg in "$@"; do
   case "$arg" in
     --live) LIVE="--live" ;;
     --offline) OFFLINE=1 ;;
-    [1-6]) SCENES+=("$arg") ;;
+    [1-7]) SCENES+=("$arg") ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
-[ ${#SCENES[@]} -eq 0 ] && SCENES=(1 2 3 4 5 6)
+[ ${#SCENES[@]} -eq 0 ] && SCENES=(1 2 3 4 5 6 7)
 
 # shellcheck disable=SC1091
 set -a; . ./.env; set +a
@@ -45,7 +46,7 @@ PIDS=()
 
 cleanup() {
   for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null; done
-  for port in 4021 4022 4099; do lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null; done
+  for port in 4021 4022 4023 4099; do lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null; done
   rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -86,7 +87,7 @@ expect() {
 }
 
 echo "════════════════════════════════════════════════════════════════"
-echo " Attested Collateral Underwriter — six scenes"
+echo " Attested Collateral Underwriter — seven scenes"
 echo " mode: ${OFFLINE:+offline (recorded, no network)}${OFFLINE:-${LIVE:-dry run (no payment)}}"
 echo " registry: $REGISTRY_ADDRESS on 0G testnet (16602)"
 echo "════════════════════════════════════════════════════════════════"
@@ -95,6 +96,7 @@ if [ -z "$OFFLINE" ]; then
 echo; echo "── starting agents ──"
 lsof -ti:4021 2>/dev/null | xargs kill -9 2>/dev/null
 lsof -ti:4022 2>/dev/null | xargs kill -9 2>/dev/null
+lsof -ti:4023 2>/dev/null | xargs kill -9 2>/dev/null
 lsof -ti:4099 2>/dev/null | xargs kill -9 2>/dev/null
 sleep 1
 
@@ -102,11 +104,13 @@ pnpm --silent --filter @acu/agent-b start >"$WORK/b.log" 2>&1 & PIDS+=($!)
 AGENT_B_SKIP_ATTESTATION=1 AGENT_B_PORT=4022 \
   pnpm --silent --filter @acu/agent-b start >"$WORK/b-degraded.log" 2>&1 & PIDS+=($!)
 pnpm --silent --filter @acu/demo mitm >"$WORK/mitm.log" 2>&1 & PIDS+=($!)
+pnpm --silent --filter @acu/demo plain >"$WORK/plain.log" 2>&1 & PIDS+=($!)
 
 wait_for 4021 "agent B" || exit 1
 wait_for 4022 "agent B (no attestation)" || exit 1
 wait_for 4099 "man in the middle" || exit 1
-echo "  agent B :4021 · agent B without attestation :4022 · MITM :4099"
+wait_for 4023 "plain x402 service" || exit 1
+echo "  agent B :4021 · agent B without attestation :4022 · MITM :4099 · plain x402 API :4023"
 fi
 
 FAILED=0
@@ -164,6 +168,12 @@ run_scene() {
     grep -h "rewrote" "$WORK/mitm.log" | tail -1 | sed 's/^/     /'
     echo "     (SIGNER_MISMATCH — both agents behaved correctly and the forgery still failed)"
     ;;
+  7)
+    echo "⑦ B is not an agent — an ordinary x402 API takes the same \$0.01 and answers ALLOW, unsigned"
+    expect "✗ DELEGATE_SEAL_INVALID" "$CLEAN_USD" --ltv 7000 $LIVE \
+      --endpoint http://localhost:4023/audit --source "$SRC/CleanUSD.sol" || FAILED=1
+    echo "     (NO_SEAL — the payment cleared; nothing came back that could be verified or embedded)"
+    ;;
   esac
 }
 
@@ -179,6 +189,7 @@ if [ -n "$OFFLINE" ]; then
          "⑤ agent B skipped the proof — refused by a live check, nothing replayed" ;;
     6) run_offline_scene 6 clean-tampered.json "✗ DELEGATE_SEAL_INVALID" 9000 \
          "⑥ verdict rewritten in flight — refused by a live signature check" ;;
+    7) echo; echo "⑦ touches nothing but localhost — run it without --offline" ;;
     *) echo; echo "scene $n has no recording yet (needs Router quota to record)" ;;
     esac
   done

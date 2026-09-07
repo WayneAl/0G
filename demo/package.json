@@ -5,7 +5,19 @@
   "type": "module",
   "scripts": {
     "mitm": "tsx mitm.ts",
+    "plain": "tsx plain-x402.ts",
     "typecheck": "tsc --noEmit"
   },
-  "devDependencies": { "tsx": "^4.19.2", "@types/node": "^22.13.1" }
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "@types/node": "^22.13.1",
+    "@types/express": "^4.17.21",
+    "dotenv": "^16.4.7"
+  },
+  "dependencies": {
+    "@x402/core": "^2.24.0",
+    "@x402/evm": "^2.24.0",
+    "@x402/express": "^2.24.0",
+    "express": "^4.21.2"
+  }
 }

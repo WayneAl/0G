@@ -29,7 +29,7 @@ agent-b/          Code Auditor —— 付費端點、0G Router 推理、簽章 B
 packages/og/      0G Compute Router client，含 TEE attestation 擷取；Direct 路徑為備援 stub
 packages/seal/    章的 schema、canonical 編碼、簽章、驗證、鏈上 ABI
 contracts/        CollateralRegistry · IProofVerifier · StubVerifier · 三個示範代幣
-demo/             run.sh（六幕）· mitm.ts（改寫判定的 proxy）· fixtures
+demo/             run.sh（七幕）· mitm.ts（改寫判定的 proxy）· plain-x402.ts（不是 agent 的 x402 API）· fixtures
 verifier/         單頁驗章器，全部在瀏覽器裡跑
 pitch/            九張投影片，與驗章器同一套配色，中/EN 一鍵切換
 NOTES.md          與建置規格的差異、穩定度驗證，附查證方式
@@ -113,7 +113,8 @@ forge script contracts/script/Deploy.s.sol \
 ```
 
 `run.sh` 會在 `:4021` 起 Agent B、在 `:4022` 起一個關掉 attestation 的 Agent B、在 `:4099`
-起中間人 proxy，然後每一幕跑一次 Agent A 並斷言最後一行。dry run 停在 x402 報價和預算閘，
+起中間人 proxy、在 `:4023` 起一個不是 agent 的普通 x402 API，然後每一幕跑一次 Agent A 並
+斷言最後一行。dry run 停在 x402 報價和預算閘，
 輸出會如實這麼說，而不是假裝判定被驗過了。
 
 `--offline` 只重播真的經過網路的東西 —— RPC 讀取、agent B 的回應、交易 hash。Agent A
@@ -132,7 +133,7 @@ pnpm --filter @acu/agent-a start -- <token> [flags]
 | `--live` | 花真的 USDC 並在鏈上結算；預設是 dry run |
 | `--no-settle` | 預審並簽章，但不呼叫 registry |
 | `--source <file>` | 提供代幣原始碼（0G testnet 沒有 verified-source API） |
-| `--endpoint <url>` | 雇哪一個 Agent B；⑤ 和 ⑥ 兩幕分別指向 `:4022` 和 `:4099` |
+| `--endpoint <url>` | 雇哪一個 Agent B；⑤、⑥、⑦ 三幕分別指向 `:4022`、`:4099`、`:4023` |
 | `--emit-seal <file>` | 把組好的章 A 寫出來，給驗章器或之後重播用 |
 | `--seal-file <file>` | 跳過預審，直接拿一顆現成的章 A 去上架 —— 第 ③ 幕 |
 | `--offline <fixture>` | 重播 `demo/fixtures/replay/` 裡的錄音 |
@@ -150,7 +151,7 @@ pnpm --filter @acu/agent-a stability            # 每個代幣跑 10 次，完�
 直接打推理層，量的是模型對 Agent A 實際會送出的那份 artifact 有多一致；付款路徑由
 `run.sh` 負責。
 
-## 六幕
+## 七幕
 
 | | 場景 | 結果 | 在哪裡被擋 |
 |---|---|---|---|
@@ -160,11 +161,20 @@ pnpm --filter @acu/agent-a stability            # 每個代幣跑 10 次，完�
 | ④ | CleanUSD，LTV 8000 | `✗ LTV_EXCEEDS_ATTESTED` | 合約 |
 | ⑤ | Agent B 收了錢，跳過可驗證推理 | `✗ DELEGATE_SEAL_INVALID` | **Agent A** |
 | ⑥ | 中間人改寫章 B 的判定 | `✗ DELEGATE_SEAL_INVALID` | **Agent A** |
+| ⑦ | B 不是 agent —— 普通的 x402 API，收同樣的錢，回一個沒簽章的 `ALLOW` | `✗ DELEGATE_SEAL_INVALID` | **Agent A** |
 
-⑤ 和 ⑥ 才是重點。它們是在 **Agent A** 這一端被擋下來的，任何東西都還沒碰到合約 ——
+⑤、⑥、⑦ 才是重點。它們是在 **Agent A** 這一端被擋下來的，任何東西都還沒碰到合約 ——
 因為「沒有人在看」的意思就是 Agent A 得自己有能力拒絕 Agent B。
 [`demo/mitm.ts`](demo/mitm.ts) 是一個真的 proxy，改寫判定、簽章原封不動；兩個 agent
-都表現正確，偽造照樣死。
+都表現正確，偽造照樣死。[`demo/plain-x402.ts`](demo/plain-x402.ts) 則是「有章之前」的
+世界：一個不是 agent 的普通 x402 API —— 同樣的錢、同樣的協定、同樣的 facilitator ——
+回一個 JSON 的 `ALLOW`。錢照樣收走，但 Agent A 拿到的東西沒有一樣能驗、能嵌，所以拒絕。
+x402 決定 B 收不收得到錢；0G 決定 B 的答案值不值錢。
+
+⑦ 背後的規則明寫在 [`verify.ts`](packages/seal/src/verify.ts)：六項檢查之上，Agent A
+只嵌 `verified` 層級的章。一張老實寫 `standard` 的章 —— B 在一般地方跑了模型並且照實說
+—— 仍然是有效的章，只是不是 A 願意採用的審核。沒有這條規則，「B 用 0G」就只是偏好，
+不是被強制執行的東西。
 
 ## 章是什麼
 
@@ -213,7 +223,7 @@ digest 逐 byte 相同 —— 不然每一個簽章都會在這裡因為錯的�
 
 [`pitch/index.html`](pitch/index.html) —— 九張投影片、三分鐘，用驗章器那套配色，讓投影幕
 和筆電看起來就是同一件東西。投影片放的是真值：章的示意圖是 `verifier/example-sealA.json`
-逐欄位對照，六幕就是 `run.sh` 的六個斷言。
+逐欄位對照，七幕就是 `run.sh` 的七個斷言。
 
 | 按鍵 | 作用 |
 |---|---|
@@ -309,7 +319,7 @@ action ALLOW with maxLtvBps 10000."*
 ```
 Foundry     20   registry 的 revert 路徑、一個 256 次的 fuzz 證明 attested 上限一定綁得住、
                  一個跨語言測試證明 viem 簽出來的 proof 在 Solidity 解出同一個 Verdict
-TypeScript  65   章的竄改案例、六個 delegate 檢查全部、注入邊界、strict schema 拒絕、預算閘
+TypeScript  66   章的竄改案例、六個 delegate 檢查全部加上 attested 層級規則、注入邊界、strict schema 拒絕、預算閘
 ```
 
 該讀的是 `contracts/test/CrossLanguage.t.sol`。TypeScript 簽章、Solidity 驗章；沒有任何東西

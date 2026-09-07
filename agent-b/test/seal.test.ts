@@ -99,16 +99,20 @@ describe("issueSealB", () => {
     expect((err as SealVerificationError).failure).toBe("ATTESTATION_MISSING");
   });
 
-  it("an honestly-declared standard tier is accepted, and the seal says so", async () => {
+  it("an honestly-declared standard tier is a valid seal that Agent A still declines by default (demo scene ⑦)", async () => {
     const seal = await issueSealB(
       request,
       inference({ trustMode: "standard", attestation: null }),
       config,
       NOW,
     );
-    await expect(verifySealB(seal, ctx)).resolves.toBeTruthy();
-    // Agent A can still refuse on policy; the point is the seal does not lie.
+    // The seal does not lie — and that honesty is exactly what lets the policy
+    // refuse it: TRUST_MODE_INSUFFICIENT, not a forgery.
     expect(seal.inference.trustMode).toBe("standard");
     expect(seal.inference.teeAttestation).toBeNull();
+    await expect(verifySealB(seal, ctx)).rejects.toThrow(/TRUST_MODE_INSUFFICIENT/);
+    await expect(
+      verifySealB(seal, { ...ctx, acceptTrustModes: ["standard", "verified"] }),
+    ).resolves.toBeTruthy();
   });
 });

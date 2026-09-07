@@ -173,10 +173,22 @@ async function main(): Promise<void> {
   }
 
   step("3", `paid ${hired.quote.humanPrice} · settlement ${hired.settlementTx ?? "(not reported)"}`);
-  step("4", `agent B returned ${hired.audit.action} maxLtvBps=${hired.audit.maxLtvBps}`);
+  if (hired.audit) {
+    step("4", `agent B returned ${hired.audit.action} maxLtvBps=${hired.audit.maxLtvBps}`);
+  } else {
+    step("4", "endpoint answered in its own shape — no audit object, no seal");
+  }
 
   // (5) The trust boundary. Agent A must be able to reject Agent B on its own.
   step("5", "verifying seal B");
+  if (hired.sealB === null) {
+    // Scene ⑦: an ordinary x402 API. The fee cleared, an ALLOW came back, and
+    // none of it is evidence. Refuse before the verifier even gets a look.
+    return fail(
+      "DELEGATE_SEAL_INVALID",
+      "NO_SEAL — the service kept the fee and signed nothing. Nothing to verify, nothing to embed, nothing reaches the chain.",
+    );
+  }
   let sealB: SealB;
   try {
     sealB = await verifySealB(hired.sealB, {

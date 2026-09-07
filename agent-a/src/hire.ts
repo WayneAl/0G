@@ -15,13 +15,15 @@ export interface Quote {
 
 export interface HireResult {
   quote: Quote;
+  /** Null when the endpoint answered in some other shape — a plain API, not an agent. */
   audit: {
     action: string;
     maxLtvBps: number;
     findings: string[];
     reasoning: string;
     costNeuron: string | null;
-  };
+  } | null;
+  /** Null when nothing signed came back. Agent A refuses before verification (scene ⑦). */
   sealB: unknown;
   /** Base Sepolia settlement tx, when the facilitator reports one. */
   settlementTx: `0x${string}` | null;
@@ -124,7 +126,7 @@ export async function hireAuditor(
     throw new HireError("AUDIT_REQUEST_FAILED", `${res.status} ${(await res.text()).slice(0, 300)}`);
   }
 
-  const body = (await res.json()) as { audit: HireResult["audit"]; sealB: unknown };
+  const body = (await res.json()) as { audit?: HireResult["audit"]; sealB?: unknown };
 
   let settlementTx: `0x${string}` | null = null;
   const paymentResponse = res.headers.get("PAYMENT-RESPONSE");
@@ -141,5 +143,5 @@ export async function hireAuditor(
     }
   }
 
-  return { quote, audit: body.audit, sealB: body.sealB, settlementTx };
+  return { quote, audit: body.audit ?? null, sealB: body.sealB ?? null, settlementTx };
 }

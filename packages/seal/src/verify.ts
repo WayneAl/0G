@@ -14,7 +14,8 @@ export type SealFailure =
   | "SUBJECT_MISMATCH"
   | "REQUEST_MISMATCH"
   | "SEAL_EXPIRED"
-  | "ATTESTATION_MISSING";
+  | "ATTESTATION_MISSING"
+  | "TRUST_MODE_INSUFFICIENT";
 
 export class SealVerificationError extends Error {
   constructor(
@@ -63,6 +64,12 @@ export interface VerifySealBContext {
   resolver: AgentIdResolver;
   /** Unix seconds; injected so tests are not clock-dependent. */
   now: number;
+  /**
+   * Trust tiers worth embedding. Default: `verified` only. An honest `standard`
+   * seal — B ran the model somewhere ordinary and said so — is still a valid
+   * seal; it is just not an audit Agent A will act on (demo scene ⑦).
+   */
+  acceptTrustModes?: readonly SealB["inference"]["trustMode"][];
 }
 
 /**
@@ -113,6 +120,17 @@ export async function verifySealB(input: unknown, ctx: VerifySealBContext): Prom
   // stops believing you.
   if (seal.inference.trustMode !== "standard" && seal.inference.teeAttestation === null) {
     throw new SealVerificationError("ATTESTATION_MISSING", `trustMode=${seal.inference.trustMode}`);
+  }
+
+  // 7. Policy on top of the six: only attested tiers count. Without this, "B ran
+  // on 0G" is a preference Agent A expresses, not a rule it enforces — a plain
+  // x402 service that says `standard` truthfully would sail through.
+  const accepted = ctx.acceptTrustModes ?? ["verified"];
+  if (!accepted.includes(seal.inference.trustMode)) {
+    throw new SealVerificationError(
+      "TRUST_MODE_INSUFFICIENT",
+      `trustMode=${seal.inference.trustMode}, accepted ${accepted.join("/")}`,
+    );
   }
 
   return seal;
