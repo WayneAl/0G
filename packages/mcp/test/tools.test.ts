@@ -8,7 +8,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { recoverSealSigner } from "@acu/seal";
 import { refusalForThrow } from "../src/tools/underwrite.js";
 import { bigintReplacer } from "../src/tools/shared.js";
-import { loadConfig } from "../src/config.js";
+import { DEFAULT_WEB_URL, loadConfig } from "../src/config.js";
 import { configPath } from "@acu/config";
 
 // One real child process, one real RPC read. Both are slow on a cold cache.
@@ -214,9 +214,19 @@ describe("the refusal a throw out of underwrite() becomes", () => {
 });
 
 describe("loadConfig — env > ~/.acu/config.json > default", () => {
+  /**
+   * A directory has to name an auditor for the server to be able to do anything,
+   * so every case that is not *about* the directory supplies a usable one.
+   */
+  const SOME_DIRECTORY = {
+    agents: [
+      { agentId: "1", signer: `0x${"1a".repeat(20)}`, role: "underwriter" },
+      { agentId: "2", signer: `0x${"2b".repeat(20)}`, role: "auditor" },
+    ],
+  };
   const home = (): NodeJS.ProcessEnv => ({
     ACU_HOME: mkdtempSync(join(tmpdir(), "acu-home-")),
-    ACU_DIRECTORY_JSON: JSON.stringify({ agents: [] }),
+    ACU_DIRECTORY_JSON: JSON.stringify(SOME_DIRECTORY),
   });
   const KEY = `0x${"11".repeat(32)}`;
   const OTHER = `0x${"22".repeat(32)}`;
@@ -276,6 +286,93 @@ describe("loadConfig — env > ~/.acu/config.json > default", () => {
     expect(err?.message).toContain(`${nearlyRight.length} characters`);
     // And it still says which of the two places to go and fix.
     expect(err?.message).toContain("config.json");
+  });
+});
+
+/**
+ * `claude mcp add acu -- npx -y @acu/mcp` has no `-e` flags, so the server has to
+ * find a directory on its own or it cannot start — and MCP configuration is
+ * fixed at install time, which makes "add one env var" the worst possible fix.
+ */
+describe("loadConfig — the directory, with nothing configured", () => {
+  const bare = (): NodeJS.ProcessEnv => ({ ACU_HOME: mkdtempSync(join(tmpdir(), "acu-home-")) });
+
+  const jsonResponse = (body: unknown): Response =>
+    ({ ok: true, status: 200, json: async () => body }) as Response;
+
+  it("reads the site's directory.json when no directory is configured", async () => {
+    const asked: string[] = [];
+    const fetchImpl = (async (url: string | URL) => {
+      asked.push(String(url));
+      return jsonResponse({
+        agents: [{ agentId: "2", signer: `0x${"2b".repeat(20)}`, role: "auditor" }],
+      });
+    }) as unknown as typeof fetch;
+
+    const config = await loadConfig(bare(), fetchImpl);
+    expect(config.directoryUrl).toBe(`${DEFAULT_WEB_URL}/directory.json`);
+    expect(asked).toEqual([`${DEFAULT_WEB_URL}/directory.json`]);
+    expect(config.directory.agents).toHaveLength(1);
+  });
+
+  it("follows ACU_WEB_URL, so a fork's own site is where its agents come from", async () => {
+    const asked: string[] = [];
+    const fetchImpl = (async (url: string | URL) => {
+      asked.push(String(url));
+      return jsonResponse({
+        agents: [{ agentId: "2", signer: `0x${"2b".repeat(20)}`, role: "auditor" }],
+      });
+    }) as unknown as typeof fetch;
+
+    const config = await loadConfig({ ...bare(), ACU_WEB_URL: "https://example.test/site" }, fetchImpl);
+    expect(config.directoryUrl).toBe("https://example.test/site/directory.json");
+    expect(asked).toEqual(["https://example.test/site/directory.json"]);
+  });
+
+  /**
+   * A fallback, not a default: the site may not be up yet, or the machine may be
+   * offline, and refusing to start would strand someone who has configured
+   * nothing wrong. It says so on stderr, because a *configured* directory
+   * failing is a real problem and must not look like a normal boot.
+   */
+  it("falls back to the reference agents when the directory cannot be read, out loud", async () => {
+    const noted: string[] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      noted.push(args.map(String).join(" "));
+    });
+    const fetchImpl = (async () => {
+      throw new Error("getaddrinfo ENOTFOUND wayneal.github.io");
+    }) as unknown as typeof fetch;
+
+    try {
+      const config = await loadConfig(bare(), fetchImpl);
+      expect(config.directory.agents.map((a) => a.agentId).sort()).toEqual(["1", "2"]);
+      expect(config.allowedPayTo).toHaveLength(1);
+      expect(noted.join("\n")).toContain(`${DEFAULT_WEB_URL}/directory.json`);
+      expect(noted.join("\n")).toContain("ENOTFOUND");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  /**
+   * An empty directory used to be accepted, and then every seal came back
+   * `AGENT_ID_NOT_LIVE` — which reads as "these seals are bad" rather than "this
+   * server has nobody to hire". It is a configuration fault, so it fails here.
+   */
+  it("refuses a directory that names no auditor", async () => {
+    const env = {
+      ...bare(),
+      ACU_DIRECTORY_JSON: JSON.stringify({
+        agents: [{ agentId: "1", signer: `0x${"1a".repeat(20)}`, role: "underwriter" }],
+      }),
+    };
+    await expect(loadConfig(env)).rejects.toThrow(/DIRECTORY_HAS_NO_AUDITOR/);
+  });
+
+  it("refuses an empty directory for the same reason", async () => {
+    const env = { ...bare(), ACU_DIRECTORY_JSON: JSON.stringify({ agents: [] }) };
+    await expect(loadConfig(env)).rejects.toThrow(/DIRECTORY_HAS_NO_AUDITOR/);
   });
 });
 

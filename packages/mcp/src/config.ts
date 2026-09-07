@@ -92,26 +92,54 @@ function requireHex(
 }
 
 /**
+ * The agents this toolkit knows about when nothing else can be reached.
+ *
+ * The published copy is `web/public/directory.json` and the CLI carries the same
+ * pair in `@acu/cli`'s `REFERENCE_DIRECTORY`; this one exists so that a server
+ * installed with no environment at all, on a day the site is down, still starts
+ * and can still quote. It is only ever a fallback, and never a silent one.
+ */
+const REFERENCE_DIRECTORY: Directory = Directory.parse({
+  agents: [
+    { agentId: "1", signer: "0x6ddF162A95123AaD1355E5D2FB66C2B1015Adc41", role: "underwriter" },
+    { agentId: "2", signer: "0xC1Dba83fd85838542b09ec44e6372485f6EE2D9E", role: "auditor" },
+  ],
+});
+
+/**
  * The directory, from wherever it was configured.
  *
  * Inline JSON wins over a URL: it is the more explicit of the two, and it is
- * what a test or an air-gapped run supplies. Neither present is a hard error —
- * a resolver with no agents would report every seal as `AGENT_ID_NOT_LIVE`,
- * which reads as "the seals are bad" rather than "you forgot to configure me".
+ * what a test or an air-gapped run supplies. The URL always exists — it defaults
+ * to the site's own `directory.json` — which is what lets the install line carry
+ * no environment variables at all.
+ *
+ * An unreachable directory falls back to the reference pair and says so on
+ * stderr, exactly as `acu` does: refusing to start would strand someone who has
+ * configured nothing wrong, and falling back quietly would hide a *configured*
+ * directory that is broken.
  */
 async function loadDirectory(
   env: NodeJS.ProcessEnv,
-  url: string | null,
+  url: string,
   fetchImpl?: typeof fetch,
 ): Promise<Directory> {
   const inline = env["ACU_DIRECTORY_JSON"];
   if (inline !== undefined && inline.trim() !== "") {
     return Directory.parse(JSON.parse(inline));
   }
-  if (url !== null && url.trim() !== "") {
-    return new HttpAgentIdResolver(url, fetchImpl ?? globalThis.fetch).directory();
+
+  try {
+    return await new HttpAgentIdResolver(url, fetchImpl ?? globalThis.fetch).directory();
+  } catch (err) {
+    // stderr, never stdout: stdout is the JSON-RPC channel.
+    console.error(
+      `note: ${url} could not be read (${err instanceof Error ? err.message : String(err)}); ` +
+        `using the built-in reference agents. ` +
+        `Set ACU_DIRECTORY_URL or ACU_DIRECTORY_JSON to name your own.`,
+    );
+    return REFERENCE_DIRECTORY;
   }
-  throw new Error("ACU_DIRECTORY_URL or ACU_DIRECTORY_JSON is required");
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetch): Promise<McpConfig> {
@@ -119,8 +147,22 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
   // a file that exists and will not parse throws rather than reading as empty.
   const user: UserConfig = readUserConfig(env);
 
-  const directoryUrl = resolve<string | null>(env["ACU_DIRECTORY_URL"], user.directoryUrl, null);
+  // The site publishes the directory, so the site's URL is the default — which
+  // is the whole reason `claude mcp add acu -- npx -y @acu/mcp` needs no `-e`.
+  const webUrl = resolve(env["ACU_WEB_URL"], user.webUrl, DEFAULT_WEB_URL);
+  const directoryUrl = resolve(env["ACU_DIRECTORY_URL"], user.directoryUrl, `${webUrl}/directory.json`);
   const directory = await loadDirectory(env, directoryUrl, fetchImpl);
+
+  // A directory with no auditor in it is a server that can never hire anybody.
+  // Left alone it surfaces one hop later as `AGENT_ID_NOT_LIVE` on every seal,
+  // which blames the seals for a fault in the configuration.
+  if (!directory.agents.some((a) => a.role === "auditor")) {
+    throw new Error(
+      `DIRECTORY_HAS_NO_AUDITOR: ${env["ACU_DIRECTORY_JSON"] === undefined ? directoryUrl : "ACU_DIRECTORY_JSON"} ` +
+        `lists ${directory.agents.length} agent(s) and none of them has role "auditor"; ` +
+        `there is nobody for this agent to hire.`,
+    );
+  }
 
   const rawKey = resolve<string | null>(env["ACU_AGENT_KEY"], user.agentKey, null);
   const agentKey =
@@ -166,7 +208,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
     ledgerPath: resolve(env["ACU_LEDGER_PATH"], user.ledgerPath, `${configDir(env)}/budget-ledger.json`),
     allowedPayTo,
     publish: (env["ACU_PUBLISH"] ?? "true") !== "false",
-    webUrl: resolve(env["ACU_WEB_URL"], user.webUrl, DEFAULT_WEB_URL),
+    webUrl,
     usdc: resolve(env["ACU_USDC"], null, BASE_SEPOLIA_USDC),
     faucetUrl: resolve(env["ACU_FAUCET_URL"], null, CIRCLE_FAUCET),
     paymentRpcUrl: resolve(env["ACU_PAYMENT_RPC_URL"], null, BASE_SEPOLIA_RPC),
