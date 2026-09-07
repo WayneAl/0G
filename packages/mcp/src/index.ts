@@ -21,7 +21,7 @@ async function main(): Promise<void> {
 
   // Not "no ACU_AGENT_KEY": the key may equally come from ~/.acu/config.json,
   // and pointing at the env var would send the reader back to a re-install.
-  const keyState = config.agentKey === null ? "no key yet (quotes only — run `npx @acu/cli init`)" : "key loaded";
+  const keyState = config.agentKey === null ? "no key yet (quotes only — run `npx @0x402/cli init`)" : "key loaded";
   process.stderr.write(
     `acu-mcp ready · agent ${config.agentId} · auditor ${config.auditorUrl} · ` +
       `${config.directory.agents.length} agents in directory · ${keyState}\n`,

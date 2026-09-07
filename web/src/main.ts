@@ -1,6 +1,6 @@
 import "./style.css";
-import { HttpAgentIdResolver } from "@acu/seal";
-import { SealNotFoundError, resolveSeal } from "@acu/storage";
+import { HttpAgentIdResolver } from "@0x402/seal";
+import { SealNotFoundError, resolveSeal } from "@0x402/storage";
 import {
   CLEAN_USD,
   DIRECTORY_URL,
@@ -31,7 +31,7 @@ import { reportSeal, type SealReport } from "./verify.js";
  * The page, wired.
  *
  * Every decision this file makes is a display decision. Whether a seal is good
- * is decided by `@acu/seal`, in this browser, over the seal's own bytes; whether
+ * is decided by `@0x402/seal`, in this browser, over the seal's own bytes; whether
  * a token is listed is decided by a contract; whether a body is the one its hash
  * names is decided by `resolveSeal`. Nothing here can make any of the three say
  * yes, which is why the page can afford to fetch a seal from a stranger.

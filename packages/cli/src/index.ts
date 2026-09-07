@@ -1,4 +1,4 @@
-import { configPath } from "@acu/config";
+import { configPath } from "@0x402/config";
 import { init } from "./commands/init.js";
 import { status } from "./commands/status.js";
 import { quote } from "./commands/quote.js";
@@ -8,7 +8,7 @@ import { main as underwriteCommand } from "./commands/underwrite.js";
 /**
  * `acu` — the headline shell.
  *
- * The reference Agent A was always a printer over `@acu/underwriter`; what kept
+ * The reference Agent A was always a printer over `@0x402/underwriter`; what kept
  * it in the repo was `private: true` and a hard-coded `.env`. This is the same
  * printer with the key it reads moved into `~/.acu/config.json`, so one `acu
  * init` serves the CLI, the MCP and anything else that grows later.

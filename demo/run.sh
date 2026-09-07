@@ -60,7 +60,7 @@ wait_for() { # port, name
   echo "  !! $2 did not come up on :$1" >&2; return 1
 }
 
-agent_a() { pnpm --silent --filter @acu/agent-a start -- "$@" 2>&1; }
+agent_a() { pnpm --silent --filter @0x402/agent-a start -- "$@" 2>&1; }
 
 # Asserts the run's final line. $1 = expected marker, rest = the CLI args.
 #
@@ -100,11 +100,11 @@ lsof -ti:4023 2>/dev/null | xargs kill -9 2>/dev/null
 lsof -ti:4099 2>/dev/null | xargs kill -9 2>/dev/null
 sleep 1
 
-pnpm --silent --filter @acu/agent-b start >"$WORK/b.log" 2>&1 & PIDS+=($!)
+pnpm --silent --filter @0x402/agent-b start >"$WORK/b.log" 2>&1 & PIDS+=($!)
 AGENT_B_SKIP_ATTESTATION=1 AGENT_B_PORT=4022 \
-  pnpm --silent --filter @acu/agent-b start >"$WORK/b-degraded.log" 2>&1 & PIDS+=($!)
-pnpm --silent --filter @acu/demo mitm >"$WORK/mitm.log" 2>&1 & PIDS+=($!)
-pnpm --silent --filter @acu/demo plain >"$WORK/plain.log" 2>&1 & PIDS+=($!)
+  pnpm --silent --filter @0x402/agent-b start >"$WORK/b-degraded.log" 2>&1 & PIDS+=($!)
+pnpm --silent --filter @0x402/demo mitm >"$WORK/mitm.log" 2>&1 & PIDS+=($!)
+pnpm --silent --filter @0x402/demo plain >"$WORK/plain.log" 2>&1 & PIDS+=($!)
 
 wait_for 4021 "agent B" || exit 1
 wait_for 4022 "agent B (no attestation)" || exit 1
@@ -121,7 +121,7 @@ run_offline_scene() {
   echo
   echo "$title"
   if [ ! -f "$REPLAY/$fixture" ]; then
-    echo "     => no recording yet ($fixture) — record it with: pnpm --filter @acu/agent-a record"
+    echo "     => no recording yet ($fixture) — record it with: pnpm --filter @0x402/agent-a record"
     return 0
   fi
   expect "$want" "$CLEAN_USD" --ltv "$ltv" --offline "$REPLAY/$fixture" || FAILED=1

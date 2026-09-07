@@ -7,12 +7,12 @@ import {
   type AgentIdResolver,
   type SealB,
   type SealFailure,
-} from "@acu/seal";
+} from "@0x402/seal";
 
 /**
  * The verifier's report, as data.
  *
- * Nothing in this file re-implements a check. `@acu/seal` decides, throws on the
+ * Nothing in this file re-implements a check. `@0x402/seal` decides, throws on the
  * first failure and names it; this shapes that one answer into rows a page can
  * draw. A second implementation of "is this seal good" is exactly the thing this
  * project must not have — the old single-file verifier had one, with its own
@@ -50,7 +50,7 @@ export interface ReportOptions {
   expectedSubject?: `0x${string}`;
 }
 
-/** The eight checks, in the order `@acu/seal` runs them. Seal A has no request, inference or tier. */
+/** The eight checks, in the order `@0x402/seal` runs them. Seal A has no request, inference or tier. */
 const ROWS_B = ["SCHEMA", "AGENT_ID_LIVE", "SIGNATURE", "SUBJECT", "REQUEST", "EXPIRY", "ATTESTATION", "TRUST_TIER"] as const;
 const ROWS_A = ["SCHEMA", "AGENT_ID_LIVE", "SIGNATURE", "SUBJECT", "EXPIRY"] as const;
 

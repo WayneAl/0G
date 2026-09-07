@@ -20,20 +20,20 @@ importers:
 
   agent-a:
     dependencies:
-      '@acu/cli':
+      '@0x402/cli':
         specifier: workspace:*
         version: link:../packages/cli
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../packages/seal
-      '@acu/underwriter':
+      '@0x402/underwriter':
         specifier: workspace:*
         version: link:../packages/underwriter
       viem:
         specifier: ^2.23.2
         version: 2.56.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
     devDependencies:
-      '@acu/og':
+      '@0x402/og':
         specifier: workspace:*
         version: link:../packages/og
       dotenv:
@@ -48,7 +48,7 @@ importers:
 
   agent-b:
     dependencies:
-      '@acu/auditor':
+      '@0x402/auditor':
         specifier: workspace:*
         version: link:../packages/auditor
       express:
@@ -101,10 +101,10 @@ importers:
 
   packages/auditor:
     dependencies:
-      '@acu/og':
+      '@0x402/og':
         specifier: workspace:*
         version: link:../og
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../seal
       '@x402/core':
@@ -135,16 +135,16 @@ importers:
 
   packages/cli:
     dependencies:
-      '@acu/config':
+      '@0x402/config':
         specifier: workspace:*
         version: link:../config
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../seal
-      '@acu/storage':
+      '@0x402/storage':
         specifier: workspace:*
         version: link:../storage
-      '@acu/underwriter':
+      '@0x402/underwriter':
         specifier: workspace:*
         version: link:../underwriter
       viem:
@@ -175,16 +175,16 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@acu/config':
+      '@0x402/config':
         specifier: workspace:*
         version: link:../config
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../seal
-      '@acu/storage':
+      '@0x402/storage':
         specifier: workspace:*
         version: link:../storage
-      '@acu/underwriter':
+      '@0x402/underwriter':
         specifier: workspace:*
         version: link:../underwriter
       '@modelcontextprotocol/sdk':
@@ -209,7 +209,7 @@ importers:
 
   packages/og:
     dependencies:
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../seal
       viem:
@@ -244,10 +244,10 @@ importers:
       '@0gfoundation/0g-storage-ts-sdk':
         specifier: 1.2.12
         version: 1.2.12(bufferutil@4.1.0)(ethers@6.13.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../seal
-      '@acu/underwriter':
+      '@0x402/underwriter':
         specifier: workspace:*
         version: link:../underwriter
       ethers:
@@ -263,7 +263,7 @@ importers:
 
   packages/underwriter:
     dependencies:
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../seal
       '@x402/core':
@@ -288,10 +288,10 @@ importers:
 
   web:
     dependencies:
-      '@acu/seal':
+      '@0x402/seal':
         specifier: workspace:*
         version: link:../packages/seal
-      '@acu/storage':
+      '@0x402/storage':
         specifier: workspace:*
         version: link:../packages/storage
       viem:

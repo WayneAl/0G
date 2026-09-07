@@ -1,15 +1,15 @@
-# @acu/storage
+# @0x402/storage
 
 Put a seal on the 0G Storage log layer, and find it again by its own hash.
 
 ```bash
-npm i @acu/storage
+npm i @0x402/storage
 ```
 
 ## Find one (browser-safe)
 
 ```ts
-import { resolveSeal } from "@acu/storage";
+import { resolveSeal } from "@0x402/storage";
 
 const located = await resolveSeal(sealHash, { rpcUrl, sender, indexerUrl });
 located.seal; // the body, re-derivable to exactly that hash
@@ -23,7 +23,7 @@ server in between.
 ## Publish one (Node)
 
 ```ts
-import { publishSeal } from "@acu/storage/publish";
+import { publishSeal } from "@0x402/storage/publish";
 
 const receipt = await publishSeal(seal, { privateKey, rpcUrl, indexerUrl });
 // { root, txHash, txSeq, sealHash, bytes }

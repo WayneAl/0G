@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { Directory, resolverFromDirectory } from "@acu/seal";
+import { Directory, resolverFromDirectory } from "@0x402/seal";
 import { reportSeal } from "../src/verify.js";
 
 /**
- * The page's report is a *view* of `@acu/seal`, not a second implementation of
+ * The page's report is a *view* of `@0x402/seal`, not a second implementation of
  * it. So these tests hold it to the two things a view can get wrong: the rows it
  * shows, and which of them it claims were actually reached.
  *

@@ -1,5 +1,5 @@
 import { createWalletClient, http, createPublicClient, type Account, type Hex } from "viem";
-import { buildStubProof, sealDigest, type SealA } from "@acu/seal";
+import { buildStubProof, sealDigest, type SealA } from "@0x402/seal";
 import { OG_TESTNET } from "./chain.js";
 import type { UnderwriteFailure } from "./underwrite.js";
 

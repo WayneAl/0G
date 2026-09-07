@@ -1,5 +1,5 @@
 {
-  "name": "@acu/web",
+  "name": "@0x402/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acu/seal": "workspace:*",
-    "@acu/storage": "workspace:*",
+    "@0x402/seal": "workspace:*",
+    "@0x402/storage": "workspace:*",
     "viem": "^2.23.2"
   },
   "devDependencies": {

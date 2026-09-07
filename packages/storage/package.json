@@ -1,5 +1,5 @@
 {
-  "name": "@acu/storage",
+  "name": "@0x402/storage",
   "version": "0.1.0",
   "description": "Put a seal on the 0G Storage log layer and find it again by its own hash. The root export is isomorphic \u2014 no ethers, no SDK \u2014 so a browser can do the lookup.",
   "license": "MIT",
@@ -62,8 +62,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acu/seal": "workspace:*",
-    "@acu/underwriter": "workspace:*",
+    "@0x402/seal": "workspace:*",
+    "@0x402/underwriter": "workspace:*",
     "@0gfoundation/0g-storage-ts-sdk": "1.2.12",
     "ethers": "6.13.1",
     "viem": "^2.23.2"

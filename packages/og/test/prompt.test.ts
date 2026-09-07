@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { InferenceOutput } from "@acu/seal";
+import { InferenceOutput } from "@0x402/seal";
 import {
   SYSTEM_PROMPT,
   buildUserPrompt,

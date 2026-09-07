@@ -15,7 +15,7 @@ import {
   type SealA,
   type SealB,
   type Unsigned,
-} from "@acu/seal";
+} from "@0x402/seal";
 import { makeBudgetGate } from "../src/budget.js";
 import type { TokenArtifact } from "../src/chain.js";
 import { HireError, type HireOptions, type HireResult, type Quote } from "../src/hire.js";

@@ -1,4 +1,4 @@
-import { sealDigest } from "@acu/seal";
+import { sealDigest } from "@0x402/seal";
 import { locateSeal, type Located, type LocateOptions } from "./locate.js";
 
 /**
@@ -11,7 +11,7 @@ import { locateSeal, type Located, type LocateOptions } from "./locate.js";
  * `sealDigest(parsed) === sealHash` is the whole integrity check — it holds
  * even if the gateway, the indexer and the RPC are all lying at once.
  *
- * Isomorphic: `viem`, `@acu/seal` and the platform `fetch`. The browser
+ * Isomorphic: `viem`, `@0x402/seal` and the platform `fetch`. The browser
  * verifier imports this file directly.
  */
 

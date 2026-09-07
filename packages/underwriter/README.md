@@ -1,14 +1,14 @@
-# @acu/underwriter
+# @0x402/underwriter
 
 The Agent A side, as a library: hire an auditor over x402, verify what it signed, and
 sign your own seal around it.
 
 ```bash
-npm i @acu/underwriter
+npm i @0x402/underwriter
 ```
 
 ```ts
-import { underwrite } from "@acu/underwriter";
+import { underwrite } from "@0x402/underwriter";
 
 const result = await underwrite(
   { token, ltvBps: 7000, source: null, settle: true, publish: true },

@@ -1,6 +1,6 @@
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { configPath, readUserConfig, writeUserConfig } from "@acu/config";
-import { CIRCLE_FAUCET } from "@acu/underwriter";
+import { configPath, readUserConfig, writeUserConfig } from "@0x402/config";
+import { CIRCLE_FAUCET } from "@0x402/underwriter";
 import type { Io } from "../index.js";
 
 const HEX_KEY = /^0x[0-9a-fA-F]{64}$/;
@@ -9,7 +9,7 @@ const HEX_KEY = /^0x[0-9a-fA-F]{64}$/;
 const BURNER_WARNING = "this is a burner key for testnet — never fund it with real money";
 
 /**
- * `acu init` — step 2 of the funnel, and the reason `@acu/config` exists.
+ * `acu init` — step 2 of the funnel, and the reason `@0x402/config` exists.
  *
  * A key generated here is read by every other shell, including the MCP, which is
  * why the MCP install line needs no environment variables at all.

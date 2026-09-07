@@ -1,5 +1,5 @@
-import { RouterClient, type InferenceResult } from "@acu/og";
-import type { AuditRequestPayload } from "@acu/seal";
+import { RouterClient, type InferenceResult } from "@0x402/og";
+import type { AuditRequestPayload } from "@0x402/seal";
 import type { AuditorConfig } from "./config.js";
 
 /**

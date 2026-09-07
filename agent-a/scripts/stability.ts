@@ -3,8 +3,8 @@
  * output, because a pass rate hides the thing worth knowing — whether the
  * reasoning was sound or the verdict was a coin flip that landed right.
  *
- *   pnpm --filter @acu/agent-a stability            # 10 runs per token, testnet
- *   pnpm --filter @acu/agent-a stability -- --n 3 --mainnet
+ *   pnpm --filter @0x402/agent-a stability            # 10 runs per token, testnet
+ *   pnpm --filter @0x402/agent-a stability -- --n 3 --mainnet
  *
  * Calls the inference layer directly. The payment path is exercised by
  * demo/run.sh; what is under test here is the model's consistency on the exact
@@ -12,8 +12,8 @@
  */
 import { config as loadEnv } from "dotenv";
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
-import { RouterClient, type OgNetwork, type InferenceResult } from "@acu/og";
-import { fetchTokenArtifact, makeOgClient, renderArtifact } from "@acu/underwriter";
+import { RouterClient, type OgNetwork, type InferenceResult } from "@0x402/og";
+import { fetchTokenArtifact, makeOgClient, renderArtifact } from "@0x402/underwriter";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });
 

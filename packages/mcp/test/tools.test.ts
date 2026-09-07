@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { recoverSealSigner } from "@acu/seal";
+import { recoverSealSigner } from "@0x402/seal";
 import { refusalForThrow } from "../src/tools/underwrite.js";
 import { bigintReplacer } from "../src/tools/shared.js";
 import { DEFAULT_WEB_URL, loadConfig } from "../src/config.js";
-import { configPath } from "@acu/config";
+import { configPath } from "@0x402/config";
 
 // One real child process, one real RPC read. Both are slow on a cold cache.
 vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
@@ -165,7 +165,7 @@ describe("the acu MCP server, over a real stdio transport", () => {
   it("answers agent_status with no key by naming the CLI, not a re-install", async () => {
     const res = await client.callTool({ name: "agent_status", arguments: {} });
     const body = JSON.parse(textOf(res));
-    expect(body, textOf(res)).toMatchObject({ hasKey: false, nextStep: "Run: npx @acu/cli init" });
+    expect(body, textOf(res)).toMatchObject({ hasKey: false, nextStep: "Run: npx @0x402/cli init" });
     // Having no key yet is a state, not a fault.
     expect(res.isError).toBeFalsy();
     // The auditor on port 1 is not answering, and the payload says so plainly.
@@ -290,7 +290,7 @@ describe("loadConfig — env > ~/.acu/config.json > default", () => {
 });
 
 /**
- * `claude mcp add acu -- npx -y @acu/mcp` has no `-e` flags, so the server has to
+ * `claude mcp add acu -- npx -y @0x402/mcp` has no `-e` flags, so the server has to
  * find a directory on its own or it cannot start — and MCP configuration is
  * fixed at install time, which makes "add one env var" the worst possible fix.
  */

@@ -94,7 +94,7 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 echo "── reference agent B ──"
-pnpm --silent --filter @acu/agent-b start >"$B_LOG" 2>&1 &
+pnpm --silent --filter @0x402/agent-b start >"$B_LOG" 2>&1 &
 B_PID=$!
 
 B_UP=""

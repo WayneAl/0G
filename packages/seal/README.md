@@ -1,4 +1,4 @@
-# @acu/seal
+# @0x402/seal
 
 The seal format, and every check that decides whether one is real.
 
@@ -8,13 +8,13 @@ underwriter decided — and carries the audit seal it paid for whole, inside its
 So one object proves the entire chain, and anyone can check it without asking anybody.
 
 ```bash
-npm i @acu/seal
+npm i @0x402/seal
 ```
 
 ## Verify
 
 ```ts
-import { verifySealA, SealVerificationError } from "@acu/seal";
+import { verifySealA, SealVerificationError } from "@0x402/seal";
 
 try {
   await verifySealA(seal, { expectedSubject: token, resolver, now });
@@ -44,7 +44,7 @@ look" is not the same claim as "it is fine".
 ## Sign
 
 ```ts
-import { signSealA, sealDigest, canonicalize } from "@acu/seal";
+import { signSealA, sealDigest, canonicalize } from "@0x402/seal";
 ```
 
 The signature covers `keccak256(canonicalize(seal))` over EIP-191, so the bytes that

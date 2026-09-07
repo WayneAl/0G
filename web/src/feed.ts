@@ -5,7 +5,7 @@ import { createPublicClient, http, type PublicClient } from "viem";
  *
  * A listing is not a verdict — this module only says "somebody listed this
  * token with this seal hash". The page then fetches each seal body from 0G
- * Storage and runs `@acu/seal` on it locally before it colours a card. Nothing
+ * Storage and runs `@0x402/seal` on it locally before it colours a card. Nothing
  * here decides whether a seal is good.
  */
 export const LISTED_EVENT = {
@@ -40,7 +40,7 @@ export interface FeedConfig {
  * The newest `limit` listings, newest first, one per token.
  *
  * Walks backwards from `latest` in `FEED_CHUNK_BLOCKS` windows — the same shape
- * as `locateSeal` in `@acu/storage`, and for the same reason — and stops when it
+ * as `locateSeal` in `@0x402/storage`, and for the same reason — and stops when it
  * has `limit` tokens or reaches `fromBlock`. A relist replaces rather than
  * repeats: the newest `Listed` for a token is the state of that token, and the
  * older one is history the registry itself no longer answers with.

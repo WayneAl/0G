@@ -1,14 +1,14 @@
-# @acu/config
+# @0x402/config
 
 `~/.acu/config.json` — the one place a key and its settings are read from, for every
 shell.
 
 ```bash
-npm i @acu/config
+npm i @0x402/config
 ```
 
 ```ts
-import { readUserConfig, writeUserConfig, configPath, resolve } from "@acu/config";
+import { readUserConfig, writeUserConfig, configPath, resolve } from "@0x402/config";
 
 const user = readUserConfig();
 const auditorUrl = resolve(process.env.ACU_AUDITOR_URL, user.auditorUrl, DEFAULT);
@@ -18,8 +18,8 @@ const auditorUrl = resolve(process.env.ACU_AUDITOR_URL, user.auditorUrl, DEFAULT
 operator can always override the file for one process without editing it, and an empty
 environment variable counts as unset rather than as an empty string.
 
-This is what makes `claude mcp add acu -- npx -y @acu/mcp` need no environment
-variables: [`@acu/cli`](https://www.npmjs.com/package/@acu/cli)'s `init` writes the key,
+This is what makes `claude mcp add acu -- npx -y @0x402/mcp` need no environment
+variables: [`@0x402/cli`](https://www.npmjs.com/package/@0x402/cli)'s `init` writes the key,
 and the MCP server reads the same file. MCP configuration is fixed at install time, so
 a key that arrived later used to mean removing and re-adding the server.
 

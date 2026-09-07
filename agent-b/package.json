@@ -1,5 +1,5 @@
 {
-  "name": "@acu/agent-b",
+  "name": "@0x402/agent-b",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acu/auditor": "workspace:*",
+    "@0x402/auditor": "workspace:*",
     "express": "^4.21.2",
     "viem": "^2.23.2"
   },

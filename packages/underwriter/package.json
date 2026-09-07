@@ -1,5 +1,5 @@
 {
-  "name": "@acu/underwriter",
+  "name": "@0x402/underwriter",
   "version": "0.1.0",
   "description": "The Agent A side, as a library: hire an x402 auditor, verify its seal, compose your own around it, publish it, list it \u2014 with a budget gate before any signature.",
   "license": "MIT",
@@ -48,7 +48,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acu/seal": "workspace:*",
+    "@0x402/seal": "workspace:*",
     "@x402/core": "^2.24.0",
     "@x402/evm": "^2.24.0",
     "@x402/fetch": "^2.24.0",

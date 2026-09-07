@@ -35,7 +35,7 @@
   <li>
     <span class="what">Get a quote. No key, no environment, no install.</span>
     <div class="cmd">
-      <code>npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8</code>
+      <code>npx @0x402/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8</code>
       <button class="copy" type="button">Copy</button>
     </div>
     <p>
@@ -48,7 +48,7 @@
   <li>
     <span class="what">Get a key.</span>
     <div class="cmd">
-      <code>npx @acu/cli init</code>
+      <code>npx @0x402/cli init</code>
       <button class="copy" type="button">Copy</button>
     </div>
     <p>
@@ -61,7 +61,7 @@
   <li>
     <span class="what">Fund it, then ask whether you are ready.</span>
     <div class="cmd">
-      <code>npx @acu/cli status</code>
+      <code>npx @0x402/cli status</code>
       <button class="copy" type="button">Copy</button>
     </div>
     <p>
@@ -77,7 +77,7 @@
   <li>
     <span class="what">Buy one real seal.</span>
     <div class="cmd">
-      <code>npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish</code>
+      <code>npx @0x402/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish</code>
       <button class="copy" type="button">Copy</button>
     </div>
     <p>
@@ -110,7 +110,7 @@
   <li>
     <span class="what">Make it your agent's job instead of yours.</span>
     <div class="cmd">
-      <code>claude mcp add acu -- npx -y @acu/mcp</code>
+      <code>claude mcp add acu -- npx -y @0x402/mcp</code>
       <button class="copy" type="button">Copy</button>
     </div>
     <p>
@@ -146,7 +146,7 @@
 
     <h3>The same agent, inside your agent</h3>
     <div class="cmd">
-      <code>claude mcp add acu -- npx -y @acu/mcp</code>
+      <code>claude mcp add acu -- npx -y @0x402/mcp</code>
       <button class="copy" type="button">Copy</button>
     </div>
     <p>
@@ -172,7 +172,7 @@
     </table>
 
     <h3>Or as a library</h3>
-    <pre class="snippet">import { underwrite } from "@acu/underwriter";
+    <pre class="snippet">import { underwrite } from "@0x402/underwriter";
 
 const result = await underwrite(
   {
@@ -214,7 +214,7 @@ const result = await underwrite(
     </p>
 
     <pre class="snippet">import express from "express";
-import { sealedAuditRoute } from "@acu/auditor";
+import { sealedAuditRoute } from "@0x402/auditor";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
@@ -274,11 +274,11 @@ app.listen(4021);</pre>
 <p>
   Verification never crosses the network. There is no endpoint of ours that will tell you
   whether a seal is good, because such an endpoint would be a thing to trust. The same
-  <code>@acu/seal</code> runs in the CLI, in the MCP, in an Agent A, and in
+  <code>@0x402/seal</code> runs in the CLI, in the MCP, in an Agent A, and in
   <a href="../#verify">the page on this site</a>.
 </p>
 
-<pre class="snippet">import { verifySealA, SealVerificationError } from "@acu/seal";
+<pre class="snippet">import { verifySealA, SealVerificationError } from "@0x402/seal";
 
 try {
   await verifySealA(seal, { expectedSubject: token, resolver, now });

@@ -42,7 +42,7 @@ jobs:
       # A project site is served from https://<user>.github.io/0G/, so the base
       # path has to be baked in: without it every asset URL and the bundled
       # `directory.json` path resolve at the domain root and 404.
-      - run: pnpm --filter @acu/web build
+      - run: pnpm --filter @0x402/web build
         env:
           BASE_PATH: /0G/
 

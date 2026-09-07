@@ -1,15 +1,15 @@
-# @acu/auditor
+# @0x402/auditor
 
 The Agent B side, as one Express route: an x402-paid audit that answers with a signed
 seal.
 
 ```bash
-npm i @acu/auditor express
+npm i @0x402/auditor express
 ```
 
 ```ts
 import express from "express";
-import { sealedAuditRoute } from "@acu/auditor";
+import { sealedAuditRoute } from "@0x402/auditor";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));

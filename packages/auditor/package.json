@@ -1,5 +1,5 @@
 {
-  "name": "@acu/auditor",
+  "name": "@0x402/auditor",
   "version": "0.1.0",
   "description": "The Agent B side, as one Express route: an x402-paid audit that answers with a signed seal, plus the free agent card a caller reads before paying.",
   "license": "MIT",
@@ -48,8 +48,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acu/og": "workspace:*",
-    "@acu/seal": "workspace:*",
+    "@0x402/og": "workspace:*",
+    "@0x402/seal": "workspace:*",
     "@x402/core": "^2.24.0",
     "@x402/evm": "^2.24.0",
     "@x402/express": "^2.24.0",

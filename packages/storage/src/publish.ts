@@ -1,7 +1,7 @@
 import { Indexer, MemData } from "@0gfoundation/0g-storage-ts-sdk";
 import { JsonRpcProvider, Wallet } from "ethers";
-import { canonicalize, sealDigest, type SealA } from "@acu/seal";
-import type { PublishReceipt, SealPublisher } from "@acu/underwriter";
+import { canonicalize, sealDigest, type SealA } from "@0x402/seal";
+import type { PublishReceipt, SealPublisher } from "@0x402/underwriter";
 
 /**
  * Putting a seal body where anyone can fetch it, forever, without asking us.

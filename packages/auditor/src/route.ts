@@ -3,7 +3,7 @@ import { z } from "zod";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
-import type { AuditRequestPayload } from "@acu/seal";
+import type { AuditRequestPayload } from "@0x402/seal";
 import type { AuditorConfig } from "./config.js";
 import { makeAuditor } from "./audit.js";
 import { issueSealB } from "./seal.js";

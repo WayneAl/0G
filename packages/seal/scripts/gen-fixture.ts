@@ -7,7 +7,7 @@
  * actually crosses the boundary, so this fixture is regenerated and asserted in CI
  * rather than eyeballed once.
  *
- *   pnpm --filter @acu/seal gen-fixture
+ *   pnpm --filter @0x402/seal gen-fixture
  */
 import { writeFileSync, mkdirSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";

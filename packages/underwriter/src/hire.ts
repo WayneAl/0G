@@ -3,7 +3,7 @@ import { ExactEvmScheme } from "@x402/evm/exact/client";
 import { decodePaymentRequiredHeader, decodePaymentResponseHeader } from "@x402/core/http";
 import type { PaymentRequirements } from "@x402/core/types";
 import type { PrivateKeyAccount } from "viem";
-import type { AuditRequestPayload } from "@acu/seal";
+import type { AuditRequestPayload } from "@0x402/seal";
 import { atomicToUsdc, type BudgetGate } from "./budget.js";
 
 export interface Quote {

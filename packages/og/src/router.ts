@@ -1,5 +1,5 @@
 import { keccak256, toHex } from "viem";
-import { InferenceOutput, type TeeAttestation } from "@acu/seal";
+import { InferenceOutput, type TeeAttestation } from "@0x402/seal";
 import { SYSTEM_PROMPT, buildUserPrompt, extractJson, promptHash } from "./prompt.js";
 import type { AuditRequest, InferenceClient, InferenceResult, TrustMode } from "./types.js";
 

@@ -1,13 +1,13 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { agentStatus, type AgentStatus } from "@acu/underwriter";
-import { configPath } from "@acu/config";
+import { agentStatus, type AgentStatus } from "@0x402/underwriter";
+import { configPath } from "@0x402/config";
 import type { Io } from "../index.js";
 import { resolveCliConfig } from "./underwrite.js";
 
 /**
  * `acu status` — "can this agent do the job right now, and if not, what next?"
  *
- * The answer comes from `agentStatus()` in `@acu/underwriter`, which is the same
+ * The answer comes from `agentStatus()` in `@0x402/underwriter`, which is the same
  * call behind the MCP's `agent_status`. This file only decides how it looks.
  */
 export async function status(argv: string[], io: Io): Promise<number> {

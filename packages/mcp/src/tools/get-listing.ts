@@ -3,9 +3,9 @@ import {
   SealVerificationError,
   resolverFromDirectory,
   verifySealA,
-} from "@acu/seal";
-import { readListing, readTrustedSigner } from "@acu/underwriter";
-import { SealNotFoundError, resolveSeal } from "@acu/storage";
+} from "@0x402/seal";
+import { readListing, readTrustedSigner } from "@0x402/underwriter";
+import { SealNotFoundError, resolveSeal } from "@0x402/storage";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { detailOf, textResult } from "./shared.js";

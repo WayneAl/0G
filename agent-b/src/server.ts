@@ -1,6 +1,6 @@
 import { config as loadEnv } from "dotenv";
 import express from "express";
-import { sealedAuditRoute } from "@acu/auditor";
+import { sealedAuditRoute } from "@0x402/auditor";
 import { loadConfig } from "./config.js";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });

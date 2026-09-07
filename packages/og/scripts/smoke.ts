@@ -1,8 +1,8 @@
 /**
  * Live check against the 0G Router. Run once a testnet balance exists:
  *
- *   pnpm --filter @acu/og smoke              # testnet, qwen2.5-omni
- *   pnpm --filter @acu/og smoke -- --mainnet # mainnet, 0gm-1.0-35b-a3b
+ *   pnpm --filter @0x402/og smoke              # testnet, qwen2.5-omni
+ *   pnpm --filter @0x402/og smoke -- --mainnet # mainnet, 0gm-1.0-35b-a3b
  *
  * Prints the attestation evidence and the billed cost, because those are the two
  * things the seal will carry and the two things worth eyeballing before trusting.

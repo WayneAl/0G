@@ -2,10 +2,10 @@
  * Records a live run into a replay fixture, so the six scenes survive a dead
  * venue network (spec §10).
  *
- *   pnpm --filter @acu/agent-a record -- --token CLEAN_USD --label CleanUSD --ltv 7000
- *   pnpm --filter @acu/agent-a record -- --token CLEAN_USD --label "CleanUSD (no attestation)" \
+ *   pnpm --filter @0x402/agent-a record -- --token CLEAN_USD --label CleanUSD --ltv 7000
+ *   pnpm --filter @0x402/agent-a record -- --token CLEAN_USD --label "CleanUSD (no attestation)" \
  *        --endpoint http://localhost:4022/audit --out clean-noattest.json --expect-refusal
- *   pnpm --filter @acu/agent-a record -- --derive-tampered clean.json --out clean-tampered.json
+ *   pnpm --filter @0x402/agent-a record -- --derive-tampered clean.json --out clean-tampered.json
  *
  * The fixture stores what crossed a network. It never stores a verdict for Agent
  * A's checks — those are re-run for real at replay time (see src/replay.ts).
@@ -14,7 +14,7 @@ import { config as loadEnv } from "dotenv";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
-import { verifySealB, StaticAgentIdResolver, auditRequestHash, signSealA, type SealB } from "@acu/seal";
+import { verifySealB, StaticAgentIdResolver, auditRequestHash, signSealA, type SealB } from "@0x402/seal";
 import { keccak256, toHex } from "viem";
 import {
   fetchTokenArtifact,
@@ -23,7 +23,7 @@ import {
   makeBudgetGate,
   makeOgClient,
   renderArtifact,
-} from "@acu/underwriter";
+} from "@0x402/underwriter";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });
 

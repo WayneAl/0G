@@ -27,24 +27,24 @@ Agent B（Code Auditor）審合約原始碼。Agent B 在 0G Compute Router 的 
 ```bash
 # 1 —— 先要一份報價。它會用 RPC 讀代幣的 bytecode、跟參考 auditor 要 x402 價格、
 #      過一次預算閘，然後停住。預設就是 dry run。
-npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
+npx @0x402/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
 
 # 2 —— 生一把 burner key，寫進 ~/.acu/config.json（0600，放在 0700 的目錄裡）。
-npx @acu/cli init
+npx @0x402/cli init
 
 # 3 —— 拿它印出來的地址去 https://faucet.circle.com 領 Base Sepolia USDC，
 #      再問它現在能不能跑。它的回答永遠是「下一步做什麼」。
-npx @acu/cli status
+npx @0x402/cli status
 
 # 4 —— 來真的：走 x402 付款、把章 B 每一項都驗過、簽出包住它的章 A、把章的本體傳上
 #      0G Storage。最後一行是一條分享連結。
-npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish
+npx @0x402/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish
 
 # 5 —— 把那條連結打開。收到的人瀏覽器裡會把每一項檢查重跑一次。
 
 # 6 —— 把這件事交給你的 agent。完全不用環境變數：MCP server 讀的就是
 #      CLI 剛剛寫好的那份 ~/.acu/config.json。
-claude mcp add acu -- npx -y @acu/mcp
+claude mcp add acu -- npx -y @0x402/mcp
 ```
 
 第 1 步是真的什麼都不用 —— 沒有 key、沒有 `.env`、沒有任何 `ACU_*`。如果網站的
@@ -57,7 +57,7 @@ claude mcp add acu -- npx -y @acu/mcp
 上架紀錄。沒設 registry 又要求上架的話，指令會回 `NO_REGISTRY`，而且是**在花任何錢之前**；
 `--registry <address>` 可以指向你自己部署的那一個。
 
-> **在套件上 npm 之前**，同樣六步可以從 clone 跑：把 `npx @acu/cli` 換成
+> **在套件上 npm 之前**，同樣六步可以從 clone 跑：把 `npx @0x402/cli` 換成
 > `node packages/cli/bin/acu.mjs <command>`，把最後那行換成
 > `claude mcp add acu -- node <repo>/packages/mcp/bin/acu-mcp.mjs`。
 
@@ -70,10 +70,10 @@ packages/underwriter/   A 這一側的函式庫 —— underwrite()：預算閘�
 packages/auditor/       B 這一側的函式庫 —— sealedAuditRoute()：GET /agent 加上 x402 收費的 POST /audit
 packages/storage/       把章的本體傳上 0G Storage，以及用 hash 再把它找回來
 packages/config/        ~/.acu/config.json —— CLI 寫、MCP 讀的那一把 key
-packages/cli/           @acu/cli，bin 是 `acu` —— 參考 Agent A，做成任何人都能跑的指令
-packages/mcp/           @acu/mcp —— 同一個 agent 的 MCP 版，讓任何 agent 框架都變成一個 A
+packages/cli/           @0x402/cli，bin 是 `acu` —— 參考 Agent A，做成任何人都能跑的指令
+packages/mcp/           @0x402/mcp —— 同一個 agent 的 MCP 版，讓任何 agent 框架都變成一個 A
 web/                    網站：首頁、鏈上章的即時列表、驗章器、文件 —— 驗證全在瀏覽器裡跑
-agent-a/                對著 repo 的 .env 跑的參考 A；本質是 @acu/cli 的一層薄殼
+agent-a/                對著 repo 的 .env 跑的參考 A；本質是 @0x402/cli 的一層薄殼
   scripts/              record.ts（錄製重播用 fixture）· stability.ts（30 次一致性驗證）
 agent-b/                對著 repo 的 .env 跑的參考 B；loadConfig 加一次 sealedAuditRoute
 contracts/              CollateralRegistry · IProofVerifier · StubVerifier · 三個示範代幣
@@ -128,7 +128,7 @@ NOTES.md                與建置規格的差異、穩定度驗證，附查證�
 
 ### 讓你的 agent 當一個 Agent A
 
-`@acu/cli` **就是**那個參考 Agent A —— 雇人、驗章、簽章、上架全是它自己做的，人只負責把它
+`@0x402/cli` **就是**那個參考 Agent A —— 雇人、驗章、簽章、上架全是它自己做的，人只負責把它
 啟動。設定的優先序到處都是**環境變數 > `~/.acu/config.json` > 內建預設**，這也是下面那行
 MCP 安裝指令一個 `-e` 都不用帶的原因。
 
@@ -141,7 +141,7 @@ MCP 安裝指令一個 `-e` 都不用帶的原因。
 | `acu verify <file\|->` | 在本機驗一顆章 A 或章 B。有效 exit 0，無效 exit 1 |
 
 ```bash
-claude mcp add acu -- npx -y @acu/mcp
+claude mcp add acu -- npx -y @0x402/mcp
 ```
 
 不用任何 `-e`：server 讀的就是 `acu init` 寫好的那份設定。環境變數永遠只是覆寫用的 ——
@@ -163,8 +163,8 @@ claude mcp add acu -- npx -y @acu/mcp
 `process.exit`，也不讀任何環境變數：
 
 ```ts
-import { underwrite } from "@acu/underwriter";
-import { ogStoragePublisher } from "@acu/storage/publish";
+import { underwrite } from "@0x402/underwriter";
+import { ogStoragePublisher } from "@0x402/storage/publish";
 
 const result = await underwrite(
   { token, ltvBps: 7000, source: null, settle: true, publish: true },
@@ -188,7 +188,7 @@ const result = await underwrite(
 
 ```ts
 import express from "express";
-import { sealedAuditRoute } from "@acu/auditor";
+import { sealedAuditRoute } from "@0x402/auditor";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
@@ -208,7 +208,7 @@ app.listen(4021);
 ```
 
 這會掛上兩條路由：`GET /agent`，免費，那張說明「來雇的人是在雇誰、你收多少」的名片；以及
-`POST /audit`，由 x402 v2 收費，跑推理並回一顆簽好的章 B。`@acu/auditor` 從不讀
+`POST /audit`，由 x402 v2 收費，跑推理並回一顆簽好的章 B。`@0x402/auditor` 從不讀
 `process.env`，所以設定錯的 B 是在建構的時候就死，而不是死在第一個客人身上。502 那條規則也
 還在：推理失敗、attestation 沒回來、或章簽不出來，`POST /audit` 一律回 **502
 `AUDIT_FAILED`**，什麼章都不發。**沒有章就不收錢。**
@@ -223,7 +223,7 @@ app.listen(4021);
 這顆章好不好」的端點，因為那種端點本身就會變成又一個要信的東西。
 
 ```ts
-import { verifySealA, SealVerificationError } from "@acu/seal";
+import { verifySealA, SealVerificationError } from "@0x402/seal";
 
 try {
   await verifySealA(seal, { expectedSubject: token, resolver, now });
@@ -233,7 +233,7 @@ try {
 }
 ```
 
-CLI、MCP server、Agent A 和網頁跑的是同一份 `@acu/seal`。
+CLI、MCP server、Agent A 和網頁跑的是同一份 `@0x402/seal`。
 
 ### 參考 auditor 跑在作者自己的機器上
 
@@ -267,7 +267,7 @@ cp .env.example .env      # 填入 0G API key 與 burner key
 forge test --root contracts
 pnpm -r test
 
-pnpm --filter @acu/og smoke                     # 打一次帶 attestation 的 Router 呼叫；印出證據與費用
+pnpm --filter @0x402/og smoke                     # 打一次帶 attestation 的 Router 呼叫；印出證據與費用
 forge script contracts/script/Deploy.s.sol \
   --root contracts --rpc-url og_testnet --broadcast
                                                 # 然後把印出來的位址抄進 .env
@@ -299,11 +299,11 @@ forge script contracts/script/Deploy.s.sol \
 ### 手動跑 Agent A
 
 ```bash
-pnpm --filter @acu/agent-a start -- <token> [flags]
+pnpm --filter @0x402/agent-a start -- <token> [flags]
 ```
 
 `agent-a` 是一層薄殼：它讀 repo 的 `.env`，然後把事情交給 `acu underwrite`，所以下面這些
-就是那個指令的參數。`.env` 只在**那裡**讀，永遠不會在 `@acu/cli` 裡讀 —— 那是陌生人會裝的
+就是那個指令的參數。`.env` 只在**那裡**讀，永遠不會在 `@0x402/cli` 裡讀 —— 那是陌生人會裝的
 套件。
 
 | 參數 | 意思 |
@@ -326,9 +326,9 @@ pnpm --filter @acu/agent-a start -- <token> [flags]
 ### 錄製與穩定度
 
 ```bash
-pnpm --filter @acu/agent-a record -- --token CLEAN_USD --label CleanUSD --ltv 7000
-pnpm --filter @acu/agent-a record -- --derive-tampered clean.json --out clean-tampered.json
-pnpm --filter @acu/agent-a stability            # 每個代幣跑 10 次，完整輸出全留
+pnpm --filter @0x402/agent-a record -- --token CLEAN_USD --label CleanUSD --ltv 7000
+pnpm --filter @0x402/agent-a record -- --derive-tampered clean.json --out clean-tampered.json
+pnpm --filter @0x402/agent-a stability            # 每個代幣跑 10 次，完整輸出全留
 ```
 
 錄音只存經過網路的東西，從不存 Agent A 的判定 —— 那是重播時重新算的。`stability`

@@ -1,5 +1,5 @@
 import { createPublicClient, http } from "viem";
-import { resolveSeal, SealNotFoundError, type Located } from "@acu/storage";
+import { resolveSeal, SealNotFoundError, type Located } from "@0x402/storage";
 
 /**
  * Token address in, seal body out — with nothing taken on trust in between.
@@ -10,7 +10,7 @@ import { resolveSeal, SealNotFoundError, type Located } from "@acu/storage";
  * verification locally. No step here can make a seal look valid.
  *
  * The ABIs are declared in this file rather than imported from
- * `@acu/underwriter`, which would drag the x402 packages into a browser bundle
+ * `@0x402/underwriter`, which would drag the x402 packages into a browser bundle
  * for three view functions. They are copied from
  * `packages/underwriter/src/settle.ts`.
  */

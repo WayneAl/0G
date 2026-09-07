@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
-import { sealDigest, type SealA } from "@acu/seal";
+import { sealDigest, type SealA } from "@0x402/seal";
 import { listWithSeal, type SettleOptions } from "../src/settle.js";
 
 /**

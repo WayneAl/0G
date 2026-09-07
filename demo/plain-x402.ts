@@ -11,7 +11,7 @@
  * Whether a model runs behind this endpoint is beside the point — nothing it
  * returned could be checked either way — so none does.
  *
- *   pnpm --filter @acu/demo plain           # listens on 4023
+ *   pnpm --filter @0x402/demo plain           # listens on 4023
  */
 import { config as loadEnv } from "dotenv";
 import express from "express";

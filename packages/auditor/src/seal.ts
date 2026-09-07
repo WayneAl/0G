@@ -1,7 +1,7 @@
 import type { Account } from "viem";
-import { signSealB, type AuditRequestPayload, type SealB, type Unsigned } from "@acu/seal";
-import { auditRequestHash } from "@acu/seal";
-import type { InferenceResult } from "@acu/og";
+import { signSealB, type AuditRequestPayload, type SealB, type Unsigned } from "@0x402/seal";
+import { auditRequestHash } from "@0x402/seal";
+import type { InferenceResult } from "@0x402/og";
 
 export interface SealBConfig {
   /** Agent B's ERC-7857 tokenId. */

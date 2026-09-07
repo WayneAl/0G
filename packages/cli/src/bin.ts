@@ -3,7 +3,7 @@
 // so this is the one place that turns it into one — the library entry stays
 // importable and the tests keep driving `main` directly.
 //
-// Two paths reach this file and they run the same code: `npx @acu/cli` runs the
+// Two paths reach this file and they run the same code: `npx @0x402/cli` runs the
 // built `dist/bin.js` (which is what `publishConfig.bin` points at, so a
 // published install needs no tsx), and `node packages/cli/bin/acu.mjs` in this
 // repo registers tsx and imports this module from source.

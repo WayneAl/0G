@@ -1,5 +1,5 @@
 {
-  "name": "@acu/og",
+  "name": "@0x402/og",
   "version": "0.1.0",
   "description": "0G Compute clients for TEE-attested inference \u2014 the Router (verified tier, attestation carried through) and a direct provider client behind one interface.",
   "license": "MIT",
@@ -49,7 +49,7 @@
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
-    "@acu/seal": "workspace:*",
+    "@0x402/seal": "workspace:*",
     "viem": "^2.23.2",
     "zod": "^3.24.2"
   },

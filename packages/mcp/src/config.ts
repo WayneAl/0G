@@ -5,16 +5,16 @@ import {
   readUserConfig,
   resolve,
   type UserConfig,
-} from "@acu/config";
-import { Directory, HttpAgentIdResolver } from "@acu/seal";
-import { BASE_SEPOLIA_RPC, BASE_SEPOLIA_USDC, CIRCLE_FAUCET } from "@acu/underwriter";
-import { OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@acu/storage/publish";
+} from "@0x402/config";
+import { Directory, HttpAgentIdResolver } from "@0x402/seal";
+import { BASE_SEPOLIA_RPC, BASE_SEPOLIA_USDC, CIRCLE_FAUCET } from "@0x402/underwriter";
+import { OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@0x402/storage/publish";
 
 /**
  * Everything the toolkit needs, resolved exactly once: **env >
  * `~/.acu/config.json` > built-in default**.
  *
- * The file half is what makes `claude mcp add acu -- npx -y @acu/mcp` need no
+ * The file half is what makes `claude mcp add acu -- npx -y @0x402/mcp` need no
  * environment variables at all: `acu init` wrote the key, and this server reads
  * the same file. MCP configuration is fixed at install time, so a key that
  * arrived later used to mean removing and re-adding the server; now it does not.
@@ -95,7 +95,7 @@ function requireHex(
  * The agents this toolkit knows about when nothing else can be reached.
  *
  * The published copy is `web/public/directory.json` and the CLI carries the same
- * pair in `@acu/cli`'s `REFERENCE_DIRECTORY`; this one exists so that a server
+ * pair in `@0x402/cli`'s `REFERENCE_DIRECTORY`; this one exists so that a server
  * installed with no environment at all, on a day the site is down, still starts
  * and can still quote. It is only ever a fallback, and never a silent one.
  */
@@ -148,7 +148,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
   const user: UserConfig = readUserConfig(env);
 
   // The site publishes the directory, so the site's URL is the default — which
-  // is the whole reason `claude mcp add acu -- npx -y @acu/mcp` needs no `-e`.
+  // is the whole reason `claude mcp add acu -- npx -y @0x402/mcp` needs no `-e`.
   const webUrl = resolve(env["ACU_WEB_URL"], user.webUrl, DEFAULT_WEB_URL);
   const directoryUrl = resolve(env["ACU_DIRECTORY_URL"], user.directoryUrl, `${webUrl}/directory.json`);
   const directory = await loadDirectory(env, directoryUrl, fetchImpl);

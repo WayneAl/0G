@@ -1,5 +1,5 @@
 {
-  "name": "@acu/mcp",
+  "name": "@0x402/mcp",
   "version": "0.1.0",
   "description": "An MCP server that lets your own agent hire an auditor, verify a seal and sign its own \u2014 seven tools, and no environment variables to install.",
   "license": "MIT",
@@ -54,10 +54,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acu/config": "workspace:*",
-    "@acu/seal": "workspace:*",
-    "@acu/storage": "workspace:*",
-    "@acu/underwriter": "workspace:*",
+    "@0x402/config": "workspace:*",
+    "@0x402/seal": "workspace:*",
+    "@0x402/storage": "workspace:*",
+    "@0x402/underwriter": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "viem": "^2.23.2",
     "zod": "^3.25.0"

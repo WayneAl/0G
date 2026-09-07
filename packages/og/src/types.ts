@@ -1,4 +1,4 @@
-import type { InferenceOutput, TeeAttestation } from "@acu/seal";
+import type { InferenceOutput, TeeAttestation } from "@0x402/seal";
 
 export type TrustMode = "standard" | "verified" | "private";
 

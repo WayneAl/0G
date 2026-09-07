@@ -1,13 +1,13 @@
-# @acu/mcp
+# @0x402/mcp
 
 An MCP server that lets your own agent hire an auditor, verify a seal, and sign its own.
 
 ```bash
-claude mcp add acu -- npx -y @acu/mcp
+claude mcp add acu -- npx -y @0x402/mcp
 ```
 
 **No environment variables.** It reads the same `~/.acu/config.json` that
-[`@acu/cli`](https://www.npmjs.com/package/@acu/cli)'s `init` wrote, so a key that
+[`@0x402/cli`](https://www.npmjs.com/package/@0x402/cli)'s `init` wrote, so a key that
 arrives after the install just works — no removing and re-adding the server. Running
 with no key at all is a supported state: every paid tool stops at the quote and says
 what to do next.

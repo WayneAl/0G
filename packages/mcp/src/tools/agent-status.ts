@@ -1,5 +1,5 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { ASSUMED_PRICE, agentStatus, usdcToAtomic, type AgentStatus } from "@acu/underwriter";
+import { ASSUMED_PRICE, agentStatus, usdcToAtomic, type AgentStatus } from "@0x402/underwriter";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { textResult, type Refusal } from "./shared.js";
@@ -8,7 +8,7 @@ import { textResult, type Refusal } from "./shared.js";
  * "Can this agent do the job right now, and if not, what next?"
  *
  * A renderer, nothing more: the answer is `agentStatus()` from
- * `@acu/underwriter`, which is the same call behind `acu status`. Two
+ * `@0x402/underwriter`, which is the same call behind `acu status`. Two
  * implementations would drift, and the moment they drift the same machine gives
  * an agent and its owner two different next steps.
  *

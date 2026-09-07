@@ -61,7 +61,7 @@ export class HttpAgentIdResolver implements AgentIdResolver {
     // Read off `this` first. A browser's `fetch` refuses to run with any
     // receiver but the window, so `this.fetchImpl(url)` — a method call on the
     // resolver — throws `Illegal invocation` in every browser while passing in
-    // Node. `@acu/storage`'s gateway fetch already takes it as a local for the
+    // Node. `@0x402/storage`'s gateway fetch already takes it as a local for the
     // same reason.
     const doFetch = this.fetchImpl;
     const res = await doFetch(this.url);

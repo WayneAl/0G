@@ -7,8 +7,8 @@ import {
   SealVerificationError,
   auditRequestHash,
   type AuditRequestPayload,
-} from "@acu/seal";
-import type { InferenceResult } from "@acu/og";
+} from "@0x402/seal";
+import type { InferenceResult } from "@0x402/og";
 import { issueSealB } from "../src/seal.js";
 
 const agentB = privateKeyToAccount("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");

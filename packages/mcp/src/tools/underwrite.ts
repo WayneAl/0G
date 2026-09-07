@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { Address, type SealA } from "@acu/seal";
-import { underwrite, type Stage, type UnderwriteResult } from "@acu/underwriter";
-import { ogStoragePublisher } from "@acu/storage/publish";
-import { shareUrl } from "@acu/config";
+import { Address, type SealA } from "@0x402/seal";
+import { underwrite, type Stage, type UnderwriteResult } from "@0x402/underwriter";
+import { ogStoragePublisher } from "@0x402/storage/publish";
+import { shareUrl } from "@0x402/config";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { NO_KEY_NOTE, detailOf, isDryRun, makeDeps, textResult } from "./shared.js";

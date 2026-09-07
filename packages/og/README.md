@@ -1,13 +1,13 @@
-# @acu/og
+# @0x402/og
 
 0G Compute clients for TEE-attested inference, behind one interface.
 
 ```bash
-npm i @acu/og
+npm i @0x402/og
 ```
 
 ```ts
-import { createInferenceClient } from "@acu/og";
+import { createInferenceClient } from "@0x402/og";
 
 const client = createInferenceClient({ kind: "router", apiKey, network: "testnet" });
 
@@ -27,7 +27,7 @@ client (`kind: "direct"`).
 
 An inference result nobody can vouch for is a sentence. One that comes back with
 `teeVerified` and a signed response hash is something an underwriter can be made to
-answer for — which is why [`@acu/seal`](https://www.npmjs.com/package/@acu/seal)
+answer for — which is why [`@0x402/seal`](https://www.npmjs.com/package/@0x402/seal)
 refuses a seal that claims an attested tier and carries no attestation, and why
 `promptHash` and `responseHash` are bound into the seal rather than left as prose.
 

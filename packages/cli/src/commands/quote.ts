@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
-import { makeBudgetGate, underwrite, type UnderwriteDeps } from "@acu/underwriter";
+import { makeBudgetGate, underwrite, type UnderwriteDeps } from "@0x402/underwriter";
 import type { Io } from "../index.js";
 import { DRY_RUN_KEY, NEXT_STEP_INIT, auditorTrust, resolveCliConfig, withoutCode } from "./underwrite.js";
 

@@ -8,7 +8,7 @@ import type { AuditRequest } from "./types.js";
  * Three layers hold that boundary, because any one of them can be talked around:
  *  1. this system prompt states the rule,
  *  2. the artifact is fenced in a tag the model is told to distrust,
- *  3. the reply is parsed against a strict schema (see @acu/seal InferenceOutput),
+ *  3. the reply is parsed against a strict schema (see @0x402/seal InferenceOutput),
  *     so a model that *is* talked around still cannot emit a field we would act on.
  */
 export const SYSTEM_PROMPT = `You are a collateral risk reviewer for a lending protocol.

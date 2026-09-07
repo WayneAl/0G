@@ -1,5 +1,5 @@
 {
-  "name": "@acu/agent-a",
+  "name": "@0x402/agent-a",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,15 +11,15 @@
     "record": "tsx scripts/record.ts"
   },
   "dependencies": {
-    "@acu/cli": "workspace:*",
-    "@acu/seal": "workspace:*",
-    "@acu/underwriter": "workspace:*",
+    "@0x402/cli": "workspace:*",
+    "@0x402/seal": "workspace:*",
+    "@0x402/underwriter": "workspace:*",
     "viem": "^2.23.2"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",
     "tsx": "^4.19.2",
     "vitest": "^3.0.5",
-    "@acu/og": "workspace:*"
+    "@0x402/og": "workspace:*"
   }
 }

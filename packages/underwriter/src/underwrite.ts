@@ -11,7 +11,7 @@ import {
   type SealA,
   type SealB,
   type Unsigned,
-} from "@acu/seal";
+} from "@0x402/seal";
 import { BudgetExceededError, type BudgetGate } from "./budget.js";
 import { fetchTokenArtifact, makeOgClient, renderArtifact } from "./chain.js";
 import { hireAuditor, HireError, type Quote } from "./hire.js";

@@ -93,7 +93,7 @@ describe("agentStatus — the one next step", () => {
       deps({ address: null, fetchImpl: noServer(), usdcClient: clientReturning(0n) }),
     );
     expect(status.hasKey).toBe(false);
-    expect(status.nextStep).toBe("Run: npx @acu/cli init");
+    expect(status.nextStep).toBe("Run: npx @0x402/cli init");
     expect(status.usdc.balance).toBeNull();
   });
 
@@ -146,7 +146,7 @@ describe("agentStatus — the one next step", () => {
 
   it("still asks for a key, and still reports the auditor, before it mentions the RPC", async () => {
     const noKey = await agentStatus(deps({ address: null, usdcClient: clientThrowing() }));
-    expect(noKey.nextStep).toBe("Run: npx @acu/cli init");
+    expect(noKey.nextStep).toBe("Run: npx @0x402/cli init");
     const offline = await agentStatus(deps({ fetchImpl: noServer(), usdcClient: clientThrowing() }));
     expect(offline.nextStep).toContain("Reference auditor is offline");
   });

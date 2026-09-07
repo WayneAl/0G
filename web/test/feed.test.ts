@@ -3,7 +3,7 @@ import type { PublicClient } from "viem";
 import { listRecentListings, type FeedEntry } from "../src/feed.js";
 
 /**
- * The feed walks the same way `@acu/storage`'s locate does, and for the same
+ * The feed walks the same way `@0x402/storage`'s locate does, and for the same
  * reason: the RPC rejects a full-range `eth_getLogs`. What is tested here is the
  * walk (windows, their size, where it stops) and the dedup rule — a relist
  * replaces, it does not appear twice.

@@ -169,7 +169,7 @@ export async function agentStatus(deps: AgentStatusDeps): Promise<AgentStatus> {
     directoryUrl: deps.directoryUrl ?? null,
     nextStep:
       deps.address === null
-        ? "Run: npx @acu/cli init"
+        ? "Run: npx @0x402/cli init"
         : card === null
           ? "Reference auditor is offline — try again later, or point at another one with ACU_AUDITOR_URL"
           : usdcError !== null

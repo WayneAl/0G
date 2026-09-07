@@ -231,8 +231,8 @@ export const DRY_RUN_KEY = "0x00000000000000000000000000000000000000000000000000
  * server, which is the point: sharing a seal must not require trusting a host.
  *
  * Takes the URL rather than a config object so this module stays free of every
- * package's own config type — and takes the seal as `object`, so `@acu/config`
- * never has to depend on `@acu/seal` to render a link.
+ * package's own config type — and takes the seal as `object`, so `@0x402/config`
+ * never has to depend on `@0x402/seal` to render a link.
  */
 export function shareUrl(webUrl: string, seal: object): string {
   return `${webUrl}/#seal=${Buffer.from(JSON.stringify(seal), "utf8").toString("base64url")}`;

@@ -1,9 +1,9 @@
-# @acu/cli
+# @0x402/cli
 
 `acu` — your agent hires an auditor, verifies the seal, and signs its own.
 
 ```bash
-npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
+npx @0x402/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
 ```
 
 That first command needs **no key, no install, no environment variable**. It reads the
@@ -14,13 +14,13 @@ thing that can happen. The last line always names the next step.
 ## The whole thing, in five more commands
 
 ```bash
-npx @acu/cli init      # a burner key into ~/.acu/config.json (0600, in a 0700 dir)
-npx @acu/cli status    # key, USDC balance, auditor, budget — and one next step
+npx @0x402/cli init      # a burner key into ~/.acu/config.json (0600, in a 0700 dir)
+npx @0x402/cli status    # key, USDC balance, auditor, budget — and one next step
 
 # Fund the address it printed with Base Sepolia USDC, then buy one real seal:
-npx @acu/cli underwrite <token> --live --no-settle --publish
+npx @0x402/cli underwrite <token> --live --no-settle --publish
 
-npx @acu/cli verify <file|->   # exit 0 valid, 1 invalid, and it never touches the network
+npx @0x402/cli verify <file|->   # exit 0 valid, 1 invalid, and it never touches the network
 ```
 
 `underwrite` flags: `--ltv 7000 --live --no-settle --publish --endpoint <url>
@@ -46,10 +46,10 @@ registry.
 ## Then hand the job to your agent
 
 ```bash
-claude mcp add acu -- npx -y @acu/mcp
+claude mcp add acu -- npx -y @0x402/mcp
 ```
 
-No environment variables: [`@acu/mcp`](https://www.npmjs.com/package/@acu/mcp) reads the
+No environment variables: [`@0x402/mcp`](https://www.npmjs.com/package/@0x402/mcp) reads the
 same `~/.acu/config.json` this CLI wrote.
 
 ---

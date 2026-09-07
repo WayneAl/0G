@@ -29,6 +29,6 @@ export const EXAMPLES_URL = `${import.meta.env.BASE_URL}examples/examples.json`;
 /** The token the reference pair underwrites, and the one the install line names. */
 export const CLEAN_USD = "0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8" as const;
 
-export const INSTALL_CLI = "npx @acu/cli init";
-export const INSTALL_UNDERWRITE = `npx @acu/cli underwrite ${CLEAN_USD}`;
-export const INSTALL_MCP = "claude mcp add acu -- npx -y @acu/mcp";
+export const INSTALL_CLI = "npx @0x402/cli init";
+export const INSTALL_UNDERWRITE = `npx @0x402/cli underwrite ${CLEAN_USD}`;
+export const INSTALL_MCP = "claude mcp add acu -- npx -y @0x402/mcp";

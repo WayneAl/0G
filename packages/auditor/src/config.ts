@@ -1,5 +1,5 @@
 import type { Account } from "viem";
-import type { OgNetwork } from "@acu/og";
+import type { OgNetwork } from "@0x402/og";
 
 /**
  * Everything a seal-issuing B needs to serve one paid audit route.

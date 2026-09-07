@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { readUserConfig } from "@acu/config";
+import { readUserConfig } from "@0x402/config";
 import {
   Directory,
   HttpAgentIdResolver,
@@ -10,13 +10,13 @@ import {
   verifySealB,
   type AgentIdResolver,
   type SealFailure,
-} from "@acu/seal";
+} from "@0x402/seal";
 import type { Io } from "../index.js";
 
 /**
  * `acu verify <file|->` — the claim of the whole project, checkable offline.
  *
- * Verification never crosses the network: this is `@acu/seal` running in this
+ * Verification never crosses the network: this is `@0x402/seal` running in this
  * process. The only lookup that can leave the machine is agent id → signer, and
  * only when a directory has been configured; the reference pair below stands in
  * otherwise, exactly as the website's verifier does.
@@ -31,7 +31,7 @@ export const REFERENCE_DIRECTORY = Directory.parse({
 /**
  * The checks each verifier runs, in the order it runs them.
  *
- * `@acu/seal` throws on the first failure and names it, so the code that comes
+ * `@0x402/seal` throws on the first failure and names it, so the code that comes
  * back says which row failed and, by position, which rows were reached at all.
  * Nothing here re-implements a check — a second implementation of "is this seal
  * good" is exactly the thing this project must not have.

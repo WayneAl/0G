@@ -1,5 +1,5 @@
 import { privateKeyToAccount } from "viem/accounts";
-import type { AuditorConfig } from "@acu/auditor";
+import type { AuditorConfig } from "@0x402/auditor";
 
 function required(name: string): string {
   const v = process.env[name];

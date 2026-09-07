@@ -7,7 +7,7 @@ import { CHAINSCAN, STORAGESCAN } from "./config.js";
  * The DOM half of the verifier, ported from the single-file page.
  *
  * Two things changed in the port, and both are deliberate. The report is a typed
- * `SealReport` produced by `@acu/seal` rather than a second set of checks
+ * `SealReport` produced by `@0x402/seal` rather than a second set of checks
  * written in this file; and every seal-derived string is set with `textContent`,
  * never `innerHTML` — a pasted seal is somebody else's input, and the old page
  * would happily have rendered a `<script>` out of a `findings` entry.

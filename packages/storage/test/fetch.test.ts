@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { canonicalize, sealDigest } from "@acu/seal";
+import { canonicalize, sealDigest } from "@0x402/seal";
 import { fetchSealBytes, resolveSeal, SealNotFoundError } from "../src/fetch.js";
 import type { LocateOptions, SubmitLog } from "../src/locate.js";
 

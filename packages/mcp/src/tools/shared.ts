@@ -1,5 +1,5 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { resolverFromDirectory } from "@acu/seal";
+import { resolverFromDirectory } from "@0x402/seal";
 import {
   hireAndVerify,
   makeBudgetGate,
@@ -9,7 +9,7 @@ import {
   type Stage,
   type UnderwriteDeps,
   type UnderwriteFailure,
-} from "@acu/underwriter";
+} from "@0x402/underwriter";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { DRY_RUN_KEY, type McpConfig } from "../config.js";
 
@@ -48,7 +48,7 @@ export function textResult(value: unknown, isError = false): CallToolResult {
  * more — both shells read `~/.acu/config.json`.
  */
 export const NO_KEY_NOTE =
-  "no key — stopped at the quote. Next: run `npx @acu/cli init`, fund the address it prints, then call this tool again (the MCP reads ~/.acu/config.json; no re-install).";
+  "no key — stopped at the quote. Next: run `npx @0x402/cli init`, fund the address it prints, then call this tool again (the MCP reads ~/.acu/config.json; no re-install).";
 
 /** True when this process holds no key, and so may never sign anything. */
 export const isDryRun = (config: McpConfig): boolean => config.agentKey === null;

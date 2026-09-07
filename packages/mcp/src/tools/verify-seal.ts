@@ -8,7 +8,7 @@ import {
   verifySealB,
   type SealA,
   type SealB,
-} from "@acu/seal";
+} from "@0x402/seal";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { detailOf, textResult } from "./shared.js";
@@ -16,7 +16,7 @@ import { detailOf, textResult } from "./shared.js";
 /**
  * The one tool that answers for itself.
  *
- * Verification never crosses the network: this is `@acu/seal` running in this
+ * Verification never crosses the network: this is `@0x402/seal` running in this
  * process against a directory this process already holds. No endpoint is asked
  * whether a seal is good, because an endpoint that can say yes can also be
  * bought.

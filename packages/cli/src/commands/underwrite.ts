@@ -11,7 +11,7 @@ import {
   resolve,
   shareUrl,
   type UserConfig,
-} from "@acu/config";
+} from "@0x402/config";
 import {
   signSealA,
   verifySealB,
@@ -24,7 +24,7 @@ import {
   type AgentIdResolver,
   type SealA,
   type SealB,
-} from "@acu/seal";
+} from "@0x402/seal";
 import {
   BASE_SEPOLIA_RPC,
   BASE_SEPOLIA_USDC,
@@ -36,8 +36,8 @@ import {
   type Stage,
   type StepEvent,
   type UnderwriteDeps,
-} from "@acu/underwriter";
-import { ogStoragePublisher, OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@acu/storage/publish";
+} from "@0x402/underwriter";
+import { ogStoragePublisher, OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@0x402/storage/publish";
 import { loadFixture, fixtureRequest } from "../replay.js";
 import { REFERENCE_DIRECTORY } from "./verify.js";
 
@@ -204,7 +204,7 @@ export function resolveCliConfig(env: NodeJS.ProcessEnv = process.env, file?: Us
  * Who agent B is, and who this agent may pay.
  *
  * An explicitly configured signer wins and costs nothing. Otherwise the
- * published directory answers both questions — which is what makes `npx @acu/cli
+ * published directory answers both questions — which is what makes `npx @0x402/cli
  * underwrite <token>` work with no environment at all — and it is only fetched
  * when it is actually needed.
  */
@@ -260,7 +260,7 @@ const payToOf = (config: CliConfig, directory: Directory): `0x${string}`[] =>
   directory.agents.filter((a) => a.role === "auditor").map((a) => lower<`0x${string}`>(a.signer));
 
 /** What every command says when there is no key to sign with. */
-export const NEXT_STEP_INIT = "Run: npx @acu/cli init";
+export const NEXT_STEP_INIT = "Run: npx @0x402/cli init";
 
 const detailOf = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Address } from "@acu/seal";
+import { Address } from "@0x402/seal";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { NO_KEY_NOTE, isDryRun, readAndHire, textResult } from "./shared.js";

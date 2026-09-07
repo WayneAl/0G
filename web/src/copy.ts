@@ -2,7 +2,7 @@
  * Copy buttons, wired once. Both pages use them; neither should own the logic.
  *
  * Its own module rather than a corner of `render.ts` for one reason: the docs
- * page needs nothing else from the renderer, and `render.ts` reaches `@acu/seal`
+ * page needs nothing else from the renderer, and `render.ts` reaches `@0x402/seal`
  * through `verify.ts`. Sharing the file would have shipped keccak, secp256k1 and
  * zod to a page whose only interactive element is a clipboard.
  */

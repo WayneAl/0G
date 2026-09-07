@@ -128,7 +128,7 @@ Agent A 照樣拒絕 —— 這個框架其實更誠實:擋的是「章沒帶證
    打到餘額檢查才被擋,回 `402 payment_error / insufficient_balance`,不是 401,
    代表 key 本身沒問題)。需在 **pc.0g.ai → Dashboard → Deposit** 簽一筆鏈上交易儲值。
    測試網 payment layer 合約:`0x0AD9690e0b34aB2d493DE02cDF149ee34f6C9939`。
-   儲值後跑 `pnpm --filter @acu/og smoke` 驗證。
+   儲值後跑 `pnpm --filter @0x402/og smoke` 驗證。
    - 順帶查到:`/v1/account/balance` 要的是 **`mk-` 管理金鑰**,不是 `sk-` 推理金鑰,
      所以拿 `sk-` 打會回 403 `insufficient_scope`(這是預期行為,不是設定錯誤)。
    - **測試網速率限制(實測 response header):10 req/min、50 req/day。**

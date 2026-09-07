@@ -4,7 +4,7 @@ import { concat, createPublicClient, http, keccak256 } from "viem";
  * Finding a seal body again, with nothing but its hash.
  *
  * 0G's log layer is the index: every upload emits `Flow.Submit`, and the
- * uploader chose the tags. `@acu/storage` puts `sealDigest(seal)` there, so the
+ * uploader chose the tags. `@0x402/storage` puts `sealDigest(seal)` there, so the
  * chain itself maps sealHash → file root without a database, a server, or
  * anyone's permission. This module is isomorphic on purpose — the browser
  * verifier imports it, so it may reach for `viem` and nothing heavier.

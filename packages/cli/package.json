@@ -1,5 +1,5 @@
 {
-  "name": "@acu/cli",
+  "name": "@0x402/cli",
   "version": "0.1.0",
   "description": "acu \u2014 your agent hires an auditor, verifies the seal, and signs its own. Quote with no key at all; verify any seal offline.",
   "license": "MIT",
@@ -59,10 +59,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acu/config": "workspace:*",
-    "@acu/seal": "workspace:*",
-    "@acu/storage": "workspace:*",
-    "@acu/underwriter": "workspace:*",
+    "@0x402/config": "workspace:*",
+    "@0x402/seal": "workspace:*",
+    "@0x402/storage": "workspace:*",
+    "@0x402/underwriter": "workspace:*",
     "viem": "^2.23.2",
     "zod": "^3.25.0"
   },

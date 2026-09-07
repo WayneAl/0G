@@ -10,7 +10,7 @@
  * and the forgery still fails — because Agent A verifies the seal itself
  * instead of trusting what arrived.
  *
- *   pnpm --filter @acu/demo mitm            # listens on 4099, forwards to 4021
+ *   pnpm --filter @0x402/demo mitm            # listens on 4099, forwards to 4021
  */
 import { createServer } from "node:http";
 

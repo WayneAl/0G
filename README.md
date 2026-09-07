@@ -30,24 +30,24 @@ money is step 4, and it costs one cent of testnet USDC.
 ```bash
 # 1 — a quote. Reads the token's bytecode over RPC, asks the reference auditor for its
 #     x402 price, runs it past the budget gate, and stops. Dry run is the default.
-npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
+npx @0x402/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
 
 # 2 — a burner key, generated into ~/.acu/config.json (0600, inside a 0700 directory).
-npx @acu/cli init
+npx @0x402/cli init
 
 # 3 — fund the address it printed with Base Sepolia USDC at https://faucet.circle.com,
 #     then ask whether you are ready. The answer is always one next step.
-npx @acu/cli status
+npx @0x402/cli status
 
 # 4 — the real thing: pay over x402, verify seal B against every check, sign seal A around
 #     it, publish the seal body to 0G Storage. The last line is a share link.
-npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish
+npx @0x402/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish
 
 # 5 — open that link. Every check re-runs in the browser of whoever you send it to.
 
 # 6 — hand the job to your agent. No environment variables at all: the server reads the
 #     same ~/.acu/config.json the CLI wrote.
-claude mcp add acu -- npx -y @acu/mcp
+claude mcp add acu -- npx -y @0x402/mcp
 ```
 
 Step 1 really does need nothing — no key, no `.env`, no `ACU_*` variable. If the site's
@@ -62,7 +62,7 @@ settle with no registry configured and the command refuses `NO_REGISTRY` **befor
 anything**; `--registry <address>` points it at your own deployment.
 
 > **Until the packages are on npm** the same six steps run from a clone: `node
-> packages/cli/bin/acu.mjs <command>` in place of `npx @acu/cli`, and `claude mcp add acu --
+> packages/cli/bin/acu.mjs <command>` in place of `npx @0x402/cli`, and `claude mcp add acu --
 > node <repo>/packages/mcp/bin/acu-mcp.mjs` in place of the `npx` line.
 
 ## Repository layout
@@ -74,10 +74,10 @@ packages/underwriter/   the A side as a library — underwrite(): budget gate, c
 packages/auditor/       the B side as a library — sealedAuditRoute(): GET /agent + x402-gated POST /audit
 packages/storage/       publish a seal body to 0G Storage, and find it again by its hash
 packages/config/        ~/.acu/config.json — the one key the CLI writes and the MCP reads
-packages/cli/           @acu/cli, bin `acu` — the reference Agent A as a command anyone can run
-packages/mcp/           @acu/mcp — the same agent over MCP, so any agent framework becomes an A
+packages/cli/           @0x402/cli, bin `acu` — the reference Agent A as a command anyone can run
+packages/mcp/           @0x402/mcp — the same agent over MCP, so any agent framework becomes an A
 web/                    the site: landing page, live seal feed, verifier and docs — verifies in the browser
-agent-a/                the reference A against the repo's .env; a shim over @acu/cli
+agent-a/                the reference A against the repo's .env; a shim over @0x402/cli
   scripts/              record.ts (replay fixtures) · stability.ts (30-run consistency check)
 agent-b/                the reference B against the repo's .env; loadConfig + sealedAuditRoute
 contracts/              CollateralRegistry · IProofVerifier · StubVerifier · three mock tokens
@@ -134,7 +134,7 @@ server and the website are shells over them, and none of the three holds anythin
 
 ### Your agent as an Agent A
 
-`@acu/cli` **is** the reference Agent A — it hires, verifies, signs and lists on its own; a
+`@0x402/cli` **is** the reference Agent A — it hires, verifies, signs and lists on its own; a
 human only starts it. Configuration resolves **environment variable > `~/.acu/config.json` >
 built-in default**, everywhere, which is why the MCP install line below carries no `-e`.
 
@@ -147,7 +147,7 @@ built-in default**, everywhere, which is why the MCP install line below carries 
 | `acu verify <file\|->` | Check a seal A or B locally. Exit 0 valid, 1 invalid |
 
 ```bash
-claude mcp add acu -- npx -y @acu/mcp
+claude mcp add acu -- npx -y @0x402/mcp
 ```
 
 No `-e` flags: the server reads the config `acu init` wrote. The environment is only ever an
@@ -170,8 +170,8 @@ Or as a library — the CLI and the MCP are both printers over this one function
 console, no `process.exit` and reads no environment:
 
 ```ts
-import { underwrite } from "@acu/underwriter";
-import { ogStoragePublisher } from "@acu/storage/publish";
+import { underwrite } from "@0x402/underwriter";
+import { ogStoragePublisher } from "@0x402/storage/publish";
 
 const result = await underwrite(
   { token, ltvBps: 7000, source: null, settle: true, publish: true },
@@ -195,7 +195,7 @@ and an A has nothing it can embed (scene ⑦). What makes you a B is issuing a s
 
 ```ts
 import express from "express";
-import { sealedAuditRoute } from "@acu/auditor";
+import { sealedAuditRoute } from "@0x402/auditor";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
@@ -216,7 +216,7 @@ app.listen(4021);
 
 That mounts `GET /agent` — free, the card saying who a caller would be hiring and what you
 charge — and `POST /audit`, gated by x402 v2, which runs the inference and returns a signed
-seal B. `@acu/auditor` never reads `process.env`, so a misconfigured B fails at construction
+seal B. `@0x402/auditor` never reads `process.env`, so a misconfigured B fails at construction
 rather than at its first customer. And the 502 rule holds: if the inference fails, or the
 attestation does not come back, or the seal cannot be signed, `POST /audit` answers **502
 `AUDIT_FAILED`** and issues nothing. **No seal, no charge.**
@@ -232,7 +232,7 @@ deliberately no endpoint that will tell you whether a seal is good, because such
 would be one more thing to trust.
 
 ```ts
-import { verifySealA, SealVerificationError } from "@acu/seal";
+import { verifySealA, SealVerificationError } from "@0x402/seal";
 
 try {
   await verifySealA(seal, { expectedSubject: token, resolver, now });
@@ -242,7 +242,7 @@ try {
 }
 ```
 
-The same `@acu/seal` runs in the CLI, in the MCP server, in an Agent A and in the page.
+The same `@0x402/seal` runs in the CLI, in the MCP server, in an Agent A and in the page.
 
 ### The reference auditor runs on the author's machine
 
@@ -277,7 +277,7 @@ cp .env.example .env      # fill in the 0G API key and burner keys
 forge test --root contracts
 pnpm -r test
 
-pnpm --filter @acu/og smoke                     # one attested Router call; prints the evidence and the cost
+pnpm --filter @0x402/og smoke                     # one attested Router call; prints the evidence and the cost
 forge script contracts/script/Deploy.s.sol \
   --root contracts --rpc-url og_testnet --broadcast
                                                 # then copy the printed addresses into .env
@@ -311,11 +311,11 @@ offline as on. Only ①'s registry outcome is quoted from the recording, and the
 ### Agent A by hand
 
 ```bash
-pnpm --filter @acu/agent-a start -- <token> [flags]
+pnpm --filter @0x402/agent-a start -- <token> [flags]
 ```
 
 `agent-a` is a shim: it loads the repo's `.env` and hands off to `acu underwrite`, so the
-flags below are that command's flags. The `.env` is read *there* and never inside `@acu/cli`,
+flags below are that command's flags. The `.env` is read *there* and never inside `@0x402/cli`,
 which strangers install.
 
 | Flag | Meaning |
@@ -338,9 +338,9 @@ including the website's token lookup — can resolve it.
 ### Recording and stability
 
 ```bash
-pnpm --filter @acu/agent-a record -- --token CLEAN_USD --label CleanUSD --ltv 7000
-pnpm --filter @acu/agent-a record -- --derive-tampered clean.json --out clean-tampered.json
-pnpm --filter @acu/agent-a stability            # 10 runs per token, full output kept
+pnpm --filter @0x402/agent-a record -- --token CLEAN_USD --label CleanUSD --ltv 7000
+pnpm --filter @0x402/agent-a record -- --derive-tampered clean.json --out clean-tampered.json
+pnpm --filter @0x402/agent-a stability            # 10 runs per token, full output kept
 ```
 
 A recording stores what crossed a network and never Agent A's verdict, which is recomputed

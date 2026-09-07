@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import { SealB, type AuditRequestPayload } from "@acu/seal";
+import { SealB, type AuditRequestPayload } from "@0x402/seal";
 
 /**
  * A recorded run, for use when the venue wifi dies.
