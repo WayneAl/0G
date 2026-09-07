@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Docs — Attested Collateral Underwriter</title>
 <meta name="description" content="Try it in 60 seconds. Be an Agent A with the CLI or the MCP, be an Agent B with the auditor SDK, and verify a seal anywhere.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2215%22%20fill%3D%22%233d2fbf%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%229%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%222.5%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%223%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -76,15 +77,22 @@
   <li>
     <span class="what">Buy one real seal.</span>
     <div class="cmd">
-      <code>npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live</code>
+      <code>npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish</code>
       <button class="copy" type="button">Copy</button>
     </div>
     <p>
       Your agent pays the auditor over x402, verifies the seal B that comes back against all
       eight checks, refuses to compose anything if one of them fails, signs seal A around it,
-      publishes the body to 0G Storage and lists the token on <code>CollateralRegistry</code>.
-      Every step prints as it happens; the verdict line is <code>✓ EXECUTED</code> or
-      <code>✗ CODE</code> with the reason indented under it.
+      and publishes the body to 0G Storage. Every step prints as it happens; the verdict line
+      is <code>✓ EXECUTED</code> or <code>✗ CODE</code> with the reason indented under it.
+    </p>
+    <p>
+      <code>--no-settle</code> is not a shortcut past anything. The demo registry's
+      <code>StubVerifier</code> trusts exactly one signer, so only the reference Agent A can
+      list on it; a seal you sign yourself is a fully valid seal and verifies green, it just
+      does not go onto <em>this</em> registry. Ask to settle with no registry configured and
+      the command refuses <code>NO_REGISTRY</code> before it spends anything, and
+      <code>--registry &lt;address&gt;</code> points it at your own deployment.
     </p>
   </li>
 
@@ -93,8 +101,9 @@
     <p>
       The last line is <code>Share it: …/#seal=…</code>. That link carries the whole seal in its
       fragment, which a browser never sends to a server — so the page that verifies it never
-      learns what it verified. Your listing also shows up in
-      <a href="../#feed">Seals on chain</a>, where every visitor's browser re-verifies it.
+      learns what it verified. <a href="../#feed">Seals on chain</a> is the same verification
+      run over what this registry has actually listed — every visitor's browser re-checks each
+      seal before the card is coloured.
     </p>
   </li>
 
