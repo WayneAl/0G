@@ -52,7 +52,13 @@ function rows(report: AgentStatus, io: Io): [string, string][] {
     ["faucet", report.usdc.faucetUrl],
     [
       "auditor",
-      `${report.auditor.url}  ${report.auditor.online ? `online${report.auditor.price === null ? "" : ` · ${report.auditor.price}`}` : "OFFLINE"}`,
+      `${report.auditor.url}  ${
+        report.auditor.online
+          ? `online${report.auditor.price === null ? "" : ` · ${report.auditor.price}`}`
+          : // "OFFLINE" on its own is unactionable; the probe's reason says whether
+            // the host refused, timed out, or answered with something that is not a card.
+            `OFFLINE${report.auditor.error === null ? "" : ` · ${report.auditor.error}`}`
+      }`,
     ],
     ["directory", report.directoryUrl ?? "—"],
     [

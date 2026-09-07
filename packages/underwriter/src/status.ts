@@ -22,6 +22,8 @@ export const BASE_SEPOLIA_RPC = "https://sepolia.base.org" as const;
 export const DEMO_TOKEN = "0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8" as const;
 /** What the reference auditor charges, used when its card does not say. */
 export const ASSUMED_PRICE = "$0.01" as const;
+/** How long the auditor probe waits before calling it offline. */
+export const PROBE_TIMEOUT_MS = 3_000;
 
 const BALANCE_OF_ABI = [
   {
@@ -86,7 +88,15 @@ export interface AgentStatus {
   hasKey: boolean;
   usdc: { balance: string | null; faucetUrl: string; error: string | null };
   budget: { remainingSession: string; remainingHour: string; ledgerPath: string };
-  auditor: { url: string; agentId: string; online: boolean; price: string | null; card: unknown | null };
+  auditor: {
+    url: string;
+    agentId: string;
+    online: boolean;
+    price: string | null;
+    card: unknown | null;
+    /** Why the probe failed, when it did. Null when the auditor answered. */
+    error: string | null;
+  };
   directoryUrl: string | null;
   nextStep: string;
 }
@@ -108,16 +118,18 @@ export interface AgentStatusDeps {
 }
 
 /**
- * The four states, in the order they are asked about.
+ * The five states, in the order they are asked about.
  *
- * The order is the point: no key beats an offline auditor beats an empty
- * wallet. Telling someone to visit a faucet when they have not got an address
+ * The order is the point: no key beats an offline auditor beats a payment RPC
+ * that will not answer beats an empty wallet. A balance we could not read must
+ * never come back as `Ready` — that would send someone to spend against a
+ * number nobody has. Telling someone to visit a faucet when they have not got an address
  * yet, or to fund a wallet for an auditor that is not answering, is how a funnel
  * loses people.
  */
 export async function agentStatus(deps: AgentStatusDeps): Promise<AgentStatus> {
   const faucetUrl = deps.faucetUrl ?? CIRCLE_FAUCET;
-  const card = await auditorCard(deps);
+  const { card, error: auditorError } = await auditorCard(deps);
 
   let balance: bigint | null = null;
   let usdcError: string | null = null;
@@ -152,6 +164,7 @@ export async function agentStatus(deps: AgentStatusDeps): Promise<AgentStatus> {
       online: card !== null,
       price,
       card,
+      error: auditorError,
     },
     directoryUrl: deps.directoryUrl ?? null,
     nextStep:
@@ -159,28 +172,40 @@ export async function agentStatus(deps: AgentStatusDeps): Promise<AgentStatus> {
         ? "Run: npx @acu/cli init"
         : card === null
           ? "Reference auditor is offline — try again later, or point at another one with ACU_AUDITOR_URL"
-          : balance !== null && balance < needAtomic
-            ? fundingHint(deps.address, needAtomic, balance, faucetUrl)
-            : `Ready: acu underwrite ${DEMO_TOKEN}`,
+          : usdcError !== null
+            ? "Check: your payment RPC is not answering — set ACU_PAYMENT_RPC_URL or try again"
+            : balance !== null && balance < needAtomic
+              ? fundingHint(deps.address, needAtomic, balance, faucetUrl)
+              : `Ready: acu underwrite ${DEMO_TOKEN}`,
   };
 }
 
 /**
  * `GET /agent` on the auditor's origin — the free card that says who you would
  * be hiring. Any failure means "offline"; it is never an exception, because
- * "the other agent is not up" is the most ordinary answer this can have.
+ * "the other agent is not up" is the most ordinary answer this can have. The
+ * reason travels back alongside it so the caller can print more than "OFFLINE".
  */
-async function auditorCard(deps: AgentStatusDeps): Promise<Record<string, unknown> | null> {
+async function auditorCard(
+  deps: AgentStatusDeps,
+): Promise<{ card: Record<string, unknown> | null; error: string | null }> {
   const fetchImpl = deps.fetchImpl ?? globalThis.fetch;
   try {
-    const res = await fetchImpl(new URL("/agent", deps.auditor.url));
-    if (!res.ok) return null;
+    // Bounded on purpose. A host that drops packets — a stale tunnel URL, once
+    // the reference auditor has moved — would otherwise hold `acu status` open
+    // for the OS connect timeout, and "is it online?" is the whole question.
+    const res = await fetchImpl(new URL("/agent", deps.auditor.url), {
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+    });
+    if (!res.ok) return { card: null, error: `AUDITOR_HTTP_${res.status}` };
     const body: unknown = await res.json();
-    return typeof body === "object" && body !== null ? (body as Record<string, unknown>) : null;
-  } catch {
-    // Deliberate: an unreachable auditor is reported through `online: false` and
-    // the next step above, both of which say so out loud.
-    return null;
+    return typeof body === "object" && body !== null
+      ? { card: body as Record<string, unknown>, error: null }
+      : { card: null, error: "AUDITOR_CARD_NOT_AN_OBJECT" };
+  } catch (err) {
+    // An unreachable auditor is an ordinary answer, not an exception — but the
+    // reason travels with it, because "OFFLINE" with no detail is unactionable.
+    return { card: null, error: err instanceof Error ? err.message : String(err) };
   }
 }
 

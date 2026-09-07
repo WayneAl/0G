@@ -144,12 +144,46 @@ describe("agentStatus — the one next step", () => {
     expect(status.usdc.error).toMatch(/^USDC_RPC_UNREACHABLE: /);
   });
 
+  it("still asks for a key, and still reports the auditor, before it mentions the RPC", async () => {
+    const noKey = await agentStatus(deps({ address: null, usdcClient: clientThrowing() }));
+    expect(noKey.nextStep).toBe("Run: npx @acu/cli init");
+    const offline = await agentStatus(deps({ fetchImpl: noServer(), usdcClient: clientThrowing() }));
+    expect(offline.nextStep).toContain("Reference auditor is offline");
+  });
+
   it("never carries the private key, only the address", async () => {
     const status = await agentStatus(deps());
     // Nothing 32 bytes wide anywhere in the payload: a status is safe to print,
     // log, or paste into an issue.
     expect(JSON.stringify(status)).not.toMatch(/0x[0-9a-fA-F]{64}/);
     expect(status.address).toBe(PAYER);
+  });
+
+  it("gives up on an auditor that will not answer, and says why", async () => {
+    // A host that drops packets — a stale tunnel URL, once the reference B has
+    // moved — must not hold `acu status` open on the OS connect timeout.
+    let signalled: AbortSignal | undefined;
+    const hangs = ((_url: unknown, init?: { signal?: AbortSignal }) => {
+      signalled = init?.signal;
+      return Promise.reject(new Error("The operation was aborted due to timeout"));
+    }) as unknown as typeof fetch;
+
+    const status = await agentStatus(deps({ fetchImpl: hangs }));
+    expect(signalled, "the probe must carry an abort signal").toBeInstanceOf(AbortSignal);
+    expect(status.auditor.online).toBe(false);
+    expect(status.auditor.error).toContain("timeout");
+  });
+
+  it("leaves auditor.error null when the auditor answered", async () => {
+    expect((await agentStatus(deps())).auditor.error).toBeNull();
+  });
+
+  it("does not say Ready when the balance could not be read", async () => {
+    const status = await agentStatus(deps({ usdcClient: clientThrowing() }));
+    expect(status.usdc.error).toMatch(/^USDC_RPC_UNREACHABLE: /);
+    expect(status.nextStep).toBe(
+      "Check: your payment RPC is not answering — set ACU_PAYMENT_RPC_URL or try again",
+    );
   });
 
   it("counts a non-2xx agent card as offline", async () => {
