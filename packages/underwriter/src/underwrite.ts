@@ -119,7 +119,21 @@ export type UnderwriteResult =
       /** Steps that were deliberately not taken, and why. */
       skipped: { settle?: string; publish?: string };
     }
-  | { ok: false; stage: Stage; code: UnderwriteFailure; detail: string };
+  | {
+      ok: false;
+      stage: Stage;
+      code: UnderwriteFailure;
+      detail: string;
+      /**
+       * Present whenever the run got far enough to sign one. After `compose` the
+       * money is spent and the seal is what it bought, so a settlement that
+       * fails afterwards hands it back rather than dropping it — the seal can be
+       * listed later with `--seal-file`, and it is the only evidence the payment
+       * produced.
+       */
+      sealA?: SealA;
+      sealHash?: `0x${string}`;
+    };
 
 export type HireAndVerifyResult =
   | { ok: true; kind: "dry-run"; quote: Quote; budget: string }
@@ -326,6 +340,21 @@ export async function composeSealA(args: {
 
 /** Steps (2)–(7). Never throws for a refusal; throws only on programmer error. */
 export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): Promise<UnderwriteResult> {
+  // Before anything, because this one is knowable from the arguments alone.
+  // It used to be checked after the auditor had been paid and the seal signed,
+  // which meant a cent bought a refusal with no seal in it. Every precondition
+  // that costs nothing to check belongs above every step that costs something.
+  if (req.settle && deps.registry === null) {
+    return {
+      ok: false,
+      stage: "settle",
+      code: "NO_REGISTRY",
+      detail:
+        "settle was asked for and no registry is configured — set ACU_REGISTRY, " +
+        "or pass --registry <address> to the CLI. Nothing was spent.",
+    };
+  }
+
   let read: Awaited<ReturnType<typeof readToken>>;
   try {
     read = await readToken(req.token, req.source, deps);
@@ -404,12 +433,10 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
 
   if (!req.settle) return sealedResult(null);
   if (deps.registry === null) {
-    return {
-      ok: false,
-      stage: "settle",
-      code: "NO_REGISTRY",
-      detail: "pass --registry <address> or set REGISTRY_ADDRESS",
-    };
+    // Unreachable: the guard at the top of this function returns before the read.
+    // Kept so the type stays honest and no future edit can reach the chain call
+    // below with a null address.
+    return { ok: false, stage: "settle", code: "NO_REGISTRY", detail: "no registry configured", sealA, sealHash };
   }
 
   // The registry's verifier accepts exactly one signer. Asking first turns a
@@ -426,6 +453,10 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
       stage: "settle",
       code: "LIST_FAILED",
       detail: (err instanceof Error ? err.message : String(err)).slice(0, 300),
+      // Paid for, signed, and possibly already on 0G Storage. Losing it here
+      // would throw away the only thing the payment produced.
+      sealA,
+      sealHash,
     };
   }
   if (!isAddressEqual(trusted, deps.account.address)) {
@@ -448,6 +479,8 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
       ok: false,
       stage: "settle",
       ...mapListError(err instanceof Error ? err.message : String(err)),
+      sealA,
+      sealHash,
     };
   }
 }

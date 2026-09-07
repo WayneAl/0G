@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, toHex } from "viem";
@@ -442,7 +442,35 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
     return fail("AUDITOR_UNREACHABLE", `${args.endpoint} — ${detailOf(err)}`);
   }
 
-  if (!result.ok) return fail(result.code, result.detail);
+  if (!result.ok) {
+    const code = fail(result.code, result.detail);
+    // A refusal after the seal was signed still leaves you holding the seal you
+    // paid for. Say where it is and how to use it, rather than letting the run
+    // end as if the money bought nothing.
+    if (result.sealA !== undefined) {
+      // --emit-seal already wrote it, via onSealA, the moment it was signed.
+      // Otherwise it goes next to the config so it is somewhere findable rather
+      // than only in this scrollback.
+      let path = emitSeal;
+      if (path === null) {
+        path = join(configDir(env), `seal-${result.sealHash?.slice(2, 10) ?? "latest"}.json`);
+        try {
+          mkdirSync(configDir(env), { recursive: true, mode: 0o700 });
+          writeFileSync(path, JSON.stringify(result.sealA, null, 2));
+        } catch {
+          // A seal we cannot write down is still a seal we can print a link to.
+          path = null;
+        }
+      }
+      console.log("\n  You still hold the seal this run paid for.");
+      if (path !== null) {
+        console.log(`  Saved to: ${path}`);
+        console.log(`  List it later with: acu underwrite ${args.token} --seal-file ${path} --publish`);
+      }
+      console.log(`  Share it: ${shareUrl(config.webUrl, result.sealA)}`);
+    }
+    return code;
+  }
 
   if (result.kind === "dry-run") {
     step("3", `quote ${result.quote.humanPrice} to ${result.quote.payTo} on ${network}`);

@@ -341,11 +341,76 @@ describe("underwrite", () => {
     ).resolves.toBeTruthy();
   });
 
-  it("refuses to settle without a registry", async () => {
-    const r = refused(await underwrite({ ...request, settle: true }, liveDeps()));
+  /**
+   * The cost of finding this the other way was one real cent: with no registry
+   * configured, `underwrite` used to pay the auditor, verify its seal, sign its
+   * own — and only then notice it had nowhere to list. The caller got a refusal
+   * with no seal in it, having paid for exactly one.
+   */
+  it("refuses to settle without a registry before it spends anything", async () => {
+    let hired = false;
+    let read = false;
+    const r = refused(
+      await underwrite(
+        { ...request, settle: true },
+        liveDeps({
+          fetchArtifact: async (...args) => {
+            read = true;
+            return (await import("../src/chain.js")).fetchTokenArtifact(...args);
+          },
+          hire: async () => {
+            hired = true;
+            throw new Error("the auditor must not be reached when there is nowhere to list");
+          },
+        }),
+      ),
+    );
     expect(r.stage).toBe("settle");
     expect(r.code).toBe("NO_REGISTRY");
-    expect(r.detail).toContain("--registry");
+    // The whole point: no payment, and not even the free RPC read.
+    expect(hired, "the auditor was paid before the registry was checked").toBe(false);
+    expect(read, "the token was read before the registry was checked").toBe(false);
+    // Says so out loud, because "did I just spend money?" is the first question.
+    expect(r.detail).toMatch(/nothing was spent/i);
+  });
+
+  /**
+   * Once the seal exists, the money is gone and the seal is what it bought. A
+   * settlement that fails afterwards must hand it back — dropping it loses the
+   * only evidence the payment produced.
+   */
+  it("hands back the seal when the listing itself fails", async () => {
+    const r = refused(
+      await underwrite(
+        { ...request, settle: true },
+        liveDeps({
+          registry: "0x1111111111111111111111111111111111111111",
+          trustedSigner: async () => agentA.address,
+          list: async () => {
+            throw new Error("execution reverted: SealExpired()");
+          },
+        }),
+      ),
+    );
+    expect(r.stage).toBe("settle");
+    expect(r.sealA, "a seal that was paid for must survive a failed listing").toBeTruthy();
+    expect(r.sealHash).toBe(sealDigest(r.sealA!));
+  });
+
+  it("hands back the seal when the registry cannot say who it trusts", async () => {
+    const r = refused(
+      await underwrite(
+        { ...request, settle: true },
+        liveDeps({
+          registry: "0x1111111111111111111111111111111111111111",
+          trustedSigner: async () => {
+            throw new Error("RPC is down");
+          },
+        }),
+      ),
+    );
+    expect(r.code).toBe("LIST_FAILED");
+    expect(r.sealA).toBeTruthy();
   });
 
   it("does not list when the registry's verifier trusts a different signer", async () => {
