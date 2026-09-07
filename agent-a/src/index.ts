@@ -130,6 +130,7 @@ async function main(): Promise<void> {
 
   if (args.offline) return runOffline(args, agentA, agentAId, agentBId, agentBSealSigner, network);
 
+  const emitSeal = args.emitSeal;
   const deps: UnderwriteDeps = {
     account: agentA,
     agentId: agentAId,
@@ -154,6 +155,17 @@ async function main(): Promise<void> {
         })
       : null,
     onStep: printStep,
+    // Written the moment the seal exists, not after the run survives. The seal is
+    // the evidence for a payment that has already happened; a listing that
+    // reverts afterwards must not take it with it.
+    ...(emitSeal === null
+      ? {}
+      : {
+          onSealA: (seal: SealA): void => {
+            writeFileSync(emitSeal, JSON.stringify(seal, null, 2));
+            step("6", `seal A written to ${emitSeal}`);
+          },
+        }),
   };
 
   const result = await underwrite(
@@ -175,11 +187,6 @@ async function main(): Promise<void> {
     step("3", `budget ok — ${result.budget}`);
     console.log("\n○ DRY RUN — stopped before signing. Re-run with --live to pay and continue.");
     return;
-  }
-
-  if (args.emitSeal) {
-    writeFileSync(args.emitSeal, JSON.stringify(result.sealA, null, 2));
-    step("6", `seal A written to ${args.emitSeal}`);
   }
 
   if (result.listing) {

@@ -1,5 +1,5 @@
 import { createWalletClient, http, createPublicClient, type Account, type Hex } from "viem";
-import { buildStubProof, type SealA } from "@acu/seal";
+import { buildStubProof, sealDigest, type SealA } from "@acu/seal";
 import { OG_TESTNET } from "./chain.js";
 import type { UnderwriteFailure } from "./underwrite.js";
 
@@ -53,6 +53,11 @@ export interface SettleOptions {
   registry: `0x${string}`;
   account: Account;
   rpcUrl?: string;
+  // Seams. The defaults are the real functions below; a caller overrides them to
+  // test what happens around the transaction without sending one.
+  sendListing?: typeof sendListing;
+  waitForReceipt?: typeof waitForReceipt;
+  readListing?: typeof readListing;
 }
 
 export interface SettleResult {
@@ -64,6 +69,41 @@ const chain = {
   ...OG_TESTNET,
   rpcUrls: { default: { http: [...OG_TESTNET.rpcUrls.default.http] } },
 } as const;
+
+/** One transport for every read and write here, retrying a flaky testnet RPC. */
+const rpc = (rpcUrl?: string) => http(rpcUrl ?? OG_TESTNET.rpcUrls.default.http[0], { retryCount: 5 });
+
+/** Waits for the listing transaction to be mined. See `listWithSeal` on why a throw here is not a verdict. */
+export async function waitForReceipt(txHash: Hex, rpcUrl?: string): Promise<void> {
+  const pub = createPublicClient({ chain, transport: rpc(rpcUrl) });
+  await pub.waitForTransactionReceipt({ hash: txHash, timeout: 180_000, pollingInterval: 1_000 });
+}
+
+/** Builds the proof and sends `list`. The only part of settlement that writes. */
+export async function sendListing(
+  seal: SealA,
+  token: `0x${string}`,
+  ltvBps: number,
+  opts: SettleOptions,
+): Promise<Hex> {
+  const transport = rpc(opts.rpcUrl);
+  const wallet = createWalletClient({ account: opts.account, chain, transport });
+  const pub = createPublicClient({ chain, transport });
+
+  const proof = await buildStubProof(seal, opts.account);
+
+  // Simulate first so a revert surfaces as its custom error rather than a
+  // failed transaction the demo has to explain.
+  const { request } = await pub.simulateContract({
+    address: opts.registry,
+    abi: REGISTRY_ABI,
+    functionName: "list",
+    args: [token, ltvBps, proof],
+    account: opts.account,
+  });
+
+  return wallet.writeContract(request);
+}
 
 /**
  * Presents seal A to the registry.
@@ -85,33 +125,29 @@ export async function listWithSeal(
   ltvBps: number,
   opts: SettleOptions,
 ): Promise<SettleResult> {
-  const transport = http(opts.rpcUrl ?? OG_TESTNET.rpcUrls.default.http[0]);
-  const wallet = createWalletClient({ account: opts.account, chain, transport });
-  const pub = createPublicClient({ chain, transport });
+  const txHash = await (opts.sendListing ?? sendListing)(seal, token, ltvBps, opts);
 
-  const proof = await buildStubProof(seal, opts.account);
+  const wait = opts.waitForReceipt ?? waitForReceipt;
+  const read = opts.readListing ?? readListing;
+  const listingOpts = {
+    registry: opts.registry,
+    ...(opts.rpcUrl === undefined ? {} : { rpcUrl: opts.rpcUrl }),
+  };
 
-  // Simulate first so a revert surfaces as its custom error rather than a
-  // failed transaction the demo has to explain.
-  const { request } = await pub.simulateContract({
-    address: opts.registry,
-    abi: REGISTRY_ABI,
-    functionName: "list",
-    args: [token, ltvBps, proof],
-    account: opts.account,
-  });
+  try {
+    await wait(txHash, opts.rpcUrl);
+  } catch (err) {
+    // This RPC loses receipts for transactions it has already mined, and a
+    // listing that landed must never be reported as one that failed. Chain state
+    // is the truth: if the registry now holds this exact seal, we are done.
+    const listed = await read(token, listingOpts);
+    if (listed.active && listed.sealHash.toLowerCase() === sealDigest(seal).toLowerCase()) {
+      return { txHash, listed };
+    }
+    throw err;
+  }
 
-  const txHash = await wallet.writeContract(request);
-  await pub.waitForTransactionReceipt({ hash: txHash, timeout: 120_000, pollingInterval: 1_000 });
-
-  const [active, listedLtv, sealHash, expiresAt] = await pub.readContract({
-    address: opts.registry,
-    abi: REGISTRY_ABI,
-    functionName: "listings",
-    args: [token],
-  });
-
-  return { txHash, listed: { active, ltvBps: listedLtv, sealHash, expiresAt } };
+  return { txHash, listed: await read(token, listingOpts) };
 }
 
 /**
@@ -154,10 +190,8 @@ export async function readTrustedSigner(registry: `0x${string}`, rpcUrl?: string
 
 /** Read-only check, used by the demo script to prove a listing landed. */
 export async function readListing(token: `0x${string}`, opts: Omit<SettleOptions, "account">) {
-  const pub = createPublicClient({
-    chain,
-    transport: http(opts.rpcUrl ?? OG_TESTNET.rpcUrls.default.http[0]),
-  });
+  // Retries here too: this read is what decides whether a listing landed.
+  const pub = createPublicClient({ chain, transport: rpc(opts.rpcUrl) });
   const [active, ltvBps, sealHash, expiresAt] = await pub.readContract({
     address: opts.registry,
     abi: REGISTRY_ABI,

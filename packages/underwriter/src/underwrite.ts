@@ -77,6 +77,12 @@ export interface UnderwriteDeps {
   rpcUrl?: string;
   publisher?: SealPublisher | null;
   onStep?: (e: StepEvent) => void;
+  /**
+   * Called the moment seal A exists, before anything is published or submitted.
+   * A seal that was signed is worth keeping even when a later stage fails — it
+   * is the evidence for the payment that already happened.
+   */
+  onSealA?: (seal: SealA, sealHash: `0x${string}`) => void;
   /** Unix seconds; injected so tests are not clock-dependent. */
   now?: () => number;
   // Seams. The defaults are the real functions from this package; a caller
@@ -361,6 +367,7 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
   });
   emit(deps, "compose", `seal A signed · embeds seal B · maxLtvBps ${sealA.verdict.maxLtvBps}`);
   const sealHash = sealDigest(sealA);
+  deps.onSealA?.(sealA, sealHash);
 
   const skipped: { settle?: string; publish?: string } = {};
   let storage: PublishReceipt | null = null;

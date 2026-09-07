@@ -12,6 +12,7 @@ import {
   StaticAgentIdResolver,
   verifySealA,
   type AuditRequestPayload,
+  type SealA,
   type SealB,
   type Unsigned,
 } from "@acu/seal";
@@ -438,6 +439,34 @@ describe("underwrite", () => {
     expect(s.storage).toBeNull();
     expect(s.skipped.publish?.startsWith("PUBLISH_FAILED")).toBe(true);
     expect(s.skipped.publish).toContain("indexer unreachable");
+  });
+
+  it("hands over the seal the moment it exists, even on a run that then fails", async () => {
+    const seen: { seal: SealA; hash: `0x${string}` }[] = [];
+    const r = refused(
+      await underwrite(
+        { ...request, settle: true },
+        liveDeps({
+          registry: "0x1111111111111111111111111111111111111111",
+          trustedSigner: async () => agentA.address,
+          list: async () => {
+            throw new Error("connection reset by peer");
+          },
+          onSealA: (seal, hash) => seen.push({ seal, hash }),
+        }),
+      ),
+    );
+    expect(r.code).toBe("LIST_FAILED");
+    // The payment already happened; losing the seal here loses the evidence.
+    expect(seen).toHaveLength(1);
+    expect(sealDigest(seen[0]!.seal)).toBe(seen[0]!.hash);
+    await expect(
+      verifySealA(seen[0]!.seal, {
+        expectedSubject: TOKEN,
+        resolver: new StaticAgentIdResolver({ "1": agentA.address, "2": agentB.address }),
+        now: NOW,
+      }),
+    ).resolves.toBeTruthy();
   });
 
   it("says so when publishing was asked for with no publisher", async () => {
