@@ -22,12 +22,13 @@ const EXAMPLES = read("../../../verifier/examples.json");
 const CLEAN_USD = "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8";
 
 /**
- * The example seals expired on 2026-09-02 — they were recorded with a 24-hour
- * life, as real seals are. Every "this seal is good" assertion therefore has to
- * say *when* it is asking, which is what `now` is for; one case below asks
- * without it and gets SEAL_EXPIRED, which is the honest answer today.
+ * Real seals expire, so every assertion about one has to say *when* it is
+ * asking — that is what `now` is for. The fixtures were re-recorded live on
+ * 2026-09-07 (commit 3d9de60) and are inside their window again, so the expiry
+ * case below asks about a moment past `expiresAt` rather than about the clock.
  */
 const BEFORE_EXPIRY = SEAL_A["verdict"].expiresAt - 1;
+const AFTER_EXPIRY = SEAL_A["verdict"].expiresAt + 1;
 
 let client: Client;
 
@@ -87,8 +88,11 @@ describe("the acu MCP server, over a real stdio transport", () => {
     expect(res.isError).toBeFalsy();
   });
 
-  it("reports the same seal as expired when asked about now", async () => {
-    const res = await client.callTool({ name: "verify_seal", arguments: { seal: SEAL_A } });
+  it("reports the same seal as expired when asked about a moment past its window", async () => {
+    const res = await client.callTool({
+      name: "verify_seal",
+      arguments: { seal: SEAL_A, now: AFTER_EXPIRY },
+    });
     const body = JSON.parse(textOf(res));
     expect(body).toMatchObject({ valid: false, failure: "SEAL_EXPIRED" });
     // An invalid seal is an answer, not a tool failure.
