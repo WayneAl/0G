@@ -22,20 +22,68 @@ ceiling the seal carries.
 > We are not replacing audits with AI. We are turning a pre-screen into an on-chain
 > auditable, attributable, expiring credential.
 
+## Try it in 60 seconds
+
+No clone, no editor, no key to start. Steps 1–3 spend nothing; the first thing that costs
+money is step 4, and it costs one cent of testnet USDC.
+
+```bash
+# 1 — a quote. Reads the token's bytecode over RPC, asks the reference auditor for its
+#     x402 price, runs it past the budget gate, and stops. Dry run is the default.
+npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
+
+# 2 — a burner key, generated into ~/.acu/config.json (0600, inside a 0700 directory).
+npx @acu/cli init
+
+# 3 — fund the address it printed with Base Sepolia USDC at https://faucet.circle.com,
+#     then ask whether you are ready. The answer is always one next step.
+npx @acu/cli status
+
+# 4 — the real thing: pay over x402, verify seal B against every check, sign seal A around
+#     it, publish the seal body to 0G Storage. The last line is a share link.
+npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish
+
+# 5 — open that link. Every check re-runs in the browser of whoever you send it to.
+
+# 6 — hand the job to your agent. No environment variables at all: the server reads the
+#     same ~/.acu/config.json the CLI wrote.
+claude mcp add acu -- npx -y @acu/mcp
+```
+
+Step 1 really does need nothing — no key, no `.env`, no `ACU_*` variable. If the site's
+`directory.json` cannot be reached it falls back to the built-in reference pair and says so
+on stderr, rather than dying on a setting you were never told to set.
+
+`--no-settle` in step 4 is not a shortcut past anything: the demo registry's `StubVerifier`
+trusts exactly one signer, so only the reference Agent A can list on it (*Known limitations*,
+point 6). A seal you sign yourself is a fully valid seal and verifies green — it just does not
+go onto *this* registry, and the site's feed is a feed of that registry's listings. Ask to
+settle with no registry configured and the command refuses `NO_REGISTRY` **before it spends
+anything**; `--registry <address>` points it at your own deployment.
+
+> **Until the packages are on npm** the same six steps run from a clone: `node
+> packages/cli/bin/acu.mjs <command>` in place of `npx @acu/cli`, and `claude mcp add acu --
+> node <repo>/packages/mcp/bin/acu-mcp.mjs` in place of the `npx` line.
+
 ## Repository layout
 
 ```
-agent-a/          Underwriter — hires B over x402, verifies seal B, signs seal A, lists on 0G
-  src/            budget gate · chain reads · hire (x402 client) · settle · replay
-  scripts/        record.ts (replay fixtures) · stability.ts (30-run consistency check)
-agent-b/          Code Auditor — paid endpoint, 0G Router inference, signs seal B
-packages/og/      0G Compute Router client with TEE attestation capture; Direct stub
-packages/seal/    seal schema, canonical encoding, signing, verification, on-chain ABI
-contracts/        CollateralRegistry · IProofVerifier · StubVerifier · three mock tokens
-demo/             run.sh (seven scenes) · mitm.ts (verdict-rewriting proxy) · plain-x402.ts (an x402 API that is not an agent) · fixtures
-web/              the site: landing page, live seal feed, verifier and docs — verifies in the browser
-pitch/            nine-slide deck, same palette as the verifier, 中/EN on one key
-NOTES.md          deviations from the build spec and the stability run, with evidence
+packages/seal/          seal schema, canonical encoding, signing, verification, on-chain ABI
+packages/og/            0G Compute Router client with TEE attestation capture; Direct stub
+packages/underwriter/   the A side as a library — underwrite(): budget gate, chain reads, hire, settle
+packages/auditor/       the B side as a library — sealedAuditRoute(): GET /agent + x402-gated POST /audit
+packages/storage/       publish a seal body to 0G Storage, and find it again by its hash
+packages/config/        ~/.acu/config.json — the one key the CLI writes and the MCP reads
+packages/cli/           @acu/cli, bin `acu` — the reference Agent A as a command anyone can run
+packages/mcp/           @acu/mcp — the same agent over MCP, so any agent framework becomes an A
+web/                    the site: landing page, live seal feed, verifier and docs — verifies in the browser
+agent-a/                the reference A against the repo's .env; a shim over @acu/cli
+  scripts/              record.ts (replay fixtures) · stability.ts (30-run consistency check)
+agent-b/                the reference B against the repo's .env; loadConfig + sealedAuditRoute
+contracts/              CollateralRegistry · IProofVerifier · StubVerifier · three mock tokens
+demo/                   run.sh (seven scenes) · serve-b.sh (tunnel the reference B) · mitm.ts (verdict-rewriting proxy) · plain-x402.ts (an x402 API that is not an agent) · fixtures
+pitch/                  nine-slide deck, same palette as the verifier, 中/EN on one key
+NOTES.md                deviations from the build spec and the stability run, with evidence
 ```
 
 ## Where the 0G integration is
@@ -45,8 +93,10 @@ NOTES.md          deviations from the build spec and the stability run, with evi
 | **Compute Router call** | [`packages/og/src/router.ts`](packages/og/src/router.ts) | `POST /v1/chat/completions` with `X-0G-Provider-Trust-Mode: verified` pinned in the constructor and `verify_tee: true` in the body |
 | **TEE attestation capture** | [`packages/og/src/router.ts`](packages/og/src/router.ts) | reads `ZG-Res-Key` (chatId) and `x_0g_trace.tee_verified` off the raw response |
 | **Attestation carried in the seal** | [`packages/seal/src/schema.ts`](packages/seal/src/schema.ts) | `inference.teeAttestation` — chatId, teeVerified, provider, signed-text hash |
-| **0G chain reads** | [`agent-a/src/chain.ts`](agent-a/src/chain.ts) | bytecode, ERC-20 metadata, owner, watched selectors, via the free 0G testnet RPC |
-| **0G chain writes** | [`agent-a/src/settle.ts`](agent-a/src/settle.ts) | `CollateralRegistry.list` on 0G testnet |
+| **0G chain reads** | [`packages/underwriter/src/chain.ts`](packages/underwriter/src/chain.ts) | bytecode, ERC-20 metadata, owner, watched selectors, via the free 0G testnet RPC |
+| **0G chain writes** | [`packages/underwriter/src/settle.ts`](packages/underwriter/src/settle.ts) | `CollateralRegistry.list` on 0G testnet |
+| **0G Storage write** | [`packages/storage/src/publish.ts`](packages/storage/src/publish.ts) | the seal A body uploaded with `tags: sealHash`, so the hash on chain finds the bytes |
+| **0G Storage read** | [`packages/storage/src/locate.ts`](packages/storage/src/locate.ts) · [`fetch.ts`](packages/storage/src/fetch.ts) | `Flow.Submit` logs scanned backwards for the tag, then the indexer's HTTPS gateway |
 | Router/Direct switch | [`packages/og/src/index.ts`](packages/og/src/index.ts) | `createInferenceClient({ kind })` |
 
 Raw `fetch` is used instead of the OpenAI SDK on purpose: the attestation evidence is exactly
@@ -57,9 +107,9 @@ chatId arrives in a response header.
 
 | What | File |
 |---|---|
-| Agent B, paid endpoint | [`agent-b/src/server.ts`](agent-b/src/server.ts) — `@x402/express` v2 |
-| Agent A, paying client | [`agent-a/src/hire.ts`](agent-a/src/hire.ts) — `@x402/fetch` v2 |
-| Budget gate | [`agent-a/src/budget.ts`](agent-a/src/budget.ts) |
+| Agent B, paid endpoint | [`packages/auditor/src/route.ts`](packages/auditor/src/route.ts) — `sealedAuditRoute`, `@x402/express` v2 |
+| Agent A, paying client | [`packages/underwriter/src/hire.ts`](packages/underwriter/src/hire.ts) — `@x402/fetch` v2 |
+| Budget gate | [`packages/underwriter/src/budget.ts`](packages/underwriter/src/budget.ts) — ledger at `~/.acu/budget-ledger.json` |
 
 x402 **v2** throughout (`PAYMENT-REQUIRED` / `PAYMENT-SIGNATURE` / `PAYMENT-RESPONSE`). The
 widely-copied `x402-express` / `x402-fetch` tutorials are the deprecated v1 line.
@@ -76,6 +126,136 @@ widely-copied `x402-express` / `x402-fetch` tutorials are the deprecated v1 line
 
 Payments settle on **Base Sepolia** (`eip155:84532`) in USDC via the free
 `x402.org/facilitator`.
+
+## Use it
+
+Three surfaces over one core. The seal and the two SDKs are the thing; the CLI, the MCP
+server and the website are shells over them, and none of the three holds anything.
+
+### Your agent as an Agent A
+
+`@acu/cli` **is** the reference Agent A — it hires, verifies, signs and lists on its own; a
+human only starts it. Configuration resolves **environment variable > `~/.acu/config.json` >
+built-in default**, everywhere, which is why the MCP install line below carries no `-e`.
+
+| Command | Does |
+|---|---|
+| `acu init` | Generate a burner key into `~/.acu/config.json`, print the address and the faucet |
+| `acu status [--json]` | Key, USDC balance, auditor reachability, budget left, and the single next step |
+| `acu quote <token>` | What an audit would cost. No key, never signs, never pays |
+| `acu underwrite <token>` | Hire, verify, seal, publish, list. Dry run unless `--live` |
+| `acu verify <file\|->` | Check a seal A or B locally. Exit 0 valid, 1 invalid |
+
+```bash
+claude mcp add acu -- npx -y @acu/mcp
+```
+
+No `-e` flags: the server reads the config `acu init` wrote. The environment is only ever an
+override — `ACU_AGENT_KEY` for a different key in one process, `ACU_AUDITOR_URL` to hire an
+auditor that is not the reference one, `ACU_DIRECTORY_URL` to trust a different directory
+than this site's. With no key at all the server still starts and every paid tool stops at
+the quote.
+
+| Tool | Does |
+|---|---|
+| `agent_status` | Can this agent underwrite right now, and what is the one next step. Call it first |
+| `describe_auditor` | Fetch an auditor's card from `GET /agent`. Free, and never trusted |
+| `quote_audit` | Price an audit past the budget gate. Never pays, never signs |
+| `hire_audit` | Pay over x402 and return a *verified* seal B, or the check that failed |
+| `underwrite` | Hire → verify → sign seal A → publish → list, refusing with a named code |
+| `verify_seal` | Verify a seal A or B locally, in this process |
+| `get_listing` | What the registry says, what the stored seal says, and whether they agree |
+
+Or as a library — the CLI and the MCP are both printers over this one function, which has no
+console, no `process.exit` and reads no environment:
+
+```ts
+import { underwrite } from "@acu/underwriter";
+import { ogStoragePublisher } from "@acu/storage/publish";
+
+const result = await underwrite(
+  { token, ltvBps: 7000, source: null, settle: true, publish: true },
+  { account, agentId: "1", auditor: { url, agentId: "2" }, resolver, budget,
+    network: "eip155:84532", dryRun: false, registry, rpcUrl,
+    publisher: ogStoragePublisher({ privateKey, rpcUrl, indexerUrl }) },
+);
+// sealed:  { ok: true,  kind: "sealed", sealA, sealHash, sealB, hire, storage, listing, skipped }
+// dry run: { ok: true,  kind: "dry-run", quote, budget }
+// refused: { ok: false, stage, code, detail, sealA? }
+```
+
+A refusal after `compose` carries `sealA` back: the money is already spent and the seal is
+what it bought, so it is handed over rather than dropped — `--seal-file` can list it later.
+
+### Your x402 service as an Agent B
+
+Once there are As — the reference auditor is the only B today. An Agent B is any x402
+service willing to sign what it did; a plain x402 API takes the money and answers with prose,
+and an A has nothing it can embed (scene ⑦). What makes you a B is issuing a seal:
+
+```ts
+import express from "express";
+import { sealedAuditRoute } from "@acu/auditor";
+
+const app = express();
+app.use(express.json({ limit: "1mb" }));
+
+sealedAuditRoute(app, {
+  sealAccount,                 // your key, in your process
+  agentId: "2",
+  priceUsd: "$0.01",
+  payToAddress,
+  network: "eip155:84532",
+  facilitatorUrl,
+  sealTtlSeconds: 86_400,
+  og: { network: "testnet", apiKey, model: undefined, skipAttestation: false },
+});
+
+app.listen(4021);
+```
+
+That mounts `GET /agent` — free, the card saying who a caller would be hiring and what you
+charge — and `POST /audit`, gated by x402 v2, which runs the inference and returns a signed
+seal B. `@acu/auditor` never reads `process.env`, so a misconfigured B fails at construction
+rather than at its first customer. And the 502 rule holds: if the inference fails, or the
+attestation does not come back, or the seal cannot be signed, `POST /audit` answers **502
+`AUDIT_FAILED`** and issues nothing. **No seal, no charge.**
+
+### Verify anywhere
+
+**<https://wayneal.github.io/0G/>** — live once GitHub Pages is enabled for this repo;
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds and deploys it.
+
+There is no backend and no API of ours. The site's only network reads are 0G testnet chain
+state, the 0G Storage indexer gateway, and the `directory.json` it serves itself. There is
+deliberately no endpoint that will tell you whether a seal is good, because such an endpoint
+would be one more thing to trust.
+
+```ts
+import { verifySealA, SealVerificationError } from "@acu/seal";
+
+try {
+  await verifySealA(seal, { expectedSubject: token, resolver, now });
+  // Every check passed, including the seal B embedded inside.
+} catch (err) {
+  if (err instanceof SealVerificationError) console.log(err.failure, err.message);
+}
+```
+
+The same `@acu/seal` runs in the CLI, in the MCP server, in an Agent A and in the page.
+
+### The reference auditor runs on the author's machine
+
+Deliberately. Agent B's key signs seals and Agent B's 0G Compute account pays for inference;
+putting either on a host we operate would make us a party that holds a key, which is the one
+thing this design is against. So the reference B is started from a laptop —
+[`demo/serve-b.sh`](demo/serve-b.sh) runs it on `:4021`, opens a cloudflared quick tunnel, and
+writes the rotating tunnel origin into `web/public/directory.json` for the run.
+
+When it is down, the site's pill reads **reference auditor offline**, and `acu quote` /
+`acu underwrite` refuse with `✗ AUDITOR_UNREACHABLE` naming the URL that would not answer.
+That is not a broken demo; it is what "we host nothing" costs, and the fix in the message is
+to try later or to run your own B with the snippet above.
 
 ## Run it
 
@@ -134,17 +314,26 @@ offline as on. Only ①'s registry outcome is quoted from the recording, and the
 pnpm --filter @acu/agent-a start -- <token> [flags]
 ```
 
+`agent-a` is a shim: it loads the repo's `.env` and hands off to `acu underwrite`, so the
+flags below are that command's flags. The `.env` is read *there* and never inside `@acu/cli`,
+which strangers install.
+
 | Flag | Meaning |
 |---|---|
 | `--ltv <bps>` | requested LTV, default `7000` |
 | `--live` | spend real USDC and settle on chain; the default is a dry run |
 | `--no-settle` | underwrite and sign, but do not call the registry |
+| `--publish` | upload the composed seal A body to 0G Storage after signing it |
 | `--source <file>` | supply the token's source (0G testnet has no verified-source API) |
 | `--endpoint <url>` | which Agent B to hire; scenes ⑤, ⑥ and ⑦ point this at `:4022`, `:4099` and `:4023` |
 | `--emit-seal <file>` | write the composed seal A out, for the verifier or a later replay |
 | `--seal-file <file>` | skip underwriting and present an existing seal A — scene ③ |
 | `--offline <fixture>` | replay a recording from `demo/fixtures/replay/` |
 | `--registry <addr>` | override `REGISTRY_ADDRESS` |
+
+`--seal-file <path> --publish` is the way back for a seal that was signed while the publisher
+was down: a listing whose body was never uploaded is a hash pointing at nothing, and nobody —
+including the website's token lookup — can resolve it.
 
 ### Recording and stability
 
@@ -219,20 +408,50 @@ Scene ⑤ dies at the last row; scene ⑥ at `SIGNER_MISMATCH`.
 
 ## Verify a seal yourself
 
-[`web/`](web/) — the site takes a seal and runs every check in your browser: recompute the
-canonical digest from the seal's own bytes, recover the signer, walk down into the embedded
-audit seal, and show the TEE attestation it carries. Nothing is taken on trust from whoever
-handed you the seal.
+**<https://wayneal.github.io/0G/>** — source in [`web/`](web/). The page takes a seal and runs
+every check in your browser: recompute the canonical digest from the seal's own bytes, recover
+the signer, walk down into the embedded audit seal, and show the TEE attestation it carries.
+Nothing is taken on trust from whoever handed you the seal.
+
+`acu underwrite` ends by printing `Share it: https://wayneal.github.io/0G/#seal=<base64url>`.
+The seal travels in the URL **fragment**, which a browser never sends to a server — so the
+page that verifies it never learns what it verified. A share link runs about 2,200 characters,
+because seal A carries seal B and its TEE attestation whole; that is fine in a browser, but
+some chat clients truncate past ~2,000, and for those `acu verify <file>` checks the same seal
+locally and exits non-zero if it does not hold up.
 
 Three recorded seals are built in, matching the three scenes shown on stage: a full valid
 chain, an audit seal that claims an attested tier and carries no attestation, and one whose
-verdict was rewritten in flight with the signature left untouched. You can also give it a
+verdict was rewritten in flight with the signature left untouched. They are recorded with a
+**90-day TTL** on purpose, so the demo does not show its own example as `SEAL_EXPIRED`; the
+product default is **24 h** (`SEAL_TTL_SECONDS`, unchanged). You can also give the page a
 token address and it will read the listing off `CollateralRegistry`, fetch the seal body from
 0G Storage, and check the hash the registry stores.
 
 The page bundles `packages/seal` itself rather than reimplementing it, so the digests it
 computes are the same bytes the agents signed — the hand-written canonicalizer the old
 single-file verifier carried is gone.
+
+### Seal bodies live on 0G Storage
+
+The registry stores a hash, not a seal. `underwrite --publish` uploads the canonical bytes of
+seal A to 0G Storage first, so `listings[token].sealHash` points at something anyone can
+actually fetch.
+
+A reader with nothing but that hash finds the body without asking us: the upload tags the
+0G Storage `Flow.Submit` event with the seal hash, so `eth_getLogs` filtered by the publisher's
+address, scanned backwards from `latest` in 5,000,000-block chunks, stops at the first
+matching `tags` and yields the file root; the indexer's HTTPS gateway (`GET /file?root=…`,
+`access-control-allow-origin: *`) returns the bytes. The integrity check is not the root but
+`sealDigest(fetched) == sealHash` — the seal's canonical encoding is its own name.
+
+The spike that established this is verified end-to-end on 0G Galileo testnet: tx
+`0xa1ac7763ab26db8a98f98e4bfa67a5189bee6c2c2397575b22244f91bb741b75`, root
+`0xec5a33d2e244bba38ff92353534f39333b7c70302bafe1e64d7a1a2a8cd8a42f`, txSeq 149629, 11 s,
+storage fee 215135514734 wei. Write path is `@0gfoundation/0g-storage-ts-sdk` 1.2.12 — the
+older `@0glabs/0g-ts-sdk` reverts on `Flow.submit` and is not used. 0G-KV was tried first and
+dropped: the only documented public KV node times out and there is no HTTPS one. Details and
+evidence in [`NOTES.md`](NOTES.md) §G.
 
 ## The pitch
 
@@ -325,10 +544,12 @@ Stated plainly, because the alternative is worse:
    facts alone and — correctly — refuses to approve on thin evidence.
 5. **Holder concentration is not populated.** No indexer on this testnet; the field is left
    null rather than invented.
-6. **The Agentic ID registry is a stub.** `StaticAgentIdResolver` maps the two agent IDs to
-   their signers from `.env`; `StubVerifier` on chain trusts one signer. Both sit behind
-   interfaces so the real registry and the real proof verifier slot in without touching the
-   agents or the registry contract.
+6. **The Agentic ID registry is a published file, not a registry.** `HttpAgentIdResolver`
+   reads `directory.json` off the website to map an agent ID to its signer, with
+   `StaticAgentIdResolver` still standing in when one is configured by hand; `StubVerifier`
+   on chain trusts one signer, so only the reference A can list on the demo registry. All of
+   it sits behind `AgentIdResolver` / `IProofVerifier`, so a real ERC-7857 registry and a real
+   proof verifier slot in without touching the agents or the registry contract.
 
 ## Deviations from the build spec
 
@@ -347,12 +568,17 @@ Recorded in [`NOTES.md`](NOTES.md), with how each was verified. The three that m
 ## Tests
 
 ```
-Foundry     20   registry revert paths, a 256-run fuzz that the attested cap always binds,
-                 and a cross-language test that a proof signed by viem decodes in Solidity
-                 to the same Verdict
-TypeScript  66   seal tamper cases, the six delegate checks and the attested-tier rule, the injection boundary,
-                 strict-schema rejection, and the budget gate
+Foundry      20   registry revert paths, a 256-run fuzz that the attested cap always binds,
+                  and a cross-language test that a proof signed by viem decodes in Solidity
+                  to the same Verdict
+TypeScript  232   seal tamper cases, the six delegate checks and the attested-tier rule, the
+                  injection boundary, strict-schema rejection, the budget gate, underwrite()'s
+                  refusal map, the MCP tools over a real stdio transport, the auditor route
+                  against a fake facilitator, 0G Storage locate/fetch, and the site's verifier
 ```
+
+`pnpm -r test` runs the TypeScript side across nine packages; `forge test --root contracts`
+runs the Foundry side.
 
 `contracts/test/CrossLanguage.t.sol` is the one to read. TypeScript signs the seal and
 Solidity verifies it; nothing forces those two encoders to agree, so a fixture generated by

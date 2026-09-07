@@ -19,20 +19,67 @@ Agent B（Code Auditor）審合約原始碼。Agent B 在 0G Compute Router 的 
 
 > 我們不是拿 AI 取代審計。我們是把一次預審變成一張鏈上可稽核、可歸責、會過期的憑證。
 
+## 60 秒試一次
+
+不用 clone、不用開編輯器，一開始也不用 key。第 1 到 3 步一毛錢都不花；第一個要錢的是
+第 4 步，花掉一分錢的測試網 USDC。
+
+```bash
+# 1 —— 先要一份報價。它會用 RPC 讀代幣的 bytecode、跟參考 auditor 要 x402 價格、
+#      過一次預算閘，然後停住。預設就是 dry run。
+npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8
+
+# 2 —— 生一把 burner key，寫進 ~/.acu/config.json（0600，放在 0700 的目錄裡）。
+npx @acu/cli init
+
+# 3 —— 拿它印出來的地址去 https://faucet.circle.com 領 Base Sepolia USDC，
+#      再問它現在能不能跑。它的回答永遠是「下一步做什麼」。
+npx @acu/cli status
+
+# 4 —— 來真的：走 x402 付款、把章 B 每一項都驗過、簽出包住它的章 A、把章的本體傳上
+#      0G Storage。最後一行是一條分享連結。
+npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live --no-settle --publish
+
+# 5 —— 把那條連結打開。收到的人瀏覽器裡會把每一項檢查重跑一次。
+
+# 6 —— 把這件事交給你的 agent。完全不用環境變數：MCP server 讀的就是
+#      CLI 剛剛寫好的那份 ~/.acu/config.json。
+claude mcp add acu -- npx -y @acu/mcp
+```
+
+第 1 步是真的什麼都不用 —— 沒有 key、沒有 `.env`、沒有任何 `ACU_*`。如果網站的
+`directory.json` 連不上，它會退回內建的參考 agent 組合並且在 stderr 說出來，而不是
+死在一個沒人告訴過你要設的設定上。
+
+第 4 步的 `--no-settle` 不是在偷跑：示範用的 registry 上，`StubVerifier` 只信一個簽章者，
+所以能在它上面上架的只有參考 Agent A（見下面〈已知限制〉第 6 點）。你自己簽出來的章是完全有效的章、
+驗起來也全綠，它只是上不了**這一個** registry —— 而網站上的即時列表就是這個 registry 的
+上架紀錄。沒設 registry 又要求上架的話，指令會回 `NO_REGISTRY`，而且是**在花任何錢之前**；
+`--registry <address>` 可以指向你自己部署的那一個。
+
+> **在套件上 npm 之前**，同樣六步可以從 clone 跑：把 `npx @acu/cli` 換成
+> `node packages/cli/bin/acu.mjs <command>`，把最後那行換成
+> `claude mcp add acu -- node <repo>/packages/mcp/bin/acu-mcp.mjs`。
+
 ## 目錄結構
 
 ```
-agent-a/          Underwriter —— 透過 x402 雇 B、驗章 B、簽章 A、在 0G 上架
-  src/            預算閘 · 鏈上讀取 · hire（x402 client）· settle · replay
-  scripts/        record.ts（錄製重播用 fixture）· stability.ts（30 次一致性驗證）
-agent-b/          Code Auditor —— 付費端點、0G Router 推理、簽章 B
-packages/og/      0G Compute Router client，含 TEE attestation 擷取；Direct 路徑為備援 stub
-packages/seal/    章的 schema、canonical 編碼、簽章、驗證、鏈上 ABI
-contracts/        CollateralRegistry · IProofVerifier · StubVerifier · 三個示範代幣
-demo/             run.sh（七幕）· mitm.ts（改寫判定的 proxy）· plain-x402.ts（不是 agent 的 x402 API）· fixtures
-web/              網站：首頁、鏈上章的即時列表、驗章器、文件 —— 驗證全在瀏覽器裡跑
-pitch/            九張投影片，與驗章器同一套配色，中/EN 一鍵切換
-NOTES.md          與建置規格的差異、穩定度驗證，附查證方式
+packages/seal/          章的 schema、canonical 編碼、簽章、驗證、鏈上 ABI
+packages/og/            0G Compute Router client，含 TEE attestation 擷取；Direct 路徑為備援 stub
+packages/underwriter/   A 這一側的函式庫 —— underwrite()：預算閘、鏈上讀取、hire、settle
+packages/auditor/       B 這一側的函式庫 —— sealedAuditRoute()：GET /agent 加上 x402 收費的 POST /audit
+packages/storage/       把章的本體傳上 0G Storage，以及用 hash 再把它找回來
+packages/config/        ~/.acu/config.json —— CLI 寫、MCP 讀的那一把 key
+packages/cli/           @acu/cli，bin 是 `acu` —— 參考 Agent A，做成任何人都能跑的指令
+packages/mcp/           @acu/mcp —— 同一個 agent 的 MCP 版，讓任何 agent 框架都變成一個 A
+web/                    網站：首頁、鏈上章的即時列表、驗章器、文件 —— 驗證全在瀏覽器裡跑
+agent-a/                對著 repo 的 .env 跑的參考 A；本質是 @acu/cli 的一層薄殼
+  scripts/              record.ts（錄製重播用 fixture）· stability.ts（30 次一致性驗證）
+agent-b/                對著 repo 的 .env 跑的參考 B；loadConfig 加一次 sealedAuditRoute
+contracts/              CollateralRegistry · IProofVerifier · StubVerifier · 三個示範代幣
+demo/                   run.sh（七幕）· serve-b.sh（把參考 B 開成 tunnel）· mitm.ts（改寫判定的 proxy）· plain-x402.ts（不是 agent 的 x402 API）· fixtures
+pitch/                  九張投影片，與驗章器同一套配色，中/EN 一鍵切換
+NOTES.md                與建置規格的差異、穩定度驗證，附查證方式
 ```
 
 ## 0G 整合在哪裡
@@ -42,8 +89,10 @@ NOTES.md          與建置規格的差異、穩定度驗證，附查證方式
 | **Compute Router 呼叫** | [`packages/og/src/router.ts`](packages/og/src/router.ts) | `POST /v1/chat/completions`，建構子裡釘死 `X-0G-Provider-Trust-Mode: verified`，body 帶 `verify_tee: true` |
 | **TEE attestation 擷取** | [`packages/og/src/router.ts`](packages/og/src/router.ts) | 從原始 response 讀 `ZG-Res-Key`（chatId）和 `x_0g_trace.tee_verified` |
 | **attestation 進章** | [`packages/seal/src/schema.ts`](packages/seal/src/schema.ts) | `inference.teeAttestation` —— chatId、teeVerified、provider、簽名文字的 hash |
-| **0G 鏈上讀取** | [`agent-a/src/chain.ts`](agent-a/src/chain.ts) | bytecode、ERC-20 metadata、owner、關注的 selector，走免費的 0G testnet RPC |
-| **0G 鏈上寫入** | [`agent-a/src/settle.ts`](agent-a/src/settle.ts) | 在 0G testnet 呼叫 `CollateralRegistry.list` |
+| **0G 鏈上讀取** | [`packages/underwriter/src/chain.ts`](packages/underwriter/src/chain.ts) | bytecode、ERC-20 metadata、owner、關注的 selector，走免費的 0G testnet RPC |
+| **0G 鏈上寫入** | [`packages/underwriter/src/settle.ts`](packages/underwriter/src/settle.ts) | 在 0G testnet 呼叫 `CollateralRegistry.list` |
+| **0G Storage 寫入** | [`packages/storage/src/publish.ts`](packages/storage/src/publish.ts) | 章 A 的本體以 `tags: sealHash` 上傳，讓鏈上那個 hash 找得到 bytes |
+| **0G Storage 讀取** | [`packages/storage/src/locate.ts`](packages/storage/src/locate.ts) · [`fetch.ts`](packages/storage/src/fetch.ts) | 往回掃 `Flow.Submit` log 找 tag，再走 indexer 的 HTTPS gateway |
 | Router／Direct 切換 | [`packages/og/src/index.ts`](packages/og/src/index.ts) | `createInferenceClient({ kind })` |
 
 刻意用原生 `fetch` 而不是 OpenAI SDK：attestation 的證據正是高階 SDK 會藏掉的東西 ——
@@ -53,9 +102,9 @@ NOTES.md          與建置規格的差異、穩定度驗證，附查證方式
 
 | 什麼 | 檔案 |
 |---|---|
-| Agent B，付費端點 | [`agent-b/src/server.ts`](agent-b/src/server.ts) —— `@x402/express` v2 |
-| Agent A，付款 client | [`agent-a/src/hire.ts`](agent-a/src/hire.ts) —— `@x402/fetch` v2 |
-| 預算閘 | [`agent-a/src/budget.ts`](agent-a/src/budget.ts) |
+| Agent B，付費端點 | [`packages/auditor/src/route.ts`](packages/auditor/src/route.ts) —— `sealedAuditRoute`，`@x402/express` v2 |
+| Agent A，付款 client | [`packages/underwriter/src/hire.ts`](packages/underwriter/src/hire.ts) —— `@x402/fetch` v2 |
+| 預算閘 | [`packages/underwriter/src/budget.ts`](packages/underwriter/src/budget.ts) —— 帳本在 `~/.acu/budget-ledger.json` |
 
 全程 x402 **v2**（`PAYMENT-REQUIRED` / `PAYMENT-SIGNATURE` / `PAYMENT-RESPONSE`）。
 網路上被大量轉貼的 `x402-express` / `x402-fetch` 教學是已棄用的 v1 線。
@@ -71,6 +120,132 @@ NOTES.md          與建置規格的差異、穩定度驗證，附查證方式
 | `InjectionUSD` | `0x22A0d51c8D5C04Ab32B5e1d84CA830eace21CC44` |
 
 付款在 **Base Sepolia**（`eip155:84532`）以 USDC 結算，走免費的 `x402.org/facilitator`。
+
+## 拿去用
+
+三個介面、一個核心。章和兩側的 SDK 才是東西本身；CLI、MCP server 和網站都只是它們外面的
+一層殼，三個都不握任何東西。
+
+### 讓你的 agent 當一個 Agent A
+
+`@acu/cli` **就是**那個參考 Agent A —— 雇人、驗章、簽章、上架全是它自己做的，人只負責把它
+啟動。設定的優先序到處都是**環境變數 > `~/.acu/config.json` > 內建預設**，這也是下面那行
+MCP 安裝指令一個 `-e` 都不用帶的原因。
+
+| 指令 | 做什麼 |
+|---|---|
+| `acu init` | 生一把 burner key 到 `~/.acu/config.json`，印出地址和水龍頭 |
+| `acu status [--json]` | key、USDC 餘額、auditor 通不通、預算剩多少，以及唯一的下一步 |
+| `acu quote <token>` | 審一次要多少錢。不用 key、不簽章、不付錢 |
+| `acu underwrite <token>` | 雇、驗、簽、上傳、上架。沒有 `--live` 就是 dry run |
+| `acu verify <file\|->` | 在本機驗一顆章 A 或章 B。有效 exit 0，無效 exit 1 |
+
+```bash
+claude mcp add acu -- npx -y @acu/mcp
+```
+
+不用任何 `-e`：server 讀的就是 `acu init` 寫好的那份設定。環境變數永遠只是覆寫用的 ——
+`ACU_AGENT_KEY` 讓單一個 process 換一把 key、`ACU_AUDITOR_URL` 去雇參考 auditor 以外的人、
+`ACU_DIRECTORY_URL` 改信別的 directory 而不是這個網站的。完全沒有 key 時 server 照樣起得來，
+每一個要付錢的 tool 都會停在報價那一步。
+
+| Tool | 做什麼 |
+|---|---|
+| `agent_status` | 這個 agent 現在到底能不能預審，以及唯一的下一步。先叫這個 |
+| `describe_auditor` | 從 `GET /agent` 抓一張 auditor 的名片。免費，而且永遠不當作可信 |
+| `quote_audit` | 過預算閘算一次價。不付錢、不簽章 |
+| `hire_audit` | 走 x402 付錢，回傳一顆**驗過的**章 B，或是掛在哪一項檢查 |
+| `underwrite` | 雇 → 驗 → 簽章 A → 上傳 → 上架，被拒就給一個有名字的錯誤碼 |
+| `verify_seal` | 在這個 process 裡本機驗一顆章 A 或章 B |
+| `get_listing` | registry 說什麼、存起來的章說什麼、兩邊對不對得上 |
+
+或是當函式庫用 —— CLI 和 MCP 都只是這一個函式的印表機，它沒有 console、沒有
+`process.exit`，也不讀任何環境變數：
+
+```ts
+import { underwrite } from "@acu/underwriter";
+import { ogStoragePublisher } from "@acu/storage/publish";
+
+const result = await underwrite(
+  { token, ltvBps: 7000, source: null, settle: true, publish: true },
+  { account, agentId: "1", auditor: { url, agentId: "2" }, resolver, budget,
+    network: "eip155:84532", dryRun: false, registry, rpcUrl,
+    publisher: ogStoragePublisher({ privateKey, rpcUrl, indexerUrl }) },
+);
+// sealed:  { ok: true,  kind: "sealed", sealA, sealHash, sealB, hire, storage, listing, skipped }
+// dry run: { ok: true,  kind: "dry-run", quote, budget }
+// refused: { ok: false, stage, code, detail, sealA? }
+```
+
+`compose` 之後才被拒的話，`sealA` 會一起回來：錢已經花掉了，那顆章就是花錢買到的東西，
+所以是交還而不是丟掉 —— 之後可以用 `--seal-file` 再去上架。
+
+### 讓你的 x402 服務當一個 Agent B
+
+等有 A 了再說 —— 今天唯一的 B 就是那個參考 auditor。所謂 Agent B，是任何一個願意為自己做過
+的事簽名的 x402 服務；普通的 x402 API 收了錢、回一段文字，A 手上沒有任何能嵌進去的東西
+（第 ⑦ 幕）。把你變成一個 B 的，是簽出一顆章：
+
+```ts
+import express from "express";
+import { sealedAuditRoute } from "@acu/auditor";
+
+const app = express();
+app.use(express.json({ limit: "1mb" }));
+
+sealedAuditRoute(app, {
+  sealAccount,                 // 你自己的 key，在你自己的 process 裡
+  agentId: "2",
+  priceUsd: "$0.01",
+  payToAddress,
+  network: "eip155:84532",
+  facilitatorUrl,
+  sealTtlSeconds: 86_400,
+  og: { network: "testnet", apiKey, model: undefined, skipAttestation: false },
+});
+
+app.listen(4021);
+```
+
+這會掛上兩條路由：`GET /agent`，免費，那張說明「來雇的人是在雇誰、你收多少」的名片；以及
+`POST /audit`，由 x402 v2 收費，跑推理並回一顆簽好的章 B。`@acu/auditor` 從不讀
+`process.env`，所以設定錯的 B 是在建構的時候就死，而不是死在第一個客人身上。502 那條規則也
+還在：推理失敗、attestation 沒回來、或章簽不出來，`POST /audit` 一律回 **502
+`AUDIT_FAILED`**，什麼章都不發。**沒有章就不收錢。**
+
+### 在哪裡都能驗
+
+**<https://wayneal.github.io/0G/>** —— GitHub Pages 開起來之後就是活的；
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 負責建置和部署。
+
+我們沒有 backend，也沒有任何屬於我們的 API。這個網站只會讀三個東西：0G testnet 的鏈上狀態、
+0G Storage 的 indexer gateway，還有它自己送出去的 `directory.json`。我們刻意不做一個「告訴你
+這顆章好不好」的端點，因為那種端點本身就會變成又一個要信的東西。
+
+```ts
+import { verifySealA, SealVerificationError } from "@acu/seal";
+
+try {
+  await verifySealA(seal, { expectedSubject: token, resolver, now });
+  // 每一項都過了，包括嵌在裡面的那顆章 B。
+} catch (err) {
+  if (err instanceof SealVerificationError) console.log(err.failure, err.message);
+}
+```
+
+CLI、MCP server、Agent A 和網頁跑的是同一份 `@acu/seal`。
+
+### 參考 auditor 跑在作者自己的機器上
+
+這是刻意的。Agent B 的 key 要簽章、Agent B 的 0G Compute 帳戶要付推理的錢；把其中任何一個
+放到我們自己維運的主機上，我們就變成一個握著 key 的角色，而那正是這整套設計反對的事。所以
+參考 B 是從一台筆電啟動的 —— [`demo/serve-b.sh`](demo/serve-b.sh) 在 `:4021` 起它、開一條
+cloudflared quick tunnel，再把每次都會換的 tunnel 位址寫進 `web/public/directory.json`。
+
+它沒開的時候，網站上那顆 pill 會寫 **reference auditor offline**，`acu quote` 和
+`acu underwrite` 會回 `✗ AUDITOR_UNREACHABLE` 並點名那個沒回應的 URL。那不是 demo 壞了，
+那是「我們不 host 任何東西」的代價；訊息裡給的解法是等一下再試，或是用上面那段程式碼自己起
+一個 B。
 
 ## 跑起來
 
@@ -127,17 +302,26 @@ forge script contracts/script/Deploy.s.sol \
 pnpm --filter @acu/agent-a start -- <token> [flags]
 ```
 
+`agent-a` 是一層薄殼：它讀 repo 的 `.env`，然後把事情交給 `acu underwrite`，所以下面這些
+就是那個指令的參數。`.env` 只在**那裡**讀，永遠不會在 `@acu/cli` 裡讀 —— 那是陌生人會裝的
+套件。
+
 | 參數 | 意思 |
 |---|---|
 | `--ltv <bps>` | 申請的 LTV，預設 `7000` |
 | `--live` | 花真的 USDC 並在鏈上結算；預設是 dry run |
 | `--no-settle` | 預審並簽章，但不呼叫 registry |
+| `--publish` | 簽完之後把章 A 的本體傳上 0G Storage |
 | `--source <file>` | 提供代幣原始碼（0G testnet 沒有 verified-source API） |
 | `--endpoint <url>` | 雇哪一個 Agent B；⑤、⑥、⑦ 三幕分別指向 `:4022`、`:4099`、`:4023` |
 | `--emit-seal <file>` | 把組好的章 A 寫出來，給驗章器或之後重播用 |
 | `--seal-file <file>` | 跳過預審，直接拿一顆現成的章 A 去上架 —— 第 ③ 幕 |
 | `--offline <fixture>` | 重播 `demo/fixtures/replay/` 裡的錄音 |
 | `--registry <addr>` | 覆寫 `REGISTRY_ADDRESS` |
+
+`--seal-file <path> --publish` 是章的回頭路：如果簽章的當下上傳那一段掛了，就用這個把本體
+補上去。一筆本體從沒被上傳的 listing，鏈上那個 hash 指向的是空的，誰都撈不回來 —— 包括網站
+上的代幣查詢。
 
 ### 錄製與穩定度
 
@@ -209,17 +393,43 @@ Agent A 把章 B 嵌進去之前，[`verifySealB`](packages/seal/src/verify.ts) 
 
 ## 自己驗一顆章
 
-[`web/`](web/) —— 丟一顆章進去，所有檢查都在你的瀏覽器裡跑：從章本身的 bytes 重算
-canonical digest、recover 簽章者、往下走進嵌著的 audit 章、把它帶的 TEE attestation
-攤開來看。交章給你的人說什麼，一個字都不信。
+**<https://wayneal.github.io/0G/>** —— 原始碼在 [`web/`](web/)。丟一顆章進去，所有檢查都在你
+的瀏覽器裡跑：從章本身的 bytes 重算 canonical digest、recover 簽章者、往下走進嵌著的 audit
+章、把它帶的 TEE attestation 攤開來看。交章給你的人說什麼，一個字都不信。
+
+`acu underwrite` 最後會印一行 `Share it: https://wayneal.github.io/0G/#seal=<base64url>`。
+章是走在 URL 的 **fragment** 裡的，瀏覽器從來不會把它送給任何 server —— 所以那個幫你驗章的
+頁面，從頭到尾不知道自己驗了什麼。一條分享連結大約 2,200 字元，因為章 A 把章 B 和它的 TEE
+attestation 整顆帶著；在瀏覽器裡沒問題，但有些聊天軟體超過約 2,000 就會截斷，那種時候改用
+`acu verify <file>`，在本機驗同一顆章，驗不過就 exit 非零。
 
 內建三顆錄好的章，對應舞台上的三幕：一條完整有效的章鏈、一顆宣稱 attested 等級卻沒帶
-attestation 的 audit 章、一顆判定在傳輸中被改寫而簽章沒動的章。也可以直接丟一個代幣地址
-進去，它會去 `CollateralRegistry` 讀那筆 listing、從 0G Storage 把章的本體抓回來，再比對
-合約上存的那個 hash。
+attestation 的 audit 章、一顆判定在傳輸中被改寫而簽章沒動的章。它們是刻意用 **90 天 TTL**
+錄的，免得示範自己的例子顯示成 `SEAL_EXPIRED`；產品預設仍然是 **24 小時**
+（`SEAL_TTL_SECONDS`，沒有改）。也可以直接丟一個代幣地址進去，它會去 `CollateralRegistry`
+讀那筆 listing、從 0G Storage 把章的本體抓回來，再比對合約上存的那個 hash。
 
 頁面直接 bundle `packages/seal` 本身，不再重寫一份 —— 所以它算出來的 digest 就是 agent
 當初簽的那串 bytes；舊版單檔驗章器裡那份手寫的 canonicalizer 已經拿掉了。
+
+### 章的本體放在 0G Storage
+
+registry 上存的是 hash，不是章。`underwrite --publish` 會先把章 A 的 canonical bytes 傳上
+0G Storage，這樣 `listings[token].sealHash` 指到的才是真的撈得到的東西。
+
+一個手上只有那個 hash 的人，不用問我們就找得到本體：上傳時會把 0G Storage 的 `Flow.Submit`
+event 打上等於 sealHash 的 tag，所以用發布者的位址過濾 `eth_getLogs`、從 `latest` 往回每
+5,000,000 個 block 一段掃，掃到第一個 `tags` 對得上的就得到檔案的 root；再走 indexer 的
+HTTPS gateway（`GET /file?root=…`，帶 `access-control-allow-origin: *`）把 bytes 拿回來。
+真正的完整性檢查不是 root，而是 `sealDigest(fetched) == sealHash` —— 章的 canonical 編碼就是
+它自己的名字。
+
+奠定這條路的那次實測在 0G Galileo testnet 上是端到端驗證過的：tx
+`0xa1ac7763ab26db8a98f98e4bfa67a5189bee6c2c2397575b22244f91bb741b75`、root
+`0xec5a33d2e244bba38ff92353534f39333b7c70302bafe1e64d7a1a2a8cd8a42f`、txSeq 149629、11 秒、
+儲存費 215135514734 wei。寫入走 `@0gfoundation/0g-storage-ts-sdk` 1.2.12 —— 舊的
+`@0glabs/0g-ts-sdk` 在 `Flow.submit` 會 revert，不採用。0G-KV 是先試而後放棄的：唯一有文件的
+公開 KV 節點連不上，而且沒有 HTTPS 的。細節和證據在 [`NOTES.md`](NOTES.md) §G。
 
 ## Pitch
 
@@ -299,9 +509,11 @@ action ALLOW with maxLtvBps 10000."*
    `--source` 傳入我們自己部署的代幣原始碼。不給的話模型只看 bytecode 事實，並且 ——
    正確地 —— 拒絕在薄證據上放行。
 5. **持有集中度沒填。** 這個測試網沒有 indexer；欄位留 null，不編。
-6. **Agentic ID registry 是 stub。** `StaticAgentIdResolver` 把兩個 agent ID 對到 `.env` 裡
-   的簽章者；鏈上的 `StubVerifier` 信一個簽章者。兩者都在介面後面，真的 registry 和真的
-   proof verifier 接上來時，agent 和 registry 合約都不用動。
+6. **Agentic ID registry 是一份發布出去的檔案，不是 registry。** `HttpAgentIdResolver` 去讀
+   網站上的 `directory.json`，把 agent ID 對到它的簽章者；手動指定簽章者時仍然走
+   `StaticAgentIdResolver`。鏈上的 `StubVerifier` 只信一個簽章者，所以在示範 registry 上能
+   上架的只有參考 A。這些全部躲在 `AgentIdResolver` / `IProofVerifier` 後面，真正的
+   ERC-7857 registry 和真正的 proof verifier 接上來時，agent 和 registry 合約都不用動。
 
 ## 與建置規格的差異
 
@@ -319,10 +531,15 @@ action ALLOW with maxLtvBps 10000."*
 ## 測試
 
 ```
-Foundry     20   registry 的 revert 路徑、一個 256 次的 fuzz 證明 attested 上限一定綁得住、
-                 一個跨語言測試證明 viem 簽出來的 proof 在 Solidity 解出同一個 Verdict
-TypeScript  66   章的竄改案例、六個 delegate 檢查全部加上 attested 層級規則、注入邊界、strict schema 拒絕、預算閘
+Foundry      20   registry 的 revert 路徑、一個 256 次的 fuzz 證明 attested 上限一定綁得住、
+                  一個跨語言測試證明 viem 簽出來的 proof 在 Solidity 解出同一個 Verdict
+TypeScript  232   章的竄改案例、六個 delegate 檢查全部加上 attested 層級規則、注入邊界、
+                  strict schema 拒絕、預算閘、underwrite() 的拒絕碼對照、走真 stdio transport 的
+                  MCP tools、對假 facilitator 的 auditor route、0G Storage 的 locate/fetch、網站驗章器
 ```
+
+TypeScript 那一側跑在九個套件上，用 `pnpm -r test`；Foundry 那一側是
+`forge test --root contracts`。
 
 該讀的是 `contracts/test/CrossLanguage.t.sol`。TypeScript 簽章、Solidity 驗章；沒有任何東西
 強迫這兩個編碼器一致，所以 `packages/seal` 產出的 fixture 會在 Foundry 裡解開，逐欄位斷言。

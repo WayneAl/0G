@@ -191,3 +191,67 @@ TrapUSD 有三個陷阱:可升級 proxy、`setBlacklist`、0.5% 轉帳費。
 
 F2 同時是 README「已知限制」第 1 點的活教材:**章保證的是可追溯,不是判斷正確。**
 這裡判定對了,但章裡留下的理由是不完整的 —— 而正因為有章,這件事才查得出來。
+
+---
+
+## G. 0G Storage —— 章的本體要放哪裡(2026-09-07 實測,Galileo testnet)
+
+規格 Decision B 原本兩個選項:(a) 不 host 任何本體,網站只吃使用者手上的章、再跟鏈上對
+hash;(b) `underwrite` 把章 A 傳上 0G Storage,網站用 hash 去撈。**選 (b)**,理由是
+registry 上存的是 hash —— 只有 (a) 的話,那個 hash 指到的東西沒有任何人撈得到,鏈上那筆
+listing 就只是一串沒有指涉的數字。
+
+### G1. 0G-KV 出局
+
+KV 層看起來最合身(key = sealHash,value = 章的 bytes),但**唯一一個有文件的公開 KV 節點
+`3.101.147.150:6789` 連不上**(timeout),而且找不到任何 HTTPS 的公開 KV 節點。瀏覽器要能讀
+是硬需求,所以 KV 直接出局,改用 log 層。
+
+### G2. 寫入 —— 端到端成功
+
+| 項目 | 值 |
+|---|---|
+| 套件 | **`@0gfoundation/0g-storage-ts-sdk` 1.2.12** |
+| 呼叫 | `indexer.upload(new MemData(bytes), rpc, signer, { tags: sealHash })` |
+| indexer | `https://indexer-storage-testnet-turbo.0g.ai` |
+| tx | `0xa1ac7763ab26db8a98f98e4bfa67a5189bee6c2c2397575b22244f91bb741b75` |
+| root | `0xec5a33d2e244bba38ff92353534f39333b7c70302bafe1e64d7a1a2a8cd8a42f` |
+| txSeq | 149629 |
+| 耗時 / 費用 | 11 秒 / storage fee 215135514734 wei |
+
+**舊的 `@0glabs/0g-ts-sdk` 0.3.3 在 `Flow.submit` 會 revert**,不要用。依 wayne-workflow:
+不在會 revert 的 API 表面上寫新程式。
+
+### G3. 讀取 —— 瀏覽器和 Node 走同一條
+
+indexer 有一個 HTTPS gateway,而且帶 `access-control-allow-origin: *`:
+
+- `GET /file?root=<root>` 回檔案 bytes
+- `GET /file/info/<root>` 回那筆 tx
+
+這正是 `storagescan-galileo.0g.ai` 自己在用的。`downloadToBlob` 也驗過 byte 級別完全一致。
+
+### G4. sealHash → root 的那一跳
+
+上傳的 `Flow.Submit(sender indexed, …, submission{tags})` 裡 `tags == sealHash`。
+`evmrpc-testnet.0g.ai`(CORS `*`)上用 `sender` 過濾的 `eth_getLogs`:
+
+- **一次 5,000,000 個 block 的區間可以過,整段範圍會被拒。**
+- 所以讀的一方從 `latest` 往回,每 5,000,000 個 block 一段掃,掃到第一個 `tags` 對得上就停。
+
+實作在 `packages/storage/src/locate.ts`(`DEFAULT_CHUNK_BLOCKS = 5_000_000n`、
+`DEFAULT_MAX_CHUNKS = 12`)。
+
+**完整性檢查不是 root,是 `sealDigest(fetched) == sealHash`。** 章的 canonical 編碼就是它
+自己的名字,所以撈回來的 bytes 對不對,章自己驗得出來,不需要相信 gateway 或 indexer。
+撈回來的東西 digest 對不上,一律 `SealNotFoundError("DIGEST_MISMATCH")` —— 包含 gateway 回
+一包 `{"code":…}` 錯誤 JSON 的情況(它 parse 得過,它只是不是那顆章)。
+
+### G5. 上傳失敗不能否決章
+
+publish 是 `underwrite` 裡一個**不能拒絕章**的階段:傳不上去就在 `steps[]` 留一句警告、
+`storage: null`,流程繼續。理由很直接 —— 錢已經付了、章已經簽了,一次上傳失敗不該把那顆
+章連同它背後的付款一起丟掉。
+
+補救的路是 `acu underwrite --seal-file <path> --publish`:拿已經簽好的章 A 重新走一次上傳。
+一筆本體從沒被上傳的 listing,鏈上那個 hash 指向的是空的,誰都撈不回來。

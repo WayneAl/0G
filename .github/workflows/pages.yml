@@ -1,0 +1,63 @@
+# Publish the static site to GitHub Pages.
+#
+# Nothing here holds a key and nothing here is a server: `web/dist` is HTML, CSS
+# and a JS bundle that verifies seals in the visitor's browser. The only network
+# reads the published page makes are the public 0G testnet RPC, the 0G Storage
+# indexer gateway, and the `directory.json` it serves itself.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A second push waits rather than racing the first;
+# cancelling half-way could leave the site on a partially uploaded artifact.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` on purpose — action-setup v4 reads `packageManager` out of
+      # package.json, so the lockfile stays the single place pnpm is pinned.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # A project site is served from https://<user>.github.io/0G/, so the base
+      # path has to be baked in: without it every asset URL and the bundled
+      # `directory.json` path resolve at the domain root and 404.
+      - run: pnpm --filter @acu/web build
+        env:
+          BASE_PATH: /0G/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
