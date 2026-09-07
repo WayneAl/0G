@@ -57,30 +57,15 @@ importers:
 
   agent-b:
     dependencies:
-      '@acu/og':
+      '@acu/auditor':
         specifier: workspace:*
-        version: link:../packages/og
-      '@acu/seal':
-        specifier: workspace:*
-        version: link:../packages/seal
-      '@x402/core':
-        specifier: ^2.24.0
-        version: 2.24.0
-      '@x402/evm':
-        specifier: ^2.24.0
-        version: 2.24.0(typescript@5.9.3)
-      '@x402/express':
-        specifier: ^2.24.0
-        version: 2.24.0(express@4.22.2)(typescript@5.9.3)
+        version: link:../packages/auditor
       express:
         specifier: ^4.21.2
         version: 4.22.2
       viem:
         specifier: ^2.23.2
         version: 2.56.1(typescript@5.9.3)(zod@3.25.76)
-      zod:
-        specifier: ^3.24.2
-        version: 3.25.76
     devDependencies:
       '@types/express':
         specifier: ^4.17.21
@@ -122,6 +107,40 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.13
+
+  packages/auditor:
+    dependencies:
+      '@acu/og':
+        specifier: workspace:*
+        version: link:../og
+      '@acu/seal':
+        specifier: workspace:*
+        version: link:../seal
+      '@x402/core':
+        specifier: ^2.24.0
+        version: 2.24.0
+      '@x402/evm':
+        specifier: ^2.24.0
+        version: 2.24.0(typescript@5.9.3)
+      '@x402/express':
+        specifier: ^2.24.0
+        version: 2.24.0(express@4.22.2)(typescript@5.9.3)
+      express:
+        specifier: ^4.21.2
+        version: 4.22.2
+      viem:
+        specifier: ^2.23.2
+        version: 2.56.1(typescript@5.9.3)(zod@3.25.76)
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+    devDependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.1)(tsx@4.23.13)
 
   packages/og:
     dependencies:

@@ -1,6 +1,6 @@
 import { RouterClient, type InferenceResult } from "@acu/og";
 import type { AuditRequestPayload } from "@acu/seal";
-import type { AgentBConfig } from "./config.js";
+import type { AuditorConfig } from "./config.js";
 
 /**
  * Runs the paid work: one attested inference over the token artifact.
@@ -9,7 +9,7 @@ import type { AgentBConfig } from "./config.js";
  * builder, which fences it. Nothing here parses it, branches on it, or lets it
  * pick a model — see spec §6.1 and packages/og/src/prompt.ts.
  */
-export function makeAuditor(config: AgentBConfig) {
+export function makeAuditor(config: AuditorConfig) {
   const client = new RouterClient({
     apiKey: config.og.apiKey,
     network: config.og.network,
