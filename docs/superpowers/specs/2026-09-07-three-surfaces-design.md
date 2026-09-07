@@ -62,8 +62,25 @@ CleanUSD against a locally started reference B → seal A returned, seal B insid
 each refusal to its code; MCP tools against a fake B; auditor route against a fake facilitator.
 
 ## Decisions (2026-09-07, Wayne)
-B=(b) 0G Storage via 0G-KV keyed by sealDigest, publish is a non-blocking stage; D=(a) @acu scope; E=(a) Vite;
-F=(a) GitHub Pages; G=(a) StubVerifier stays, only the reference A lists in v1.
+B=(b) seal bodies on 0G Storage; D=(a) @acu scope; E=(a) Vite; F=(a) GitHub Pages; G=(a) StubVerifier
+stays, only the reference A lists in v1.
+
+**B, refined by the spike (same day, live on Galileo):** 0G-KV is out — the only documented public KV
+node (`3.101.147.150:6789`) times out and no HTTPS one exists. The log layer works end to end:
+- Write (Node): `@0gfoundation/0g-storage-ts-sdk` 1.2.12 `indexer.upload(new MemData(bytes), rpc, signer,
+  { tags: sealHash })` on `https://indexer-storage-testnet-turbo.0g.ai`. Proof: tx
+  `0xa1ac7763ab26db8a98f98e4bfa67a5189bee6c2c2397575b22244f91bb741b75`, root
+  `0xec5a33d2e244bba38ff92353534f39333b7c70302bafe1e64d7a1a2a8cd8a42f`, txSeq 149629, 11 s, storage fee
+  215135514734 wei. The older `@0glabs/0g-ts-sdk` 0.3.3 reverts on `Flow.submit` — do not use it.
+- Read (browser and Node): the indexer exposes an HTTPS gateway with `access-control-allow-origin: *`:
+  `GET /file?root=<root>` returns the bytes, `GET /file/info/<root>` the tx. This is what
+  storagescan-galileo.0g.ai itself uses. `downloadToBlob` also round-trips byte-identical.
+- sealHash → root: the upload's `Flow.Submit(sender indexed, …, submission{tags})` carries
+  `tags == sealHash`. `eth_getLogs` on `evmrpc-testnet.0g.ai` (CORS `*`) filtered by `sender` works over
+  a 5,000,000-block span and rejects the full range; readers scan backwards in 5M-block chunks from
+  `latest` and stop at the first `tags` match. The seal bytes are the canonical encoding, so
+  `sealDigest(fetched) == sealHash` is the integrity check, not the root.
+- Publish is a stage of `underwrite` that cannot refuse the seal: failure → `steps[]` warning + `storage: null`.
 
 ## Open decisions (resolved above, kept for the record)
 B. Seal bodies: (a) none hosted; the website takes the seal from the user and cross-checks the chain
