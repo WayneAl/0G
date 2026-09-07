@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,9 +15,22 @@ const capture = (env: NodeJS.ProcessEnv): { io: { out: (l: string) => void; env:
 
 const repoFile = (rel: string): string => fileURLToPath(new URL(`../../../${rel}`, import.meta.url));
 
-/** The seals the browser verifier ships, read from the same files it reads. */
-const SEAL_A = repoFile("verifier/example-sealA.json");
-const EXAMPLES = JSON.parse(readFileSync(repoFile("verifier/examples.json"), "utf8")) as Record<string, unknown>;
+/**
+ * The seals the browser verifier ships, read from the same files it reads.
+ *
+ * They are moving from `verifier/` into `web/public/examples/` as the site is
+ * built; look in both rather than pinning a path that is mid-flight, and say so
+ * loudly if they are in neither.
+ */
+const fixture = (name: string): string => {
+  for (const rel of [`web/public/examples/${name}`, `verifier/${name}`]) {
+    if (existsSync(repoFile(rel))) return repoFile(rel);
+  }
+  throw new Error(`example seal ${name} is in neither web/public/examples/ nor verifier/`);
+};
+
+const SEAL_A = fixture("example-sealA.json");
+const EXAMPLES = JSON.parse(readFileSync(fixture("examples.json"), "utf8")) as Record<string, unknown>;
 
 describe("routing", () => {
   it("prints the five commands when asked for nothing", async () => {
