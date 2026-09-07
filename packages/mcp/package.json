@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@acu/config": "workspace:*",
     "@acu/seal": "workspace:*",
     "@acu/storage": "workspace:*",
     "@acu/underwriter": "workspace:*",

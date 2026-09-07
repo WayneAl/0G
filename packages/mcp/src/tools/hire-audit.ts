@@ -3,6 +3,7 @@ import { Address } from "@acu/seal";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { NO_KEY_NOTE, isDryRun, readAndHire, textResult } from "./shared.js";
+import { fundingRefusal, statusOf } from "./agent-status.js";
 
 /**
  * Pay the auditor and hold its seal to the six checks — and stop there.
@@ -16,7 +17,7 @@ export function registerHireAudit(server: McpServer, config: McpConfig): void {
     "hire_audit",
     {
       description:
-        "Pay the auditor over x402 and verify the seal B it returns against the six checks (signature, live agentId, subject, request, expiry, attestation). Returns the verified seal, or a refusal naming the check that failed. Without ACU_AGENT_KEY this stops at the quote.",
+        "Pay the auditor over x402 and verify the seal B it returns against the six checks (signature, live agentId, subject, request, expiry, attestation). Returns the verified seal, or a refusal naming the check that failed. Without a key this stops at the quote.",
       inputSchema: {
         token: Address.describe("ERC-20 contract address on 0G testnet."),
         source: z.string().optional().describe("Local Solidity source for the token, if you have it. Never fetched."),
@@ -30,6 +31,12 @@ export function registerHireAudit(server: McpServer, config: McpConfig): void {
       },
     },
     async ({ token, source, ltvBps }) => {
+      // Money first: an x402 authorization is signed locally and only fails at
+      // the facilitator, so an unfunded agent would otherwise learn about the
+      // faucet from a settlement error.
+      const unfunded = await fundingRefusal(config, await statusOf(config));
+      if (unfunded !== null) return textResult({ ...unfunded, requestedLtvBps: ltvBps });
+
       const result = await readAndHire(config, { token, source });
       const note = isDryRun(config) ? { note: NO_KEY_NOTE } : {};
       return textResult({ ...result, requestedLtvBps: ltvBps, ...note });

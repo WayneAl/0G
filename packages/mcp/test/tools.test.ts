@@ -1,4 +1,4 @@
-import { readFileSync, mkdtempSync } from "node:fs";
+import { readFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { recoverSealSigner } from "@acu/seal";
 import { refusalForThrow } from "../src/tools/underwrite.js";
 import { bigintReplacer } from "../src/tools/shared.js";
+import { loadConfig } from "../src/config.js";
+import { configPath } from "@acu/config";
 
 // One real child process, one real RPC read. Both are slow on a cold cache.
 vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
@@ -49,6 +51,7 @@ const TOOL_NAMES = [
   "verify_seal",
   "underwrite",
   "get_listing",
+  "agent_status",
 ];
 
 function textOf(result: unknown): string {
@@ -72,6 +75,9 @@ beforeAll(async () => {
   // Port 1 is not a port anything listens on: the auditor is reachably absent.
   env["ACU_AUDITOR_URL"] = "http://127.0.0.1:1/audit";
   env["ACU_LEDGER_PATH"] = join(mkdtempSync(join(tmpdir(), "acu-mcp-")), "budget-ledger.json");
+  // The server now reads ~/.acu/config.json, so the suite must be pointed at an
+  // empty one: a developer's real key must never reach a test.
+  env["ACU_HOME"] = mkdtempSync(join(tmpdir(), "acu-home-"));
   delete env["ACU_AGENT_KEY"];
 
   client = new Client({ name: "acu-mcp-test", version: "0" });
@@ -83,7 +89,7 @@ afterAll(async () => {
 });
 
 describe("the acu MCP server, over a real stdio transport", () => {
-  it("exposes exactly the six tools that are the contract", async () => {
+  it("exposes exactly the seven tools that are the contract", async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...TOOL_NAMES].sort());
   });
@@ -156,6 +162,16 @@ describe("the acu MCP server, over a real stdio transport", () => {
     expect(text).toContain("AUDITOR_UNREACHABLE");
   });
 
+  it("answers agent_status with no key by naming the CLI, not a re-install", async () => {
+    const res = await client.callTool({ name: "agent_status", arguments: {} });
+    const body = JSON.parse(textOf(res));
+    expect(body, textOf(res)).toMatchObject({ hasKey: false, nextStep: "Run: npx @acu/cli init" });
+    // Having no key yet is a state, not a fault.
+    expect(res.isError).toBeFalsy();
+    // The auditor on port 1 is not answering, and the payload says so plainly.
+    expect(body.auditor.online).toBe(false);
+  });
+
   it("names the auditor instead of leaking a bare fetch error out of underwrite", async () => {
     const res = await client.callTool({
       name: "underwrite",
@@ -194,6 +210,51 @@ describe("the refusal a throw out of underwrite() becomes", () => {
   it("keeps a seal A that was already signed when a later stage throws", () => {
     const r = refusalForThrow("settle", new Error("reverted"), SEAL_A as never) as Record<string, unknown>;
     expect(r["sealA"]).toBeTruthy();
+  });
+});
+
+describe("loadConfig — env > ~/.acu/config.json > default", () => {
+  const home = (): NodeJS.ProcessEnv => ({
+    ACU_HOME: mkdtempSync(join(tmpdir(), "acu-home-")),
+    ACU_DIRECTORY_JSON: JSON.stringify({ agents: [] }),
+  });
+  const KEY = `0x${"11".repeat(32)}`;
+  const OTHER = `0x${"22".repeat(32)}`;
+
+  const withKeyOnDisk = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv => {
+    writeFileSync(configPath(env), JSON.stringify({ agentKey: KEY, agentId: "7" }), { mode: 0o600 });
+    return env;
+  };
+
+  it("takes the key the CLI wrote when the environment says nothing", async () => {
+    const config = await loadConfig(withKeyOnDisk(home()));
+    expect(config.agentKey).toBe(KEY);
+    expect(config.agentId).toBe("7");
+  });
+
+  it("lets the environment win over the file", async () => {
+    const env = withKeyOnDisk(home());
+    const config = await loadConfig({ ...env, ACU_AGENT_KEY: OTHER, ACU_AGENT_ID: "9" });
+    expect(config.agentKey).toBe(OTHER);
+    expect(config.agentId).toBe("9");
+  });
+
+  it("is a supported configuration with neither: paid tools stop at the quote", async () => {
+    const config = await loadConfig(home());
+    expect(config.agentKey).toBeNull();
+    expect(config.agentId).toBe("1");
+  });
+
+  it("keeps the budget ledger under ACU_HOME rather than the real ~/.acu", async () => {
+    const env = home();
+    const config = await loadConfig(env);
+    expect(config.ledgerPath).toBe(join(env["ACU_HOME"] as string, "budget-ledger.json"));
+  });
+
+  it("throws rather than running with a key that is not a key", async () => {
+    const env = home();
+    writeFileSync(configPath(env), JSON.stringify({ agentKey: "hunter2" }));
+    await expect(loadConfig(env)).rejects.toThrow(/config\.json/);
   });
 });
 

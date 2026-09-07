@@ -6,9 +6,10 @@ import { registerHireAudit } from "./tools/hire-audit.js";
 import { registerVerifySeal } from "./tools/verify-seal.js";
 import { registerUnderwrite } from "./tools/underwrite.js";
 import { registerGetListing } from "./tools/get-listing.js";
+import { registerAgentStatus } from "./tools/agent-status.js";
 
 /**
- * Six tools that turn any MCP client into Agent A.
+ * Seven tools that turn any MCP client into Agent A.
  *
  * The names are the contract — a client that learned `verify_seal` on one build
  * must find it on the next — so they are written out here rather than derived
@@ -23,6 +24,7 @@ export function createServer(config: McpConfig): McpServer {
   registerVerifySeal(server, config);
   registerUnderwrite(server, config);
   registerGetListing(server, config);
+  registerAgentStatus(server, config);
 
   return server;
 }

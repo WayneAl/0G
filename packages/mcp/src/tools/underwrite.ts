@@ -5,6 +5,7 @@ import { ogStoragePublisher } from "@acu/storage/publish";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { NO_KEY_NOTE, detailOf, isDryRun, makeDeps, textResult } from "./shared.js";
+import { fundingRefusal, statusOf } from "./agent-status.js";
 
 /**
  * The whole A side in one call: read, hire, verify, compose, publish, list.
@@ -19,7 +20,7 @@ export function registerUnderwrite(server: McpServer, config: McpConfig): void {
     "underwrite",
     {
       description:
-        "Run the full underwriting: read the token, pay and verify an auditor's seal B, compose and sign seal A around it, publish the body to 0G Storage, and list it on the CollateralRegistry. Refuses with a named code at whichever step fails. Without ACU_AGENT_KEY this stops at the quote.",
+        "Run the full underwriting: read the token, pay and verify an auditor's seal B, compose and sign seal A around it, publish the body to 0G Storage, and list it on the CollateralRegistry. Refuses with a named code at whichever step fails. Without a key this stops at the quote.",
       inputSchema: {
         token: Address.describe("ERC-20 contract address on 0G testnet."),
         ltvBps: z
@@ -38,6 +39,10 @@ export function registerUnderwrite(server: McpServer, config: McpConfig): void {
       },
     },
     async ({ token, ltvBps, source, settle, publish }) => {
+      // Money first, before anything signs: see `fundingRefusal`.
+      const unfunded = await fundingRefusal(config, await statusOf(config));
+      if (unfunded !== null) return textResult(unfunded);
+
       const publisher =
         config.agentKey !== null && publish
           ? ogStoragePublisher({

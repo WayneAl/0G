@@ -40,8 +40,15 @@ export function textResult(value: unknown, isError = false): CallToolResult {
   };
 }
 
-/** What a paid tool adds when there is no key to pay with. */
-export const NO_KEY_NOTE = "no ACU_AGENT_KEY — stopped at the quote";
+/**
+ * What a paid tool adds when there is no key to pay with.
+ *
+ * It names the CLI, not this server: MCP configuration is fixed at install time,
+ * so "add a key" used to mean removing and re-adding the server. It does not any
+ * more — both shells read `~/.acu/config.json`.
+ */
+export const NO_KEY_NOTE =
+  "no key — stopped at the quote. Next: run `npx @acu/cli init`, fund the address it prints, then call this tool again (the MCP reads ~/.acu/config.json; no re-install).";
 
 /** True when this process holds no key, and so may never sign anything. */
 export const isDryRun = (config: McpConfig): boolean => config.agentKey === null;
@@ -56,7 +63,13 @@ export const detailOf = (err: unknown): string => (err instanceof Error ? err.me
  * — the auditor is not running — and it has to come back as a named refusal
  * instead of taking down a server the client is still talking to.
  */
-export type McpFailure = UnderwriteFailure | "AUDITOR_UNREACHABLE";
+export type McpFailure =
+  | UnderwriteFailure
+  | "AUDITOR_UNREACHABLE"
+  // Both come from the pre-payment funding check, which `underwrite()` does not
+  // do: it is handed an account and assumes the caller checked it can pay.
+  | "INSUFFICIENT_USDC"
+  | "USDC_RPC_UNREACHABLE";
 
 export interface Refusal {
   ok: false;

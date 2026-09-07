@@ -1,17 +1,25 @@
-import { homedir } from "node:os";
+import { configDir, readUserConfig, resolve, type UserConfig } from "@acu/config";
 import { Directory, HttpAgentIdResolver } from "@acu/seal";
+import { BASE_SEPOLIA_RPC, BASE_SEPOLIA_USDC, CIRCLE_FAUCET } from "@acu/underwriter";
 import { OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@acu/storage/publish";
 
 /**
- * Everything the toolkit needs, read from the environment exactly once.
+ * Everything the toolkit needs, resolved exactly once: **env >
+ * `~/.acu/config.json` > built-in default**.
+ *
+ * The file half is what makes `claude mcp add acu -- npx -y @acu/mcp` need no
+ * environment variables at all: `acu init` wrote the key, and this server reads
+ * the same file. MCP configuration is fixed at install time, so a key that
+ * arrived later used to mean removing and re-adding the server; now it does not.
  *
  * The whole surface of "who am I and what am I allowed to spend" lives here, so
  * no tool handler ever reaches for `process.env`. A key that is simply absent is
  * a supported configuration — it makes every paid tool stop at the quote — but a
- * key that is present and malformed is a fault, and throws.
+ * key that is present and malformed is a fault, and throws, wherever it came
+ * from.
  */
 export interface McpConfig {
-  /** ACU_AGENT_KEY. Absent → every paid tool stops at the quote. */
+  /** ACU_AGENT_KEY > the file's agentKey. Absent → paid tools stop at the quote. */
   agentKey: `0x${string}` | null;
   /** ACU_AGENT_ID, default "1". */
   agentId: string;
@@ -19,7 +27,7 @@ export interface McpConfig {
   auditorUrl: string;
   /** ACU_AUDITOR_AGENT_ID, default "2". */
   auditorAgentId: string;
-  /** ACU_DIRECTORY_JSON (inline) or fetched from ACU_DIRECTORY_URL at startup. */
+  /** ACU_DIRECTORY_JSON (inline), else fetched from ACU_DIRECTORY_URL / the file. */
   directory: Directory;
   /** ACU_REGISTRY. */
   registry: `0x${string}` | null;
@@ -29,7 +37,7 @@ export interface McpConfig {
   indexerUrl: string;
   /** ACU_PAYMENT_NETWORK, default "eip155:84532". */
   network: `${string}:${string}`;
-  /** ACU_LEDGER_PATH, default `${os.homedir()}/.acu/budget-ledger.json`. */
+  /** ACU_LEDGER_PATH, default `<ACU_HOME or ~/.acu>/budget-ledger.json`. */
   ledgerPath: string;
   /** ACU_ALLOWED_PAYTO (comma list); default: the directory's auditor signers. */
   allowedPayTo: `0x${string}`[];
@@ -37,6 +45,14 @@ export interface McpConfig {
   publish: boolean;
   /** ACU_WEB_URL — where `shareUrl` points. Default the project's Pages site. */
   webUrl: string;
+  /** ACU_USDC, default Base Sepolia USDC. */
+  usdc: `0x${string}`;
+  /** ACU_FAUCET_URL, default the Circle faucet. */
+  faucetUrl: string;
+  /** ACU_PAYMENT_RPC_URL, default Base Sepolia. Where the balance is read. */
+  paymentRpcUrl: string;
+  /** Where the config came from, so `agent_status` can name it. */
+  directoryUrl: string | null;
 }
 
 const HEX_KEY = /^0x[0-9a-fA-F]{64}$/;
@@ -68,30 +84,38 @@ function requireHex(value: string, name: string, pattern: RegExp, what: string):
  * a resolver with no agents would report every seal as `AGENT_ID_NOT_LIVE`,
  * which reads as "the seals are bad" rather than "you forgot to configure me".
  */
-async function loadDirectory(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetch): Promise<Directory> {
+async function loadDirectory(
+  env: NodeJS.ProcessEnv,
+  url: string | null,
+  fetchImpl?: typeof fetch,
+): Promise<Directory> {
   const inline = env["ACU_DIRECTORY_JSON"];
   if (inline !== undefined && inline.trim() !== "") {
     return Directory.parse(JSON.parse(inline));
   }
-  const url = env["ACU_DIRECTORY_URL"];
-  if (url !== undefined && url.trim() !== "") {
+  if (url !== null && url.trim() !== "") {
     return new HttpAgentIdResolver(url, fetchImpl ?? globalThis.fetch).directory();
   }
   throw new Error("ACU_DIRECTORY_URL or ACU_DIRECTORY_JSON is required");
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetch): Promise<McpConfig> {
-  const directory = await loadDirectory(env, fetchImpl);
+  // The file the CLI wrote. Reading it is what makes zero-env installs work;
+  // a file that exists and will not parse throws rather than reading as empty.
+  const user: UserConfig = readUserConfig(env);
 
-  const rawKey = env["ACU_AGENT_KEY"];
+  const directoryUrl = resolve<string | null>(env["ACU_DIRECTORY_URL"], user.directoryUrl, null);
+  const directory = await loadDirectory(env, directoryUrl, fetchImpl);
+
+  const rawKey = resolve<string | null>(env["ACU_AGENT_KEY"], user.agentKey, null);
   const agentKey =
-    rawKey === undefined || rawKey.trim() === ""
+    rawKey === null
       ? null
-      : requireHex(rawKey.trim(), "ACU_AGENT_KEY", HEX_KEY, "a 0x-prefixed 32-byte private key");
+      : requireHex(rawKey.trim(), keySource(env), HEX_KEY, "a 0x-prefixed 32-byte private key");
 
-  const rawRegistry = env["ACU_REGISTRY"];
+  const rawRegistry = resolve<string | null>(env["ACU_REGISTRY"], user.registry, null);
   const registry =
-    rawRegistry === undefined || rawRegistry.trim() === ""
+    rawRegistry === null
       ? null
       : requireHex(rawRegistry.trim(), "ACU_REGISTRY", HEX_ADDRESS, "a 0x-prefixed 20-byte address");
 
@@ -114,17 +138,29 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
 
   return {
     agentKey,
-    agentId: env["ACU_AGENT_ID"] ?? "1",
-    auditorUrl: env["ACU_AUDITOR_URL"] ?? "http://localhost:4021/audit",
-    auditorAgentId: env["ACU_AUDITOR_AGENT_ID"] ?? "2",
+    agentId: resolve(env["ACU_AGENT_ID"], user.agentId, "1"),
+    auditorUrl: resolve(env["ACU_AUDITOR_URL"], user.auditorUrl, "http://localhost:4021/audit"),
+    auditorAgentId: resolve(env["ACU_AUDITOR_AGENT_ID"], null, "2"),
     directory,
     registry,
-    rpcUrl: env["ACU_RPC_URL"] ?? OG_TESTNET_RPC,
-    indexerUrl: env["ACU_INDEXER_URL"] ?? OG_TESTNET_INDEXER,
+    rpcUrl: resolve(env["ACU_RPC_URL"], null, OG_TESTNET_RPC),
+    indexerUrl: resolve(env["ACU_INDEXER_URL"], null, OG_TESTNET_INDEXER),
     network: network as `${string}:${string}`,
-    ledgerPath: env["ACU_LEDGER_PATH"] ?? `${homedir()}/.acu/budget-ledger.json`,
+    // Next to the config that names the key it protects, and ACU_HOME-aware, so
+    // a test never spends against the developer's real ledger.
+    ledgerPath: resolve(env["ACU_LEDGER_PATH"], user.ledgerPath, `${configDir(env)}/budget-ledger.json`),
     allowedPayTo,
     publish: (env["ACU_PUBLISH"] ?? "true") !== "false",
-    webUrl: env["ACU_WEB_URL"] ?? DEFAULT_WEB_URL,
+    webUrl: resolve(env["ACU_WEB_URL"], user.webUrl, DEFAULT_WEB_URL),
+    usdc: resolve(env["ACU_USDC"], null, BASE_SEPOLIA_USDC),
+    faucetUrl: resolve(env["ACU_FAUCET_URL"], null, CIRCLE_FAUCET),
+    paymentRpcUrl: resolve(env["ACU_PAYMENT_RPC_URL"], null, BASE_SEPOLIA_RPC),
+    directoryUrl,
   };
 }
+
+/** Named so a malformed key blames the place it actually came from. */
+const keySource = (env: NodeJS.ProcessEnv): string =>
+  env["ACU_AGENT_KEY"] !== undefined && env["ACU_AGENT_KEY"].trim() !== ""
+    ? "ACU_AGENT_KEY"
+    : "agentKey in ~/.acu/config.json";
