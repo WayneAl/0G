@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { main } from "../src/index.js";
 import { auditorTrust, resolveCliConfig, DEFAULT_AUDITOR_URL } from "../src/commands/underwrite.js";
+import { REFERENCE_DIRECTORY } from "../src/commands/verify.js";
 
 const home = (): NodeJS.ProcessEnv => ({ ACU_HOME: mkdtempSync(join(tmpdir(), "acu-cli-")) });
 
@@ -162,15 +163,52 @@ describe("who agent B is", () => {
     expect(allowedPayTo).toEqual([SIGNER.toLowerCase()]);
   });
 
-  it("names three fixes instead of throwing when the directory cannot be fetched", async () => {
+  /**
+   * The funnel's first promise is "works with no key and no environment", and a
+   * first run has neither — nor, before the site is published, a directory it
+   * can fetch. So an unreachable directory falls back to the reference pair
+   * rather than ending the run.
+   */
+  it("falls back to the reference pair when the directory cannot be fetched", async () => {
     // Port 1 is not a port anything listens on: reachably absent, no socket
     // leaves the machine.
     const env = { ...home(), ACU_DIRECTORY_URL: "http://127.0.0.1:1/directory.json" };
-    await expect(auditorTrust(resolveCliConfig(env))).rejects.toThrow(/^NO_DIRECTORY: /);
+
+    const notes: string[] = [];
+    const realError = console.error;
+    console.error = (...args: unknown[]): void => void notes.push(args.join(" "));
+    let trusted: Awaited<ReturnType<typeof auditorTrust>>;
+    try {
+      trusted = await auditorTrust(resolveCliConfig(env));
+    } finally {
+      console.error = realError;
+    }
+
+    for (const agent of REFERENCE_DIRECTORY.agents) {
+      expect(await trusted.resolver.resolve(agent.agentId)).toBe(agent.signer.toLowerCase());
+    }
+    // Still an allowlist, and still only the auditors in the directory it used.
+    expect(trusted.allowedPayTo).toEqual(
+      REFERENCE_DIRECTORY.agents.filter((a) => a.role === "auditor").map((a) => a.signer.toLowerCase()),
+    );
+    // A fallback that happens silently is a default, and this is not one: a
+    // configured directory that cannot be read is worth saying out loud.
+    expect(notes.join("\n")).toContain("http://127.0.0.1:1/directory.json");
+    expect(notes.join("\n")).toContain("ACU_AUDITOR_SIGNER");
+  });
+
+  /**
+   * The fallback covers a directory that cannot be *reached*. A directory that
+   * was supplied and is not a directory is a different thing — the operator
+   * said something specific and got it wrong, and guessing past that would pay
+   * an auditor they never named.
+   */
+  it("still refuses, with three named fixes, when the directory supplied is not one", async () => {
+    const env = { ...home(), ACU_DIRECTORY_JSON: JSON.stringify({ agents: [{ nope: true }] }) };
+    await expect(auditorTrust(resolveCliConfig(env))).rejects.toThrow();
 
     const { io, text } = capture(env);
     expect(await main(["quote", "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8"], io)).toBe(1);
     expect(text()).toContain("✗ NO_DIRECTORY");
-    expect(text()).toContain("ACU_AUDITOR_SIGNER");
   });
 });

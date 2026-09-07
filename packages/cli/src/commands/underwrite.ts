@@ -2,7 +2,16 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, toHex } from "viem";
-import { configDir, configPath, readUserConfig, resolve, type UserConfig } from "@acu/config";
+import {
+  DEFAULT_WEB_URL,
+  DRY_RUN_KEY,
+  configDir,
+  configPath,
+  readUserConfig,
+  resolve,
+  shareUrl,
+  type UserConfig,
+} from "@acu/config";
 import {
   signSealA,
   verifySealB,
@@ -30,6 +39,9 @@ import {
 } from "@acu/underwriter";
 import { ogStoragePublisher, OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@acu/storage/publish";
 import { loadFixture, fixtureRequest } from "../replay.js";
+import { REFERENCE_DIRECTORY } from "./verify.js";
+
+export { DEFAULT_WEB_URL, DRY_RUN_KEY, shareUrl };
 
 interface Args {
   token: `0x${string}`;
@@ -110,7 +122,6 @@ export interface CliConfig {
   paymentRpcUrl: string;
 }
 
-export const DEFAULT_WEB_URL = "https://wayneal.github.io/0G";
 export const DEFAULT_AUDITOR_URL = "http://localhost:4021/audit";
 
 /** The first of these variables that is set to something non-empty. */
@@ -217,12 +228,22 @@ export async function auditorTrust(
   try {
     directory = await resolver.directory();
   } catch (err) {
-    // A directory nobody can fetch is a configuration problem with three named
-    // fixes, not a stack trace for a first-time user to decode.
-    throw new Error(
-      `NO_DIRECTORY: ${config.directoryUrl} — ${err instanceof Error ? err.message : String(err)}. ` +
-        `Set ACU_DIRECTORY_URL, ACU_DIRECTORY_JSON, or name the auditor's signer with ACU_AUDITOR_SIGNER.`,
+    // A first run has nothing configured and the published directory may not be
+    // reachable — it is not up yet, or the machine is offline. Falling back to
+    // the reference pair is what makes `acu quote <token>` work with no key and
+    // no environment, which is the whole first step of the funnel. It is a
+    // fallback and not a default: an unreachable directory is worth saying out
+    // loud, on stderr, because a *configured* one failing is a real problem.
+    console.error(
+      `note: ${config.directoryUrl} could not be read ` +
+        `(${err instanceof Error ? err.message : String(err)}); ` +
+        `using the built-in reference agents. ` +
+        `Set ACU_DIRECTORY_URL, ACU_DIRECTORY_JSON, or ACU_AUDITOR_SIGNER to name your own.`,
     );
+    return {
+      resolver: resolverFromDirectory(REFERENCE_DIRECTORY),
+      allowedPayTo: payToOf(config, REFERENCE_DIRECTORY),
+    };
   }
   return {
     resolver,
@@ -240,16 +261,6 @@ const payToOf = (config: CliConfig, directory: Directory): `0x${string}`[] =>
 
 /** What every command says when there is no key to sign with. */
 export const NEXT_STEP_INIT = "Run: npx @acu/cli init";
-
-/**
- * An account for the dry-run path to hold and never use.
- *
- * The deps are built before the run knows whether it will sign, so it needs *an*
- * account even when there is nothing to sign with. Private key 1 — public
- * knowledge, funded nowhere — and unreachable, because `dryRun` is forced true
- * whenever there is no real key.
- */
-export const DRY_RUN_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001" as const;
 
 const detailOf = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
@@ -434,7 +445,7 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
 
   if (result.listing) {
     console.log(`\n✓ EXECUTED  ltv=${result.listing.ltvBps}bps  tx=${result.listing.txHash}`);
-    console.log(`\nShare it: ${shareUrl(config, result.sealA)}`);
+    console.log(`\nShare it: ${shareUrl(config.webUrl, result.sealA)}`);
     return 0;
   }
 
@@ -444,24 +455,13 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
     step("7", `skipped: ${result.skipped.settle}`);
     console.log(`\n${JSON.stringify(result.sealA, null, 2)}`);
     console.log(`\n○ NOT LISTED — ${result.skipped.settle}`);
-    console.log(`\nShare it: ${shareUrl(config, result.sealA)}`);
+    console.log(`\nShare it: ${shareUrl(config.webUrl, result.sealA)}`);
     return 0;
   }
   console.log(`\n${JSON.stringify(result.sealA, null, 2)}`);
   console.log("\n○ --no-settle: seal A printed, nothing submitted on chain.");
-  console.log(`\nShare it: ${shareUrl(config, result.sealA)}`);
+  console.log(`\nShare it: ${shareUrl(config.webUrl, result.sealA)}`);
   return 0;
-}
-
-/**
- * A link that carries the seal itself, not a pointer to one.
- *
- * The verifier page checks the fragment locally, so a link opened by someone who
- * has never heard of us proves the same thing. Fragments are never sent to a
- * server, which is the point: sharing a seal must not require trusting a host.
- */
-export function shareUrl(config: Pick<CliConfig, "webUrl">, seal: SealA): string {
-  return `${config.webUrl}/#seal=${Buffer.from(JSON.stringify(seal), "utf8").toString("base64url")}`;
 }
 
 /**

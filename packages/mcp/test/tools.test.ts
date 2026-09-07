@@ -19,8 +19,8 @@ const read = (rel: string): Record<string, any> =>
   JSON.parse(readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8"));
 
 /** Real recorded seals — the same bytes the browser verifier ships. */
-const SEAL_A = read("../../../verifier/example-sealA.json");
-const EXAMPLES = read("../../../verifier/examples.json");
+const SEAL_A = read("../../../web/public/examples/example-sealA.json");
+const EXAMPLES = read("../../../web/public/examples/examples.json");
 
 /** CleanUSD on 0G testnet, from demo/fixtures/replay/clean.json. */
 const CLEAN_USD = "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8";
@@ -255,6 +255,27 @@ describe("loadConfig — env > ~/.acu/config.json > default", () => {
     const env = home();
     writeFileSync(configPath(env), JSON.stringify({ agentKey: "hunter2" }));
     await expect(loadConfig(env)).rejects.toThrow(/config\.json/);
+  });
+
+  /**
+   * A key is rejected for being the wrong shape, not for being the wrong value:
+   * a mistyped 65-character key is still 64 characters of somebody's real
+   * secret. This message travels to stderr, an issue, or an MCP client's
+   * transcript, so it may say how long the value was and never what it was.
+   */
+  it("never quotes the key back when it rejects one", async () => {
+    const env = home();
+    const nearlyRight = `0x${"ab".repeat(32)}cd`; // one byte too long
+    writeFileSync(configPath(env), JSON.stringify({ agentKey: nearlyRight }));
+    const err = await loadConfig(env).then(
+      () => null,
+      (e: unknown) => e as Error,
+    );
+    expect(err, "a 66-byte key must be rejected").not.toBeNull();
+    expect(err?.message).not.toContain(nearlyRight.slice(0, 6));
+    expect(err?.message).toContain(`${nearlyRight.length} characters`);
+    // And it still says which of the two places to go and fix.
+    expect(err?.message).toContain("config.json");
   });
 });
 

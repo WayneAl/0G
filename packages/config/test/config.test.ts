@@ -2,7 +2,16 @@ import { chmodSync, mkdtempSync, mkdirSync, readFileSync, statSync, writeFileSyn
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { configDir, configPath, readUserConfig, resolve, writeUserConfig } from "../src/index.js";
+import {
+  DEFAULT_WEB_URL,
+  DRY_RUN_KEY,
+  configDir,
+  configPath,
+  readUserConfig,
+  resolve,
+  shareUrl,
+  writeUserConfig,
+} from "../src/index.js";
 
 /**
  * Every case gets its own ACU_HOME, so nothing here can read or write the real
@@ -149,5 +158,41 @@ describe("resolve — env > file > default", () => {
 
   it("trims the environment value, because shells add newlines", () => {
     expect(resolve(" 0xabc\n", null, "dflt")).toBe("0xabc");
+  });
+});
+
+/**
+ * The link is the artefact a user actually hands to someone else, and it is
+ * minted by two different shells. These cases pin the one property that makes
+ * that safe: whatever opens the link needs nothing but the link.
+ */
+describe("shareUrl", () => {
+  const SEAL = { type: "underwriting", subject: "0xdb08", verdict: { ltvBps: 7000 } };
+
+  it("carries the seal in the fragment, so no server ever sees it", () => {
+    const url = shareUrl(DEFAULT_WEB_URL, SEAL);
+    const [base, fragment] = url.split("#seal=");
+    expect(base).toBe(`${DEFAULT_WEB_URL}/`);
+    expect(JSON.parse(Buffer.from(fragment as string, "base64url").toString("utf8"))).toEqual(SEAL);
+  });
+
+  it("encodes base64url, because a seal in a query string would not survive one", () => {
+    // "+" and "/" from plain base64 both change meaning inside a URL; a seal
+    // whose encoding is mangled in transit verifies as tampered on arrival.
+    const fragment = shareUrl("https://x", { s: "\u00ff".repeat(8) }).split("#seal=")[1];
+    expect(fragment).not.toMatch(/[+/=]/);
+  });
+
+  it("follows a webUrl an operator overrode, so a staging build is shareable too", () => {
+    expect(shareUrl("http://localhost:5173", SEAL)).toMatch(/^http:\/\/localhost:5173\/#seal=/);
+  });
+});
+
+describe("DRY_RUN_KEY", () => {
+  it("is a well-formed key nobody would ever fund", () => {
+    // It has to satisfy viem so the dry-run path can build an account; it must
+    // never be mistaken for a real one, which is why it is the public constant 1.
+    expect(DRY_RUN_KEY).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(BigInt(DRY_RUN_KEY)).toBe(1n);
   });
 });

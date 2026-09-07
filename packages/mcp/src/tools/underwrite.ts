@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Address, type SealA } from "@acu/seal";
 import { underwrite, type Stage, type UnderwriteResult } from "@acu/underwriter";
 import { ogStoragePublisher } from "@acu/storage/publish";
+import { shareUrl } from "@acu/config";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpConfig } from "../config.js";
 import { NO_KEY_NOTE, detailOf, isDryRun, makeDeps, textResult } from "./shared.js";
@@ -80,7 +81,7 @@ export function registerUnderwrite(server: McpServer, config: McpConfig): void {
 
       const note = isDryRun(config) ? { note: NO_KEY_NOTE } : {};
       if (result.ok && result.kind === "sealed") {
-        return textResult({ ...result, shareUrl: shareUrl(config, result.sealA), ...note });
+        return textResult({ ...result, shareUrl: shareUrl(config.webUrl, result.sealA), ...note });
       }
       return textResult({ ...result, ...note });
     },
@@ -110,16 +111,4 @@ export function refusalForThrow(stage: Stage, err: unknown, sealA: SealA | null)
     detail: `${stage} threw: ${detailOf(err)}`,
     ...(sealA === null ? {} : { sealA }),
   };
-}
-
-/**
- * A URL that carries the seal itself, not a pointer to one.
- *
- * The verifier page checks the fragment locally, so a link opened by someone who
- * has never heard of us still proves the same thing. Fragments are never sent to
- * the server, which is the point: sharing a seal must not require trusting a host.
- */
-export function shareUrl(config: McpConfig, seal: SealA): string {
-  const encoded = Buffer.from(JSON.stringify(seal), "utf8").toString("base64url");
-  return `${config.webUrl}/#seal=${encoded}`;
 }

@@ -1,4 +1,11 @@
-import { configDir, readUserConfig, resolve, type UserConfig } from "@acu/config";
+import {
+  DEFAULT_WEB_URL,
+  DRY_RUN_KEY,
+  configDir,
+  readUserConfig,
+  resolve,
+  type UserConfig,
+} from "@acu/config";
 import { Directory, HttpAgentIdResolver } from "@acu/seal";
 import { BASE_SEPOLIA_RPC, BASE_SEPOLIA_USDC, CIRCLE_FAUCET } from "@acu/underwriter";
 import { OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@acu/storage/publish";
@@ -58,22 +65,30 @@ export interface McpConfig {
 const HEX_KEY = /^0x[0-9a-fA-F]{64}$/;
 const HEX_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
-export const DEFAULT_WEB_URL = "https://wayneal.github.io/0G";
+export { DEFAULT_WEB_URL, DRY_RUN_KEY };
 
 /**
- * A key the dry-run path can hand to viem without ever using it.
+ * `secret` decides what a rejection is allowed to quote back.
  *
- * `underwrite()` builds its deps before it knows whether it will sign, so it
- * needs *an* account object even when there is nothing to sign with. This is
- * private key 1 — the smallest valid secp256k1 scalar, public knowledge, funded
- * nowhere we care about, and never reached, because `dryRun` is forced true
- * whenever `agentKey` is null.
+ * An address is public and echoing it is the fastest way to see the typo. A
+ * private key is not: a mistyped 65-character key is still 64 real characters of
+ * somebody's secret, and printing a prefix of it puts that in a log file, an
+ * issue, or an MCP client's transcript. Say how long it was and where it came
+ * from — that is everything needed to find it, and none of the key.
  */
-export const DRY_RUN_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001" as const;
-
-function requireHex(value: string, name: string, pattern: RegExp, what: string): `0x${string}` {
-  if (!pattern.test(value)) throw new Error(`${name} must be ${what}, got ${value.slice(0, 12)}…`);
-  return value.toLowerCase() as `0x${string}`;
+function requireHex(
+  value: string,
+  name: string,
+  pattern: RegExp,
+  what: string,
+  secret = false,
+): `0x${string}` {
+  if (pattern.test(value)) return value.toLowerCase() as `0x${string}`;
+  throw new Error(
+    secret
+      ? `${name} must be ${what} (got ${value.length} characters; the value is not shown)`
+      : `${name} must be ${what}, got ${value.slice(0, 12)}…`,
+  );
 }
 
 /**
@@ -111,7 +126,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
   const agentKey =
     rawKey === null
       ? null
-      : requireHex(rawKey.trim(), keySource(env), HEX_KEY, "a 0x-prefixed 32-byte private key");
+      : requireHex(rawKey.trim(), keySource(env), HEX_KEY, "a 0x-prefixed 32-byte private key", true);
 
   const rawRegistry = resolve<string | null>(env["ACU_REGISTRY"], user.registry, null);
   const registry =

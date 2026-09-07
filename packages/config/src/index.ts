@@ -201,3 +201,39 @@ function readRaw(path: string): Record<string, unknown> | null {
   }
   return parsed as Record<string, unknown>;
 }
+
+/**
+ * Where a shared seal is opened. The project's Pages site unless overridden.
+ *
+ * Here rather than in a shell, because a link minted by `acu underwrite` and one
+ * minted by the MCP's `underwrite` tool must open the same verifier. Two
+ * constants would drift the day one of them is pointed at a staging build, and
+ * the seal that came back from the other shell would land on a 404.
+ */
+export const DEFAULT_WEB_URL = "https://wayneal.github.io/0G";
+
+/**
+ * An account for the dry-run path to hold and never use.
+ *
+ * `underwrite()` builds its deps before it knows whether it will sign, so it
+ * needs *an* account even when there is nothing to sign with. This is private
+ * key 1 — the smallest valid secp256k1 scalar, public knowledge, funded nowhere
+ * we care about, and unreachable, because `dryRun` is forced true whenever
+ * `agentKey` is null.
+ */
+export const DRY_RUN_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001" as const;
+
+/**
+ * A link that carries the seal itself, not a pointer to one.
+ *
+ * The verifier page checks the fragment locally, so a link opened by someone who
+ * has never heard of us proves the same thing. Fragments are never sent to a
+ * server, which is the point: sharing a seal must not require trusting a host.
+ *
+ * Takes the URL rather than a config object so this module stays free of every
+ * package's own config type — and takes the seal as `object`, so `@acu/config`
+ * never has to depend on `@acu/seal` to render a link.
+ */
+export function shareUrl(webUrl: string, seal: object): string {
+  return `${webUrl}/#seal=${Buffer.from(JSON.stringify(seal), "utf8").toString("base64url")}`;
+}
