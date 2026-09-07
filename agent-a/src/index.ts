@@ -1,6 +1,5 @@
 import { config as loadEnv } from "dotenv";
 import { readFileSync, writeFileSync } from "node:fs";
-import { randomBytes } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, toHex } from "viem";
 import {
@@ -9,15 +8,17 @@ import {
   StaticAgentIdResolver,
   SealVerificationError,
   auditRequestHash,
-  type AuditRequestPayload,
   type SealA,
   type SealB,
-  type Unsigned,
 } from "@acu/seal";
-import { makeBudgetGate, BudgetExceededError } from "./budget.js";
-import { fetchTokenArtifact, makeOgClient, renderArtifact } from "./chain.js";
-import { hireAuditor, HireError } from "./hire.js";
-import { listWithSeal } from "./settle.js";
+import {
+  listWithSeal,
+  makeBudgetGate,
+  underwrite,
+  type Stage,
+  type StepEvent,
+  type UnderwriteDeps,
+} from "@acu/underwriter";
 import { loadFixture, fixtureRequest } from "./replay.js";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });
@@ -27,11 +28,11 @@ interface Args {
   ltvBps: number;
   live: boolean;
   settle: boolean;
+  /** Upload the seal A body to 0G Storage after signing it. */
+  publish: boolean;
   endpoint: string;
   registry: `0x${string}` | null;
   sourcePath: string | null;
-  /** Replaces the RPC read with a recorded artifact. Backs --offline (spec §10). */
-  artifactFile: string | null;
   /** Write the composed seal A here, so a later run can replay it. */
   emitSeal: string | null;
   /** Skip underwriting and present an already-issued seal A. Demo scene ③. */
@@ -58,10 +59,10 @@ function parseArgs(argv: string[]): Args {
     // Dry run is the default. Real money needs --live (spec §6.4).
     live: argv.includes("--live"),
     settle: !argv.includes("--no-settle"),
+    publish: argv.includes("--publish"),
     endpoint: flag("endpoint") ?? process.env["AGENT_B_URL"] ?? "http://localhost:4021/audit",
     registry: registry ? (registry.toLowerCase() as `0x${string}`) : null,
     sourcePath: flag("source") ?? null,
-    artifactFile: flag("artifact-file") ?? null,
     emitSeal: flag("emit-seal") ?? null,
     sealFile: flag("seal-file") ?? null,
     offline: flag("offline") ?? null,
@@ -80,6 +81,25 @@ const fail = (code: string, detail: string): never => {
   console.log(`  ${detail}`);
   process.exit(1);
 };
+
+/**
+ * The scene numbers the demo narrates. The library reports stages; this file is
+ * the only place that knows they are printed as [2]…[7].
+ */
+const STAGE_STEP: Record<Stage, string> = {
+  read: "2",
+  quote: "3",
+  hire: "4",
+  verify: "5",
+  compose: "6",
+  publish: "S",
+  settle: "7",
+};
+
+const printStep = (e: StepEvent): void =>
+  // Paying is still part of the hire, but it is the last thing [3] says before
+  // agent B answers as [4].
+  step(e.stage === "hire" && e.message.startsWith("paid ") ? "3" : STAGE_STEP[e.stage], e.message);
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
@@ -107,148 +127,66 @@ async function main(): Promise<void> {
 
   if (args.offline) return runOffline(args, agentA, agentAId, agentBId, agentBSealSigner, network);
 
-  // (2) Free RPC read. No paid data purchase (spec §11).
-  const source = args.sourcePath ? readFileSync(args.sourcePath, "utf8") : null;
-  let artifactText: string;
-  let ownAnalysis: { liquidityDepthUsd: string; top10HolderPct: number; sourceHash: `0x${string}` };
-
-  if (args.artifactFile) {
-    step("2", `reading recorded artifact from ${args.artifactFile}`);
-    artifactText = readFileSync(args.artifactFile, "utf8");
-    ownAnalysis = {
-      liquidityDepthUsd: "0",
-      top10HolderPct: 0,
-      sourceHash: keccak256(toHex(artifactText)),
-    };
-  } else {
-    step("2", "reading token from 0G testnet RPC");
-    const artifact = await fetchTokenArtifact(makeOgClient(), args.token, source);
-    step(
-      "2",
-      `${artifact.symbol ?? "?"} · ${artifact.bytecodeSize}B code · owner ${artifact.owner ?? "none"} · flagged selectors: ${artifact.presentSelectors.join(", ") || "none"}`,
-    );
-    artifactText = renderArtifact(artifact);
-    ownAnalysis = {
-      liquidityDepthUsd: artifact.liquidityDepthUsd,
-      top10HolderPct: artifact.top10HolderPct ?? 0,
-      sourceHash: artifact.sourceHash,
-    };
-  }
-
-  const request: AuditRequestPayload = {
-    token: args.token,
-    artifact: artifactText,
-    requestedAt: Math.floor(Date.now() / 1000),
-    nonce: randomBytes(16).toString("hex"),
+  const deps: UnderwriteDeps = {
+    account: agentA,
+    agentId: agentAId,
+    auditor: { url: args.endpoint, agentId: agentBId },
+    resolver: new StaticAgentIdResolver({ [agentBId]: agentBSealSigner }),
+    budget: makeBudgetGate(
+      // The allowlist is the real protection. A compromised endpoint that quotes a
+      // different payee is refused before anything is signed.
+      [(process.env["AGENT_B_PAYTO"] ?? agentBSealSigner).toLowerCase() as `0x${string}`],
+      new URL("../../.budget-ledger.json", import.meta.url).pathname,
+    ),
+    network,
+    dryRun: !args.live,
+    registry: args.registry,
+    // Task 2 hands this a 0G Storage publisher; until then --publish is inert.
+    publisher: null,
+    onStep: printStep,
   };
 
-  // (3) Hire Agent B over x402.
-  step("3", `hiring agent B at ${args.endpoint}`);
-  const budget = makeBudgetGate(
-    // The allowlist is the real protection. A compromised endpoint that quotes a
-    // different payee is refused before anything is signed.
-    [(process.env["AGENT_B_PAYTO"] ?? agentBSealSigner).toLowerCase() as `0x${string}`],
-    new URL("../../.budget-ledger.json", import.meta.url).pathname,
+  const result = await underwrite(
+    {
+      token: args.token,
+      ltvBps: args.ltvBps,
+      // (2) Free RPC read. No paid data purchase (spec §11).
+      source: args.sourcePath ? readFileSync(args.sourcePath, "utf8") : null,
+      settle: args.settle,
+      publish: args.publish,
+    },
+    deps,
   );
 
-  let hired;
-  try {
-    hired = await hireAuditor(
-      { endpoint: args.endpoint, account: agentA, network, budget, dryRun: !args.live },
-      request,
-    );
-  } catch (err) {
-    if (err instanceof BudgetExceededError) {
-      return fail("BUDGET_REFUSED", `${err.denial} — nothing was signed. ${budget.summary()}`);
-    }
-    if (err instanceof HireError) return fail(err.code, err.message);
-    throw err;
-  }
+  if (!result.ok) return fail(result.code, result.detail);
 
-  if ("dryRun" in hired) {
-    step("3", `quote ${hired.quote.humanPrice} to ${hired.quote.payTo} on ${network}`);
-    step("3", `budget ok — ${budget.summary()}`);
+  if (result.kind === "dry-run") {
+    step("3", `quote ${result.quote.humanPrice} to ${result.quote.payTo} on ${network}`);
+    step("3", `budget ok — ${result.budget}`);
     console.log("\n○ DRY RUN — stopped before signing. Re-run with --live to pay and continue.");
     return;
   }
 
-  step("3", `paid ${hired.quote.humanPrice} · settlement ${hired.settlementTx ?? "(not reported)"}`);
-  if (hired.audit) {
-    step("4", `agent B returned ${hired.audit.action} maxLtvBps=${hired.audit.maxLtvBps}`);
-  } else {
-    step("4", "endpoint answered in its own shape — no audit object, no seal");
-  }
-
-  // (5) The trust boundary. Agent A must be able to reject Agent B on its own.
-  step("5", "verifying seal B");
-  if (hired.sealB === null) {
-    // Scene ⑦: an ordinary x402 API. The fee cleared, an ALLOW came back, and
-    // none of it is evidence. Refuse before the verifier even gets a look.
-    return fail(
-      "DELEGATE_SEAL_INVALID",
-      "NO_SEAL — the service kept the fee and signed nothing. Nothing to verify, nothing to embed, nothing reaches the chain.",
-    );
-  }
-  let sealB: SealB;
-  try {
-    sealB = await verifySealB(hired.sealB, {
-      expectedSubject: args.token,
-      expectedRequest: auditRequestHash(request),
-      resolver: new StaticAgentIdResolver({ [agentBId]: agentBSealSigner }),
-      now: Math.floor(Date.now() / 1000),
-    });
-  } catch (err) {
-    if (err instanceof SealVerificationError) {
-      return fail("DELEGATE_SEAL_INVALID", `${err.failure} — refusing to compose seal A. Nothing was submitted on chain.`);
-    }
-    throw err;
-  }
-  step("5", `seal B valid · signer ${agentBSealSigner} · attestation ${sealB.inference.teeAttestation ? "present" : "ABSENT"}`);
-
-  // (6) Compose seal A around seal B. This is the chain.
-  step("6", "composing seal A");
-  const unsignedA: Unsigned<SealA> = {
-    version: 1,
-    type: "underwriting",
-    agentId: agentAId,
-    subject: args.token,
-    delegations: [
-      {
-        agentId: agentBId,
-        service: "code-audit",
-        priceAtomic: hired.quote.amountAtomic.toString(),
-        network,
-        settlementTx: hired.settlementTx,
-        seal: sealB,
-        sealVerified: true,
-      },
-    ],
-    ownAnalysis,
-    verdict: {
-      // Agent A relays the auditor's verdict rather than softening it, and can
-      // only ever tighten the cap, never raise it.
-      action: sealB.verdict.action,
-      maxLtvBps: Math.min(sealB.verdict.maxLtvBps, args.ltvBps > 0 ? sealB.verdict.maxLtvBps : 0),
-      expiresAt: sealB.expiresAt,
-    },
-  };
-  const sealA = await signSealA(unsignedA, agentA);
-  step("6", `seal A signed · embeds seal B · maxLtvBps ${sealA.verdict.maxLtvBps}`);
   if (args.emitSeal) {
-    writeFileSync(args.emitSeal, JSON.stringify(sealA, null, 2));
+    writeFileSync(args.emitSeal, JSON.stringify(result.sealA, null, 2));
     step("6", `seal A written to ${args.emitSeal}`);
   }
 
-  if (!args.settle) {
-    console.log(`\n${JSON.stringify(sealA, null, 2)}`);
-    console.log("\n○ --no-settle: seal A printed, nothing submitted on chain.");
+  if (result.listing) {
+    console.log(`\n✓ EXECUTED  ltv=${result.listing.ltvBps}bps  tx=${result.listing.txHash}`);
     return;
   }
-  if (!args.registry) return fail("NO_REGISTRY", "pass --registry <address> or set REGISTRY_ADDRESS");
 
-  // (7) Present it to the contract.
-  step("7", `listing on CollateralRegistry ${args.registry}`);
-  await submit(sealA, args.token, args.ltvBps, args.registry, agentA);
+  if (result.skipped.settle) {
+    // The seal is good; this registry just does not trust this signer. Saying so
+    // is the whole difference between "refused" and "not attempted".
+    step("7", `skipped: ${result.skipped.settle}`);
+    console.log(`\n${JSON.stringify(result.sealA, null, 2)}`);
+    console.log(`\n○ NOT LISTED — ${result.skipped.settle}`);
+    return;
+  }
+  console.log(`\n${JSON.stringify(result.sealA, null, 2)}`);
+  console.log("\n○ --no-settle: seal A printed, nothing submitted on chain.");
 }
 
 /**

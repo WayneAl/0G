@@ -15,6 +15,13 @@ const REGISTRY_ABI = [
     outputs: [],
   },
   {
+    name: "verifier",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
     name: "listings",
     type: "function",
     stateMutability: "view",
@@ -35,6 +42,10 @@ const REGISTRY_ABI = [
   { type: "error", name: "ZERO_ADDRESS", inputs: [] },
   { type: "error", name: "NO_SEAL", inputs: [] },
   { type: "error", name: "BAD_SIGNATURE", inputs: [] },
+] as const;
+
+const VERIFIER_ABI = [
+  { name: "signer", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
 ] as const;
 
 export interface SettleOptions {
@@ -100,6 +111,23 @@ export async function listWithSeal(
   });
 
   return { txHash, listed: { active, ltvBps: listedLtv, sealHash, expiresAt } };
+}
+
+/**
+ * The one signer StubVerifier accepts: registry.verifier() → verifier.signer().
+ *
+ * Asked *before* listing, because a seal signed by anyone else is refused on
+ * chain with BAD_SIGNATURE after the gas is spent. Reading it costs nothing and
+ * turns a revert into a refusal the agent can explain.
+ */
+export async function readTrustedSigner(registry: `0x${string}`, rpcUrl?: string): Promise<`0x${string}`> {
+  const pub = createPublicClient({ chain, transport: http(rpcUrl ?? OG_TESTNET.rpcUrls.default.http[0]) });
+  const verifier = await pub.readContract({
+    address: registry,
+    abi: REGISTRY_ABI,
+    functionName: "verifier",
+  });
+  return pub.readContract({ address: verifier, abi: VERIFIER_ABI, functionName: "signer" });
 }
 
 /** Read-only check, used by the demo script to prove a listing landed. */

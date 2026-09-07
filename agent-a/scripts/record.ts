@@ -16,10 +16,14 @@ import { randomBytes } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import { verifySealB, StaticAgentIdResolver, auditRequestHash, signSealA, type SealB } from "@acu/seal";
 import { keccak256, toHex } from "viem";
-import { makeBudgetGate } from "../src/budget.js";
-import { fetchTokenArtifact, makeOgClient, renderArtifact } from "../src/chain.js";
-import { hireAuditor } from "../src/hire.js";
-import { listWithSeal } from "../src/settle.js";
+import {
+  fetchTokenArtifact,
+  hireAuditor,
+  listWithSeal,
+  makeBudgetGate,
+  makeOgClient,
+  renderArtifact,
+} from "@acu/underwriter";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });
 

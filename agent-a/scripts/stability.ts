@@ -13,7 +13,7 @@
 import { config as loadEnv } from "dotenv";
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { RouterClient, type OgNetwork, type InferenceResult } from "@acu/og";
-import { fetchTokenArtifact, makeOgClient, renderArtifact } from "../src/chain.js";
+import { fetchTokenArtifact, makeOgClient, renderArtifact } from "@acu/underwriter";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });
 

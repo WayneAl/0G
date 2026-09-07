@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "stability": "tsx scripts/stability.ts",
     "record": "tsx scripts/record.ts"
   },
   "dependencies": {
     "@acu/seal": "workspace:*",
+    "@acu/underwriter": "workspace:*",
     "@x402/core": "^2.24.0",
     "@x402/evm": "^2.24.0",
     "@x402/fetch": "^2.24.0",

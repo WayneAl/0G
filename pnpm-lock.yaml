@@ -23,6 +23,9 @@ importers:
       '@acu/seal':
         specifier: workspace:*
         version: link:../packages/seal
+      '@acu/underwriter':
+        specifier: workspace:*
+        version: link:../packages/underwriter
       '@x402/core':
         specifier: ^2.24.0
         version: 2.24.0
@@ -151,6 +154,31 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.13
+
+  packages/underwriter:
+    dependencies:
+      '@acu/seal':
+        specifier: workspace:*
+        version: link:../seal
+      '@x402/core':
+        specifier: ^2.24.0
+        version: 2.24.0
+      '@x402/evm':
+        specifier: ^2.24.0
+        version: 2.24.0(typescript@5.9.3)
+      '@x402/fetch':
+        specifier: ^2.24.0
+        version: 2.24.0
+      viem:
+        specifier: ^2.23.2
+        version: 2.56.1(typescript@5.9.3)(zod@3.25.76)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.13
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.1)(tsx@4.23.13)
 
 packages:
 
