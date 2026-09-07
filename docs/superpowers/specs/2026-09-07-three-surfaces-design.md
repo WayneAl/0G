@@ -61,7 +61,11 @@ CleanUSD against a locally started reference B → seal A returned, seal B insid
 `demo/run.sh` still passes all seven scenes against the refactored pair. Tests: `underwrite()` maps
 each refusal to its code; MCP tools against a fake B; auditor route against a fake facilitator.
 
-## Open decisions
+## Decisions (2026-09-07, Wayne)
+B=(b) 0G Storage via 0G-KV keyed by sealDigest, publish is a non-blocking stage; D=(a) @acu scope; E=(a) Vite;
+F=(a) GitHub Pages; G=(a) StubVerifier stays, only the reference A lists in v1.
+
+## Open decisions (resolved above, kept for the record)
 B. Seal bodies: (a) none hosted; the website takes the seal from the user and cross-checks the chain
    **[rec]**; (b) `underwrite` publishes seal A to 0G Storage and the website fetches it by hash.
 D. npm: the three packages plus `@acu/seal` and `@acu/og` are the distribution now that nothing is
