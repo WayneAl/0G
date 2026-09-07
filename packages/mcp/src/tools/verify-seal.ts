@@ -84,7 +84,7 @@ export function registerVerifySeal(server: McpServer, config: McpConfig): void {
             resolver,
             now: at,
           });
-          return textResult(reportB(verified, await recoverSealSigner(candidate), expectedSubject !== undefined));
+          return textResult(reportB(verified, await signerOf(verified), expectedSubject !== undefined));
         }
 
         if (candidate["type"] === "underwriting") {
@@ -93,7 +93,7 @@ export function registerVerifySeal(server: McpServer, config: McpConfig): void {
             resolver,
             now: at,
           });
-          return textResult(reportA(verified, await recoverSealSigner(candidate), expectedSubject !== undefined));
+          return textResult(reportA(verified, await signerOf(verified), expectedSubject !== undefined));
         }
 
         return textResult({
@@ -110,6 +110,17 @@ export function registerVerifySeal(server: McpServer, config: McpConfig): void {
     },
   );
 }
+
+/**
+ * The signer of the seal that was *verified*, never of the bytes that came in.
+ *
+ * `verifySealA`/`verifySealB` parse before they recover: unknown keys are
+ * dropped and hex is lowercased. Recovering from the caller's object would
+ * therefore report an address that signed nothing — beside `valid: true` — for
+ * any seal pasted out of another tool with an extra field or checksummed hex.
+ */
+const signerOf = (seal: SealA | SealB): Promise<`0x${string}`> =>
+  recoverSealSigner(seal as unknown as Record<string, unknown>);
 
 const boundNote = (bound: boolean): string | undefined =>
   bound ? undefined : "expectedSubject was omitted — subject and request bindings are self-consistent only";

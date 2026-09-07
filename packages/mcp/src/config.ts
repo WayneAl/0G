@@ -48,9 +48,10 @@ export const DEFAULT_WEB_URL = "https://wayneal.github.io/0G";
  * A key the dry-run path can hand to viem without ever using it.
  *
  * `underwrite()` builds its deps before it knows whether it will sign, so it
- * needs *an* account object even when there is nothing to sign with. This is the
- * canonical anvil key 0 — public, funded nowhere we care about, and never
- * reached, because `dryRun` is forced true whenever `agentKey` is null.
+ * needs *an* account object even when there is nothing to sign with. This is
+ * private key 1 — the smallest valid secp256k1 scalar, public knowledge, funded
+ * nowhere we care about, and never reached, because `dryRun` is forced true
+ * whenever `agentKey` is null.
  */
 export const DRY_RUN_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001" as const;
 

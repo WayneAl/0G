@@ -55,16 +55,22 @@ export function registerUnderwrite(server: McpServer, config: McpConfig): void {
       deps.onStep = (e) => {
         stage = e.stage;
       };
+      // The seal is the evidence for a payment that has already happened. If a
+      // later stage throws, the caller must still get it.
+      let signed: SealA | null = null;
+      deps.onSealA = (seal) => {
+        signed = seal;
+      };
 
       let result: UnderwriteResult;
       try {
         result = await underwrite({ token, ltvBps, source: source ?? null, settle, publish }, deps);
       } catch (err) {
         // A dead RPC stays an exception — that is a broken environment, and
-        // `underwrite()` is right to say so. A dead auditor is an ordinary
-        // Tuesday, and gets a code the caller can act on.
+        // `underwrite()` is right to say so. Anything later is a refusal the
+        // caller can act on, and it names the party that actually failed.
         if (stage === "read") throw err;
-        return textResult({ ok: false, stage, code: "AUDITOR_UNREACHABLE", detail: detailOf(err) }, true);
+        return textResult(refusalForThrow(stage, err, signed));
       }
 
       const note = isDryRun(config) ? { note: NO_KEY_NOTE } : {};
@@ -74,6 +80,31 @@ export function registerUnderwrite(server: McpServer, config: McpConfig): void {
       return textResult({ ...result, ...note });
     },
   );
+}
+
+/**
+ * A throw out of `underwrite()`, turned into a refusal that names the right party.
+ *
+ * Only `quote` and `hire` are stages where the auditor is the one on the other
+ * end of the wire; calling a failure at `verify`, `compose` or `settle`
+ * `AUDITOR_UNREACHABLE` accuses an agent that answered perfectly well. The
+ * settlement stage already has a code for this. Any seal A that was signed
+ * before the throw rides along: it is worth keeping even when the run is not.
+ */
+export function refusalForThrow(stage: Stage, err: unknown, sealA: SealA | null): Record<string, unknown> {
+  const code =
+    stage === "quote" || stage === "hire"
+      ? "AUDITOR_UNREACHABLE"
+      : stage === "settle"
+        ? "LIST_FAILED"
+        : "UNEXPECTED_ERROR";
+  return {
+    ok: false,
+    stage,
+    code,
+    detail: `${stage} threw: ${detailOf(err)}`,
+    ...(sealA === null ? {} : { sealA }),
+  };
 }
 
 /**
