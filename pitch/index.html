@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Every Hop Leaves a Seal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,6 +51,11 @@
 :root[data-lang="zh"] .deflist .row { grid-template-columns: 150px 1fr; }
 :root[data-lang="zh"] .callout { line-height: 1.7; }
 :root[data-lang="zh"] .stat .lbl { line-height: 1.6; }
+:root[data-lang="zh"] .stack .d { line-height: 1.55; font-size: 12.5px; }
+:root[data-lang="zh"] .funnel .t { font-size: 14.5px; }
+:root[data-lang="zh"] .chat .say { line-height: 1.7; }
+:root[data-lang="zh"] .cmdnote { line-height: 1.6; }
+:root[data-lang="zh"] .funnel { gap: 10px; }
 
 * { box-sizing: border-box; }
 body {
@@ -218,6 +224,88 @@ p { margin: 0; }
 .figwrap .f-s { font-family: var(--sans); }
 .figwrap .f-m { font-family: var(--mono); }
 
+/* ── Package stack: core + shells ──────────────────────────────────────────── */
+.stack { display: flex; flex-direction: column; gap: 7px; }
+.stack .grp {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); margin: 5px 0 1px;
+}
+.stack .pkg {
+  display: grid; grid-template-columns: 152px 1fr; gap: 14px; align-items: baseline;
+  background: var(--surface); border: 1px solid var(--line); border-left: 2px solid var(--line);
+  border-radius: 3px; padding: 7px 13px;
+}
+.stack .pkg.entry { border-left-color: var(--accent); }
+.stack .n { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+.stack .pkg.entry .n { color: var(--accent); }
+.stack .d { font-size: 13px; line-height: 1.4; color: var(--muted); }
+.stack .d code { color: var(--ink); font-size: 12px; }
+
+/* ── Copyable command line / code block ────────────────────────────────────── */
+.cmdline {
+  display: flex; align-items: baseline; gap: 10px;
+  background: var(--surface); border: 1px solid var(--accent-2); border-radius: 3px;
+  padding: 11px 15px; font-family: var(--mono); font-size: 14.5px; color: var(--ink);
+}
+.cmdline .pfx { color: var(--accent); }
+.cmdline.big { font-size: 18px; padding: 15px 20px; }
+.cmdnote { font-family: var(--mono); font-size: 12px; color: var(--dim); margin-top: 8px; }
+.cmdnote code { color: var(--muted); }
+pre.code {
+  margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+  padding: 12px 15px; font-family: var(--mono); font-size: 12.5px; line-height: 1.62;
+  color: var(--ink); white-space: pre-wrap;
+}
+pre.code .c { color: var(--dim); }
+pre.code .kw { color: var(--accent); }
+
+/* ── Terminal transcript ───────────────────────────────────────────────────── */
+.term {
+  background: #070a0f; border: 1px solid var(--line); border-radius: 3px;
+  padding: 14px 17px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+  color: var(--muted); white-space: pre-wrap;
+}
+.term .cmd { color: var(--ink); }
+.term .cmd::before { content: "$ "; color: var(--accent); }
+.term .s { color: var(--dim); }
+.term .ok { color: var(--pass); }
+.term .no { color: var(--fail); }
+.term .hi { color: var(--warn); }
+
+/* ── Numbered onboarding funnel ────────────────────────────────────────────── */
+.funnel { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: fn; }
+.funnel li { list-style: none; display: grid; grid-template-columns: 21px 1fr; gap: 11px; }
+.funnel li::before {
+  counter-increment: fn; content: counter(fn);
+  font-family: var(--mono); font-size: 11px; color: var(--accent);
+  border: 1px solid var(--accent-2); border-radius: 2px;
+  width: 21px; height: 21px; display: grid; place-items: center;
+}
+.funnel .t { font-family: var(--display); font-size: 14px; font-weight: 600; color: var(--ink); }
+.funnel .c { display: block; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 3px; }
+.funnel .c em { color: var(--dim); font-style: normal; }
+
+/* ── Agent transcript: the MCP slide ───────────────────────────────────────── */
+.chat { display: flex; flex-direction: column; gap: 11px; }
+.chat .turn { display: grid; grid-template-columns: 56px 1fr; gap: 13px; align-items: baseline; }
+.chat .w {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--dim); text-align: right;
+}
+.chat .turn.tool .w { color: var(--accent); }
+.chat .say { font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.chat .turn.tool .say { font-family: var(--mono); font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.chat .turn.tool .say b { color: var(--accent); font-weight: 500; }
+.chat .say .u { color: var(--dim); }
+
+/* ── Tool chips ────────────────────────────────────────────────────────────── */
+.tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.tools span {
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 2px; padding: 4px 9px;
+}
+.tools span.hot { color: var(--accent); border-color: var(--accent-2); background: var(--accent-soft); }
+
 /* ── Notes drawer (outside the scaled stage, so it stays readable) ─────────── */
 .notes {
   border-top: 1px solid var(--line);
@@ -280,15 +368,16 @@ p { margin: 0; }
             <p class="tag" data-zh="錢在 <b>Base</b>,證明在 <b>0G</b>。">Money on <b>Base</b>. Proof on <b>0G</b>.</p>
             <div class="hero-meta">
               <span data-zh="<b>Agent A</b> 做准入預審 · <b>Agent B</b> 做原始碼審核 · A 用 x402 付錢請 B"><b>Agent A</b> underwrites · <b>Agent B</b> audits · A pays B over x402</span>
-              <span data-zh="推理跑在 <b>0G Compute Router</b> 的 TEE 裡,結果簽成章"><b>0G Compute Router</b> runs the inference in a TEE and it is sealed</span>
+              <span data-zh="推理在 <b>0G Compute Router</b> 的 TEE 裡跑,章本體存在 <b>0G Storage</b>">Inference in a TEE on the <b>0G Compute Router</b>, seal bodies on <b>0G Storage</b></span>
               <span data-zh="<b>CollateralRegistry</b> 見章才上架 · 0G testnet 16602"><b>CollateralRegistry</b> lists nothing without a seal · 0G testnet 16602</span>
+              <span data-zh="出貨形式:<b>npx @acu/cli</b> 和 <b>claude mcp add acu</b> —— 我們什麼都不代管">Shipped as <b>npx @acu/cli</b> and <b>claude mcp add acu</b> — we host nothing</span>
             </div>
           </div>
         </div>
       </section>
 
       <!-- ② The problem -->
-      <section class="slide" data-notes="0:20–0:40|問題只講一件事:<strong>A 憑什麼相信 B?</strong><span class='do'>三張卡不要逐字唸,指著說「這三種失敗,『我信你』一種都擋不住」。最後一句是關鍵句:今天這件事發生在 Discord 跟 Notion,鏈上只看得到結果。</span>">
+      <section class="slide" data-notes="0:20–0:35|問題只講一件事:<strong>A 憑什麼相信 B?</strong><span class='do'>三張卡不要逐字唸,指著說「這三種失敗,『我信你』一種都擋不住」。最後一句是關鍵句:今天這件事發生在 Discord 跟 Notion,鏈上只看得到結果。</span>">
         <div class="eyebrow" data-zh="問題在哪">The gap</div>
         <h2 data-zh="Agent A 要雇 Agent B 做事。<br>中間沒有人在看。">Agent A wants to hire Agent B.<br>Nobody is watching.</h2>
         <p class="lede" data-zh="會出事的地方有三個,「我信你」一個都擋不住。">Three ways that goes wrong — and “I trust you” catches none of them.</p>
@@ -316,7 +405,7 @@ p { margin: 0; }
       </section>
 
       <!-- ③ The mechanism: without us / with us, scene ① as run, three roles tagged -->
-      <section class="slide" data-notes="0:40–1:10|先點三個角色:<strong>Agent A 是用戶端的 agent</strong>(替放款方做准入)、<strong>Agent B 是收 x402 費用的服務 agent</strong>、<strong>0G Router 是 B 叫的算力</strong>,在 TEE 裡跑 —— 三個是三方,不是同一個人。Router 回給 B 的是<strong>回答加 TEE 證明</strong>,章 B 是 B 自己簽的;A 驗章時只用章的 bytes、鏈上的 key 和它自己送出的請求,所以不用信任何人。<span class='do'>上面框起來的是今天的做法:A 付錢、B 回一個 ALLOW、A 就拿去上架 —— 一樣會成功,但事後誰說的、憑什麼、哪個模型,什麼都查不到。下面是第 ① 幕實際跑出來的同一件事:同樣一塊錢、同樣一個 ALLOW,差別是每一跳都留下東西 —— TEE 證明、章 B、A 的六項檢查、章 A。最後停在:<strong>信任邊界在 Agent A,不在合約</strong>。</span>">
+      <section class="slide" data-notes="0:35–1:00|先點三個角色:<strong>Agent A 是用戶端的 agent</strong>(替放款方做准入)、<strong>Agent B 是收 x402 費用的服務 agent</strong>、<strong>0G Router 是 B 叫的算力</strong>,在 TEE 裡跑 —— 三個是三方,不是同一個人。Router 回給 B 的是<strong>回答加 TEE 證明</strong>,章 B 是 B 自己簽的;A 驗章時只用章的 bytes、鏈上的 key 和它自己送出的請求,所以不用信任何人。<span class='do'>上面框起來的是今天的做法:A 付錢、B 回一個 ALLOW、A 就拿去上架 —— 一樣會成功,但事後誰說的、憑什麼、哪個模型,什麼都查不到。下面是第 ① 幕實際跑出來的同一件事:同樣一塊錢、同樣一個 ALLOW,差別是每一跳都留下東西 —— TEE 證明、章 B、A 的六項檢查、章 A。最後停在:<strong>信任邊界在 Agent A,不在合約</strong>。</span>">
         <div class="eyebrow" data-zh="一跳怎麼走 —— 有我們,和沒我們">How one hop works — with us, and without</div>
         <h2 data-zh="同樣一塊錢、同樣一個 ALLOW,差別在留下了什麼。">Same $0.01, same ALLOW. The difference is what is left behind.</h2>
         <div class="figwrap">
@@ -434,7 +523,7 @@ p { margin: 0; }
       </section>
 
       <!-- ④ The seal -->
-      <section class="slide" data-notes="1:10–1:30|指著圖說:<strong>章 A 把整張章 B 整個包進去,這就是章鏈</strong>。合約只驗最外層,但任何人都可以往下走一層自己重驗。<span class='do'>這是 repo 裡真的一張章,不是示意圖。右邊四條一條一句話,最重要的是第一條:章帶的是<strong>額度上限,不是一個 boolean</strong> —— 審核員說 75%,合約就不會讓你用 80% 上架(那就是第 ④ 幕)。</span>">
+      <section class="slide" data-notes="1:00–1:15|指著圖說:<strong>章 A 把整張章 B 整個包進去,這就是章鏈</strong>。合約只驗最外層,但任何人都可以往下走一層自己重驗。<span class='do'>這是 repo 裡真的一張章,不是示意圖。右邊四條一條一句話,最重要的是第一條:章帶的是<strong>額度上限,不是一個 boolean</strong> —— 審核員說 75%,合約就不會讓你用 80% 上架(那就是第 ④ 幕)。</span>">
         <div class="eyebrow" data-zh="章長什麼樣">The artifact</div>
         <h2 data-zh="章上寫的是額度上限,不是一個「通過」">A seal carries a credit limit, not a thumbs-up</h2>
         <div class="body">
@@ -476,8 +565,107 @@ p { margin: 0; }
         </div>
       </section>
 
-      <!-- ⑤ Six scenes -->
-      <section class="slide" data-notes="1:30–2:10|<strong>這是全場最重要的一頁,分配最多時間。</strong>前四幕快速帶過:合約擋得住。<span class='do'>停在 ⑤⑥⑦:這三幕是<strong>在 Agent A 就被拒絕的,東西根本沒碰到鏈</strong>。⑥ 的 MITM 是真的 proxy,真的改了 verdict、簽章原封不動 —— 兩個 agent 都表現正常,偽造還是死了。⑦ 回答「B 為什麼要用 0G」:一個普通的 x402 API 收同樣的錢、回同樣的 ALLOW,但沒有一樣能驗 —— x402 管付錢,0G 管答案值不值錢。最後一句:七幕每一幕都會 assert 預期結果,綠燈才算過。</span>">
+      <!-- ⑤ What we shipped -->
+      <section class="slide" data-notes="1:15–1:35|這頁講<strong>我們到底交付了什麼</strong>:章加兩邊的 SDK 是核心,CLI、MCP、靜態網站是三個外殼。<span class='do'>左邊八個套件不要逐一唸,說「核心五個、外殼三個,全部在 npm 上」就好。重點在右邊:<strong>要當 A,一行指令;要當 B,掛一條路由</strong> —— 而且審核失敗回 502,<strong>沒有章就不收錢</strong>。最後停在最下面那句:我們不代管任何一把碰得到真錢的鑰匙,唯一放上線的東西是一個 JSON 檔。</span>">
+        <div class="eyebrow" data-zh="我們交付了什麼">What we shipped</div>
+        <h2 data-zh="一個核心、三個外殼,什麼都不代管。">One core. Three shells. Nothing hosted.</h2>
+        <div class="body">
+          <div class="cols2" style="grid-template-columns:1.08fr 1fr;gap:40px">
+            <div class="stack">
+              <div class="grp" data-zh="核心 —— 發佈在 npm 的 @acu/*">core — published on npm as @acu/*</div>
+              <div class="pkg"><span class="n">@acu/seal</span><span class="d" data-zh="canonical bytes、簽章、驗章">canonical bytes · sign · verify</span></div>
+              <div class="pkg"><span class="n">@acu/underwriter</span><span class="d" data-zh="當 A:雇人、驗章、組章、上架">be an A: hire, verify, compose, list</span></div>
+              <div class="pkg"><span class="n">@acu/auditor</span><span class="d" data-zh="當 B:一條 x402 路由,會出章">be a B: one x402 route that seals</span></div>
+              <div class="pkg"><span class="n">@acu/storage</span><span class="d" data-zh="章本體上 0G Storage,靠 hash 找回來">seal bodies on 0G Storage, found by hash</span></div>
+              <div class="pkg"><span class="n">@acu/config</span><span class="d" data-zh="兩個外殼共用的金鑰檔,0600">the key file both shells share, 0600</span></div>
+              <div class="grp" data-zh="外殼 —— 三個入口">shells — the three ways in</div>
+              <div class="pkg entry"><span class="n">@acu/cli</span><span class="d">init · status · quote · underwrite · verify</span></div>
+              <div class="pkg entry"><span class="n">@acu/mcp</span><span class="d" data-zh="七個工具,任何 agent 框架都能當 A">seven tools — any agent framework becomes an A</span></div>
+              <div class="pkg entry"><span class="n">web/</span><span class="d" data-zh="landing · 動態牆 · 驗章 · 文件 · directory">landing · live feed · verifier · docs · directory</span></div>
+            </div>
+            <div>
+              <div class="eyebrow" data-zh="要當 Agent A">to be an Agent A</div>
+              <div class="cmdline" style="margin-top:9px"><span class="pfx">$</span>npx @acu/cli underwrite 0xDB08…9eB8</div>
+              <div class="cmdline" style="margin-top:8px"><span class="pfx">$</span>claude mcp add acu -- npx -y @acu/mcp</div>
+              <div class="eyebrow" style="margin-top:24px" data-zh="要當 Agent B">to be an Agent B</div>
+              <pre class="code" style="margin-top:9px"><span class="kw">import</span> { sealedAuditRoute } <span class="kw">from</span> <span class="c">&quot;@acu/auditor&quot;</span>;
+sealedAuditRoute(app, config);
+<span class="c">// GET  /agent  → the agent card</span>
+<span class="c">// POST /audit  → x402-gated. No seal, no charge:</span>
+<span class="c">//                a failed audit answers 502.</span></pre>
+              <div class="cmdnote" data-zh="一個普通的 x402 API 不算 B(第 ⑦ 幕)。掛上這條路由,才是「答案值不值錢」的分界線。">a plain x402 API is not a B (scene ⑦). Mounting this route is the line between getting paid and being worth paying.</div>
+            </div>
+          </div>
+          <p class="callout" data-zh="我們不代管任何一把碰得到真錢的鑰匙。A 的鑰匙在 A 自己的 process,B 的鑰匙在 B 自己的 server,錢只有一跳:A → B,走 x402。<b>我們唯一放上線的東西是一個檔案</b> —— <code class='mono'>directory.json</code> 把 agentId 對到 signer;哪天換成 ERC-7857 註冊表,呼叫端一行都不用改。">We host nothing that holds a key that touches real money. A’s key stays in A’s process, B’s key in B’s own server,
+            and money is one hop: A → B over x402. <b>The only thing we put online is a file</b> — <code class="mono">directory.json</code> maps agentId → signer,
+            and an ERC-7857 registry replaces it without a caller changing a line.</p>
+        </div>
+      </section>
+
+      <!-- ⑥ Try it in 60 seconds -->
+      <section class="slide" data-notes="1:35–2:00|<strong>這頁回答「怎麼用」。</strong>左邊六步是我們的驗收標準:一台乾淨的機器、只看 README、五分鐘內拿到一張綠章。<span class='do'>先講第 1 步 —— <strong>不用安裝、不用鑰匙、不用環境變數,就能拿到真的 402 報價</strong>,這是漏斗的入口。第 2 步 <code>acu init</code> 產生一把 burner key 寫進 <code>~/.acu/config.json</code>(0600)—— <strong>這把鑰匙等一下 MCP 直接讀,不用重裝任何東西</strong>。右邊是真的跑出來的輸出,<strong>上面每一個 hash 都可以現場去 chainscan 查</strong>:x402 在 Base Sepolia 結算、章本體在 0G Storage、上架在 0G 區塊 53536319。</span>">
+        <div class="eyebrow" data-zh="上手 —— 這條漏斗本身就是產品">Onboarding — the funnel is the product</div>
+        <h2 data-zh="從零到一張簽好、上鏈的章。">From nothing to a signed, on-chain seal.</h2>
+        <div class="body">
+          <div class="cols2" style="grid-template-columns:0.8fr 1.2fr;gap:40px">
+            <ol class="funnel">
+              <li><div><span class="t" data-zh="先看它跑">See it run</span><span class="c">npx @acu/cli quote 0xDB08…9eB8<br><em data-zh="不用安裝、不用鑰匙、不用環境變數">no install, no key, no env</em></span></div></li>
+              <li><div><span class="t" data-zh="拿一把鑰匙">Get a key</span><span class="c">npx @acu/cli init<br><em data-zh="burner key 寫進 ~/.acu/config.json(0600)">burner key → ~/.acu/config.json (0600)</em></span></div></li>
+              <li><div><span class="t" data-zh="去水龍頭領錢">Fund it</span><span class="c"><em data-zh="用它印出來的地址去 Circle 領 Base Sepolia USDC">the address it printed → Circle, Base Sepolia USDC</em></span></div></li>
+              <li><div><span class="t" data-zh="確認">Check</span><span class="c">npx @acu/cli status<br><em data-zh="從「去領錢」翻成 ✓ Ready,並說出下一個指令">flips to ✓ Ready and names the next command</em></span></div></li>
+              <li><div><span class="t" data-zh="出章">Underwrite</span><span class="c">npx @acu/cli underwrite 0xDB08…9eB8 --live --publish<br><em data-zh="最後一行是可以直接分享的 URL">the last line is a shareable URL</em></span></div></li>
+              <li><div><span class="t" data-zh="交給你自己的 agent">Hand it to your agent</span><span class="c">claude mcp add acu -- npx -y @acu/mcp<br><em data-zh="同一把鑰匙、零環境變數">same key, zero env</em></span></div></li>
+            </ol>
+            <div class="term"><span class="cmd">npx @acu/cli underwrite 0xDB08Ce21…7fF9eB8 --live --publish</span>
+<span class="s">[2]</span> reading token from 0G testnet RPC
+<span class="s">[2]</span> CUSD · 1825B code · owner none · flagged selectors: none
+<span class="s">[3]</span> hiring agent B at https://…trycloudflare.com/audit
+<span class="s">[3]</span> paid $0.01 · settlement 0xe0578d97…785ebc
+<span class="s">[4]</span> agent B returned <span class="ok">ALLOW</span> maxLtvBps=7500
+<span class="s">[5]</span> verifying seal B
+<span class="s">[5]</span> seal B valid · signer 0xC1Dba83f… · attestation present
+<span class="s">[6]</span> composing seal A
+<span class="s">[6]</span> seal A signed · embeds seal B · maxLtvBps 7500
+<span class="s">[S]</span> published to 0G Storage · root 0xfe2ebe72…67ce697
+<span class="s">[7]</span> listing on CollateralRegistry 0xC1AAfd71…7B46a65E
+
+<span class="ok">✓ EXECUTED  ltv=7000bps  tx=0xeab43669…ce28272e</span>
+<span class="hi">share</span>  https://wayneal.github.io/0G/#seal=eyJ0eXBlIjoi…</div>
+          </div>
+          <p class="callout" data-zh="右邊不是示意圖,是 2026-09-07 真的跑出來的一次:x402 在 <b>Base Sepolia</b> 結算、章本體進 <b>0G Storage</b>(txSeq 149639)、上架落在 <b>0G 區塊 53536319</b> —— 每一個 hash 現場都查得到。<code class='mono'>acu status</code> 和 MCP 的 <code class='mono'>agent_status</code> 是同一個函式,所以兩個外殼永遠不會對「下一步該做什麼」講不同的話。">That transcript is not a mock-up. It is one live run on 2026-09-07: the x402 payment settled on <b>Base Sepolia</b>,
+            the seal body went to <b>0G Storage</b> at txSeq 149639, and the listing landed in <b>0G block 53536319</b> — every hash is checkable on stage.
+            <code class="mono">acu status</code> and the MCP’s <code class="mono">agent_status</code> are the same function, so the two shells can never disagree about what to do next.</p>
+        </div>
+      </section>
+
+      <!-- ⑦ Agent as user -->
+      <section class="slide" data-notes="2:00–2:25|<strong>這是全場的論點頁,agent 才是使用者。</strong>前面是人打指令,這頁開始是 agent 自己做。<span class='do'>先指最上面那一行:<strong>裝 MCP 零環境變數</strong>,因為它讀的就是剛剛 <code>acu init</code> 寫好的鑰匙。然後唸對話:使用者只說了一句話,agent 自己查狀態、自己付錢、自己驗章、自己上架,最後把章交出來讓你自己驗。最重要的是右邊那句 —— <strong>verify_seal 是在你自己 agent 的 process 裡跑的</strong>,它從來不會問我們「這張章有沒有效」。驗證不過網路,這就是整件事的重點。</span>">
+        <div class="eyebrow" data-zh="論點本身 —— agent 才是使用者">The thesis — the agent is the user</div>
+        <h2 data-zh="一行裝好,然後用講的。你的 agent 就是 Agent A。">One line to install. Then just say it. Your agent is the Agent A.</h2>
+        <div class="body">
+          <div class="cmdline big"><span class="pfx">$</span>claude mcp add acu -- npx -y @acu/mcp</div>
+          <div class="cmdnote" data-zh="零環境變數 —— 它讀的就是 <code>acu init</code> 剛剛寫好的那把鑰匙,不用重裝、不用重設。">no environment variables at all — it reads the key <code>acu init</code> already wrote, so nothing has to be re-installed</div>
+          <div class="cols2" style="grid-template-columns:1.18fr 1fr;gap:36px;margin-top:26px">
+            <div class="chat">
+              <div class="turn"><span class="w" data-zh="你">you</span><span class="say" data-zh="「幫我審 0xDB08…9eB8,LTV 70%,過得了就上架。」">“Underwrite 0xDB08…9eB8 at 70% LTV and list it if it holds up.”</span></div>
+              <div class="turn tool"><span class="w">acu</span><span class="say"><b>agent_status</b> → key ✓ · budget $0.09 left · auditor online · Ready</span></div>
+              <div class="turn tool"><span class="w">acu</span><span class="say"><b>underwrite</b> → paid $0.01 over x402 · seal B verified in-process<br>seal A signed · published to 0G Storage · listed at 7000 bps</span></div>
+              <div class="turn"><span class="w" data-zh="它">agent</span><span class="say" data-zh="「上架了,7000 bps。審核員的上限開到 7500,而且它的答案是在 TEE 裡產生的。章在這裡,你可以自己驗:<span class='u'>…/#seal=eyJ0eXBl…</span>」">“Listed at 7000 bps. The auditor capped it at 7500, and its answer was produced in a TEE. Here is the seal — check it yourself: <span class="u">…/#seal=eyJ0eXBl…</span>”</span></div>
+            </div>
+            <div>
+              <div class="eyebrow" data-zh="七個工具">seven tools</div>
+              <div class="tools" style="margin-top:11px">
+                <span>describe_auditor</span><span>quote_audit</span><span>hire_audit</span><span class="hot">verify_seal</span><span>underwrite</span><span>get_listing</span><span class="hot">agent_status</span>
+              </div>
+              <p class="callout" style="margin-top:22px" data-zh="<b>verify_seal 是 @acu/seal 在你自己 agent 的 process 裡跑的。</b>你的 agent 從來不需要問我們「這張章有沒有效」—— 這就是整件事的重點。沒有鑰匙的時候,每個要付錢的工具都停在報價,並回一句下一步該做什麼,而不是丟一個錯誤。"><b><code class="mono">verify_seal</code> is <code class="mono">@acu/seal</code> running inside your agent’s own process.</b>
+                Your agent never asks us whether a seal is valid — that is the entire point. With no key, every paid tool stops at the quote and returns the next step instead of an error.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑧ Seven scenes -->
+      <section class="slide" data-notes="2:25–2:55|<strong>這是全場最重要的一頁,分配最多時間。</strong>前四幕快速帶過:合約擋得住。<span class='do'>停在 ⑤⑥⑦:這三幕是<strong>在 Agent A 就被拒絕的,東西根本沒碰到鏈</strong>。⑥ 的 MITM 是真的 proxy,真的改了 verdict、簽章原封不動 —— 兩個 agent 都表現正常,偽造還是死了。⑦ 回答「B 為什麼要用 0G」:一個普通的 x402 API 收同樣的錢、回同樣的 ALLOW,但沒有一樣能驗 —— x402 管付錢,0G 管答案值不值錢。最後一句:七幕每一幕都會 assert 預期結果,綠燈才算過。</span>">
         <div class="eyebrow" data-zh="現場 Demo · <span class='mono'>./demo/run.sh --live</span>">Live demo · <span class="mono">./demo/run.sh --live</span></div>
         <h2 data-zh="七幕,每一幕都 assert 自己該有的結果。">Seven scenes. Every one asserts its own outcome.</h2>
         <div class="body">
@@ -501,24 +689,29 @@ p { margin: 0; }
         </div>
       </section>
 
-      <!-- ⑥ 0G integration -->
-      <section class="slide" data-notes="2:10–2:30|評審要聽的是「真的接了、不是只改 base_url」。<span class='do'>講第一條就好:<code>verify_tee</code> 是 body 頂層欄位、chatId 從 <code>ZG-Res-Key</code> header 回來 —— <strong>所以我們用 raw fetch 不用 SDK,因為 SDK 剛好把證據藏掉</strong>。這句話很有說服力。下面地址不用唸,指一下就好。</span>">
+      <!-- ⑨ 0G integration -->
+      <section class="slide" data-notes="2:55–3:15|評審要聽的是「真的接了、不是只改 base_url」。<span class='do'>講第一條就好:<code>verify_tee</code> 是 body 頂層欄位、chatId 從 <code>ZG-Res-Key</code> header 回來 —— <strong>所以我們用 raw fetch 不用 SDK,因為 SDK 剛好把證據藏掉</strong>。這句話很有說服力。下面地址不用唸,指一下就好。</span>">
         <div class="eyebrow" data-zh="0G 接在哪裡">Where the 0G integration is</div>
-        <h2 data-zh="Compute、Agentic ID、鏈上合約 —— 三個都接了,拔掉任何一個系統就不成立">Compute, Agentic ID and the chain — all three, all load-bearing</h2>
+        <h2 data-zh="Compute、Storage、鏈 —— 三個 0G 介面,拔掉任何一個系統就不成立">Compute, Storage and the chain — three 0G surfaces, every one load-bearing</h2>
         <div class="body">
           <dl class="deflist" style="margin-bottom:26px">
             <div class="row"><dt data-zh="Compute Router">Compute Router</dt>
-              <dd data-zh="<code>POST /v1/chat/completions</code>,帶 <code>X-0G-Provider-Trust-Mode: verified</code> 和 <code>verify_tee: true</code>。證明從 <code>ZG-Res-Key</code> header 和 <code>x_0g_trace.tee_verified</code> 回來。這裡故意用 raw <code>fetch</code> 不用 SDK —— SDK 幫你藏掉的,剛好就是這些證據。"><code>POST /v1/chat/completions</code> with <code>X-0G-Provider-Trust-Mode: verified</code> and <code>verify_tee: true</code>.
-                The attestation comes back as the <code>ZG-Res-Key</code> header and <code>x_0g_trace.tee_verified</code> — raw <code>fetch</code>, on purpose, because that is exactly what an SDK hides.</dd></div>
-            <div class="row"><dt data-zh="第三方複驗">Third-party check</dt>
-              <dd data-zh="任何人都能 <code>GET /v1/proxy/signature/{chatId}</code>,拿 provider 鏈上登記的 TEE 簽章地址做 EIP-191 驗簽。你連 Router 都不用信。">Anyone can <code>GET /v1/proxy/signature/{chatId}</code> and verify it as EIP-191 against the provider’s on-chain TEE signer. We do not ask you to trust the Router either.</dd></div>
+              <dd data-zh="<code>POST /v1/chat/completions</code>,帶 <code>X-0G-Provider-Trust-Mode: verified</code> 和 <code>verify_tee: true</code>。證明從 <code>ZG-Res-Key</code> header 和 <code>x_0g_trace.tee_verified</code> 回來。這裡故意用 raw <code>fetch</code> 不用 SDK —— SDK 幫你藏掉的,剛好就是這些證據。事後任何人都能自己複驗:<code>GET /v1/proxy/signature/{chatId}</code>,拿 provider 鏈上登記的 TEE 簽章地址做 EIP-191 驗簽。你連 Router 都不用信。"><code>POST /v1/chat/completions</code> with <code>X-0G-Provider-Trust-Mode: verified</code> and <code>verify_tee: true</code>.
+                The attestation comes back as the <code>ZG-Res-Key</code> header and <code>x_0g_trace.tee_verified</code> — raw <code>fetch</code>, on purpose, because that is exactly what an SDK hides.
+                Anyone can re-check it afterwards: <code>GET /v1/proxy/signature/{chatId}</code>, verified as EIP-191 against the provider’s on-chain TEE signer. We do not ask you to trust the Router either.</dd></div>
+            <div class="row"><dt data-zh="0G Storage">0G Storage</dt>
+              <dd data-zh="每一張章 A 都經 indexer 上傳,<code>tags</code> 帶著它自己的 <code>sealHash</code>。之後要找回它,不需要跟我們拿任何東西:掃 <code>Flow.Submit</code> 找那個 tag、從 indexer 的 HTTPS gateway 抓 bytes,<code>sealDigest(bytes) == sealHash</code> 就是完整性檢查。實測:root <code>0xfe2ebe72…</code>、txSeq 149639、<b>1.4 秒</b>找回來。(0G-KV 沒有一個公開節點連得上,所以我們走 log layer。)">Every seal A is uploaded through the indexer with its own <code>sealHash</code> in <code>tags</code>.
+                To find it again you need nothing from us: scan <code>Flow.Submit</code> for the tag, pull the bytes from the indexer’s HTTPS gateway, and
+                <code>sealDigest(bytes) == sealHash</code> is the integrity check. Measured: root <code>0xfe2ebe72…</code>, txSeq 149639, located again in <b>1.4 s</b>.
+                (0G-KV has no reachable public node — we went through the log layer instead.)</dd></div>
             <div class="row"><dt data-zh="Agentic ID">Agentic ID</dt>
               <dd data-zh="兩個 agent 各有一個。ERC-7857 的 tokenId 寫在每一張章上,A 收下 B 的結果之前,會先確認 B 的 ID 還活著。">Both agents hold one. The ERC-7857 tokenId is a field in every seal, and A checks that B’s is live before accepting its work.</dd></div>
             <div class="row"><dt data-zh="0G 鏈">0G chain</dt>
-              <dd data-zh="讀:bytecode、ERC-20 metadata、owner、要盯的 selector。寫:<code>CollateralRegistry.list</code>。">Reads — bytecode, ERC-20 metadata, owner, watched selectors. Writes — <code>CollateralRegistry.list</code>.</dd></div>
+              <dd data-zh="讀:bytecode、ERC-20 metadata、owner、要盯的 selector。寫:<code>CollateralRegistry.list</code> —— 沒有一張驗得過的章,就上不了架。">Reads — bytecode, ERC-20 metadata, owner, watched selectors. Writes — <code>CollateralRegistry.list</code>, which lists nothing without a seal that verifies.</dd></div>
           </dl>
           <div class="strip">
             <div class="cell"><div class="l">CollateralRegistry · 16602</div><div class="v">0xC1AAfd71…7B46a65E</div></div>
+            <div class="cell"><div class="l" data-zh="章本體">Seal body</div><div class="v">0G Storage <small>txSeq 149639</small></div></div>
             <div class="cell"><div class="l" data-zh="推理">Inference</div><div class="v">qwen2.5-omni <small>TDX · dstack</small></div></div>
             <div class="cell"><div class="l" data-zh="付款">Payment</div><div class="v">x402 v2 <small>eip155:84532</small></div></div>
             <div class="cell"><div class="l" data-zh="每次審核成本">Cost per audit</div><div class="v" data-zh="$0.01 <small>+ 推理 $0.0009</small>">$0.01 <small>+ $0.0009 inference</small></div></div>
@@ -526,39 +719,40 @@ p { margin: 0; }
         </div>
       </section>
 
-      <!-- ⑦ Verifier -->
-      <section class="slide" data-notes="2:30–2:45|如果現場有時間就<strong>直接開頁面貼一張章當眾驗</strong>(這是加分項)。<span class='do'>一句話講完:這頁不是「顯示」一張章,是<strong>檢查</strong>它 —— 從章自己的 bytes 重算 digest、recover 出簽章者、再往下走進內嵌的章 B。第三顆範例是被改過 verdict 的那張,現場點它會紅。</span>">
-        <div class="eyebrow" data-zh="自己帶章來驗">Bring your own seal</div>
-        <h2 data-zh="這頁是驗章的,不是展示章的">A page that checks a seal instead of displaying one</h2>
-        <p class="lede" data-zh="貼一張章進來,所有東西在你的瀏覽器裡、從章本身的 bytes 重算 —— 交章給你的人說什麼,一個字都不信。">Paste a seal. Everything is recomputed in your browser, from the seal’s own bytes — nothing is taken on trust from whoever handed it to you.</p>
+      <!-- ⑩ The public site -->
+      <section class="slide" data-notes="3:15–3:35|如果現場有時間就<strong>直接開頁面貼一張章當眾驗</strong>(這是加分項)。<span class='do'>一句話講完:這頁不是「顯示」一張章,是<strong>檢查</strong>它 —— 從章自己的 bytes 重算 digest、recover 出簽章者、再往下走進內嵌的章 B。第三顆範例是被改過 verdict 的那張,現場點它會紅。</span>">
+        <div class="eyebrow" data-zh="公開的那一面">The public surface</div>
+        <h2 data-zh="任何人做出來的章都會出現在這裡,而且任何人都能自己重驗一次">Every seal anyone makes shows up here — and anyone can re-check it</h2>
+        <p class="lede" data-zh="一個靜態網站。<code class='mono'>@acu/seal</code> 直接打包進去,所有檢查都在你自己的分頁裡跑 —— 沒有一支我們的 API 可以騙你。">A static site. It bundles <code class="mono">@acu/seal</code>, so every check runs in your own tab — there is no API of ours that could lie to you.</p>
         <div class="body">
           <div class="cols3">
             <div class="panel">
+              <h3 data-zh="章的動態牆">The feed</h3>
+              <p data-zh="從合約的 <code class='mono'>Listed</code> event 抓 token,去 0G Storage 把章本體撈回來,<b>先在你的瀏覽器裡驗過</b>,卡片才會變綠。在有人出章之前它是空的 —— 那正是重點。">Tokens come from the registry’s <code class="mono">Listed</code> events, the seal bodies come from 0G Storage, and every one is <b>verified in your browser</b> before its card turns green. Empty until somebody underwrites — which is the point.</p>
+            </div>
+            <div class="panel">
               <h3 data-zh="重算,不是照讀">Recompute, don’t read</h3>
-              <p data-zh="從章的 bytes 重算 canonical digest,再從簽章 recover 出簽章者。這是 <code class='mono'>canonical.ts</code> 的另一份實作,兩邊算出的 digest 逐 byte 對過。">The canonical digest is rebuilt from the seal’s bytes and the signer is recovered from it. A reimplementation of <code class="mono">canonical.ts</code>, checked byte-for-byte against it.</p>
+              <p data-zh="從章自己的 bytes 重算 canonical digest,再從簽章 recover 出簽章者,然後往下走進包在裡面的章 B 和它的 TEE 證明。八項檢查,照順序跑,停在哪一項就顯示哪一項。">The canonical digest is rebuilt from the seal’s own bytes, the signer is recovered from it, and then it walks down into the embedded seal B and its TEE attestation. Eight checks, in order, and it shows you which one stopped it.</p>
             </div>
             <div class="panel">
-              <h3 data-zh="往下走一層">Walk down the chain</h3>
-              <p data-zh="打開章 A,再打開包在裡面的章 B,看它帶的 TEE 證明。">Open seal A, then open the audit seal embedded inside it, and see the TEE attestation that one carries.</p>
-            </div>
-            <div class="panel">
-              <h3 data-zh="內建三張真實的章">Three recorded seals</h3>
-              <p data-zh="一條完整有效的章鏈;一張自稱 attested 卻沒帶證明的審核章;一張判定在半路被改、簽章卻沒動的。">A valid chain; an audit seal claiming an attested tier with no attestation; and one whose verdict was rewritten in flight with the signature left alone.</p>
+              <h3 data-zh="或者只給它一個地址">Or just give it an address</h3>
+              <p data-zh="頁面自己去鏈上讀 <code class='mono'>listings(token)</code>,用 hash 去 0G Storage 撈本體,然後把 <code class='mono'>ON_CHAIN_HASH</code> 當成獨立的一列給你看:<code class='mono'>sealDigest(抓回來的) == listings[token].sealHash</code>。">The page reads <code class="mono">listings(token)</code> on chain itself, fetches the body by its hash, and shows <code class="mono">ON_CHAIN_HASH</code> as a row of its own: <code class="mono">sealDigest(fetched) == listings[token].sealHash</code>.</p>
             </div>
           </div>
-          <p class="callout" data-zh="<span class='mono'>verifier/index.html</span> —— 一個檔案、不用 build、離線能跑。<b>現場丟一張章給它,它會告訴你這張章的真話。</b>"><span class="mono">verifier/index.html</span> — one file, no build step, runs offline.
-            <b>Hand it a seal on stage and it will tell you the truth about it.</b></p>
+          <p class="callout" data-zh="這條反向路徑是實測過的:從鏈上一個 <code class='mono'>bytes32</code>(<code class='mono'>0x324d95a0…</code>)出發,<b>1.4 秒</b>在 0G Storage 找到章本體、digest 對上、<code class='mono'>verifySealA</code> 通過,一路走進章 B 看到 <code class='mono'>teeVerified: true</code>。<b>整個過程沒有任何人需要幫你留一份備份。</b>">Proven end to end: starting from one <code class="mono">bytes32</code> on chain — <code class="mono">0x324d95a0…</code> — the body was located on 0G Storage in <b>1.4 s</b>,
+            the digest matched, and <code class="mono">verifySealA</code> passed, walking down into seal B with <code class="mono">teeVerified: true</code>.
+            <b>Nobody had to keep a copy for any of that to work.</b></p>
         </div>
       </section>
 
-      <!-- ⑧ Honest -->
-      <section class="slide" data-notes="2:45–3:00|<strong>這頁是我們和其他隊伍的差別,不要跳過。</strong><span class='do'>先給數字:30 次全對、確定性判定。然後說最重要的一句 —— <strong>章保證的是可追溯,不是判斷正確</strong>。舉 InjectionUSD:模型 10/10 都答對 DENY,但理由是錯的,它看到注入就短路、根本沒去審合約。<strong>而我們知道這件事,正是因為有章把理由記下來。</strong>沒有章的系統,這個問題查不出來。</span>">
+      <!-- ⑪ Honest -->
+      <section class="slide" data-notes="3:35–3:55|<strong>這頁是我們和其他隊伍的差別,不要跳過。</strong><span class='do'>先給數字:30 次全對、確定性判定。然後說最重要的一句 —— <strong>章保證的是可追溯,不是判斷正確</strong>。舉 InjectionUSD:模型 10/10 都答對 DENY,但理由是錯的,它看到注入就短路、根本沒去審合約。<strong>而我們知道這件事,正是因為有章把理由記下來。</strong>沒有章的系統,這個問題查不出來。</span>">
         <div class="eyebrow" data-zh="我們敢說什麼、不敢說什麼">What we can and cannot claim</div>
         <h2 data-zh="章保證的是可追溯,不是判斷正確。">A seal proves traceability. It does not prove the judgement was right.</h2>
         <div class="body">
           <div class="stats" style="margin-bottom:28px">
             <div class="stat"><div class="num pass">30/30</div><div class="lbl" data-zh="次結果一致 —— 3 種代幣 × 10 次,判定和額度每次都一樣">runs agree — 3 tokens × 10, deterministic verdict and cap</div></div>
-            <div class="stat"><div class="num">86</div><div class="lbl" data-zh="個測試 —— Foundry 20(含 256 輪 fuzz)、TypeScript 66">tests — 20 Foundry incl. a 256-run fuzz, 66 TypeScript</div></div>
+            <div class="stat"><div class="num">146</div><div class="lbl" data-zh="個測試 —— Foundry 20(含 256 輪 fuzz)、TypeScript 126,九個套件">tests — 20 Foundry incl. a 256-run fuzz, 126 TypeScript across nine packages</div></div>
             <div class="stat"><div class="num">3.5s</div><div class="lbl" data-zh="推理延遲中位數,30 次全部 TEE 驗證通過">p50 inference latency, TEE-attested every run</div></div>
             <div class="stat"><div class="num">0</div><div class="lbl" data-zh="把私鑰寫進 repo;六幕每一幕都 assert 結果">private keys in the repo; every scene asserts its outcome</div></div>
           </div>
@@ -573,29 +767,35 @@ p { margin: 0; }
                 auditable, attributable, <b style="color:var(--ink);font-weight:600">expiring</b> credential.</p>
               <p class="lede" style="font-size:15px" data-zh="README 裡也直接寫明:TEE 不等於 trustless;章不涵蓋帳單;持有人集中度沒有 indexer 可查,就留 <code class='mono'>null</code>,不編數字。">Also stated plainly in the README: a TEE is not trustlessness, the seal does not cover the invoice,
                 and holder concentration is left <code class="mono">null</code> rather than invented — there is no indexer on this testnet.</p>
+              <p class="lede" style="font-size:15px" data-zh="v1 沒做完的也直接講:合約目前只信一個 underwriter 簽章者;Agentic ID 是章上的一個欄位,還不是活的 ERC-7857 註冊表;參考用的 Agent B 跑在一台筆電上、靠 tunnel 對外,所以網站上那顆燈會誠實告訴你它現在是不是關的。">And what v1 does not do yet, said out loud: the registry trusts one underwriter signer, Agentic ID is a field rather than a live ERC-7857 registry,
+                and the reference Agent B runs on a laptop behind a tunnel — so the site’s pill tells you honestly when it is off.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ⑨ Close -->
+      <!-- ⑫ Close -->
       <section class="slide hero" data-notes="收尾|回到第一頁那句話收:<strong>每一跳都需要證明 —— 每一跳都出章。</strong><span class='do'>然後把 repo 網址留在畫面上,不要再多講。留時間給 Q&amp;A。</span>">
         <div class="eyebrow" data-zh="Attested Collateral Underwriter · 0G Taipei Hackathon">Attested Collateral Underwriter · 0G Taipei Hackathon</div>
         <div class="hero-grid">
           <div>
             <h1 class="close" data-zh="每一跳都留下一張章。">Every hop leaves a seal.</h1>
-            <p class="tag" style="margin-top:18px" data-zh="Agent 可以放心雇 Agent,中間不用有人在看 ——<br>因為 A 自己就能拒絕 B。">Agents can hire agents with nobody watching —<br>because A can reject B on its own.</p>
+            <p class="tag" style="margin-top:18px" data-zh="Agent 可以放心雇 Agent,中間不用有人在看 ——<br>因為 A 自己就能拒絕 B。<br><b>而現在,這件事只要一行指令。</b>">Agents can hire agents with nobody watching —<br>because A can reject B on its own.<br><b>And now that takes one command.</b></p>
           </div>
           <div>
             <div class="strip" style="flex-direction:column">
               <div class="cell" style="border-right:0;border-bottom:1px solid var(--line)">
-                <div class="l" data-zh="跑起來">Run it</div>
-                <div class="v">./demo/run.sh --live</div>
-                <div class="v" style="color:var(--muted)">./demo/run.sh --offline</div>
+                <div class="l" data-zh="自己跑一次">Run it yourself</div>
+                <div class="v">npx @acu/cli init</div>
+                <div class="v">npx @acu/cli underwrite 0xDB08…9eB8</div>
               </div>
               <div class="cell" style="border-right:0;border-bottom:1px solid var(--line)">
-                <div class="l" data-zh="自己驗一張章">Verify a seal yourself</div>
-                <div class="v">verifier/index.html</div>
+                <div class="l" data-zh="交給你自己的 agent">Give it to your agent</div>
+                <div class="v">claude mcp add acu -- npx -y @acu/mcp</div>
+              </div>
+              <div class="cell" style="border-right:0;border-bottom:1px solid var(--line)">
+                <div class="l" data-zh="看章、驗章">See and verify every seal</div>
+                <div class="v">wayneal.github.io/0G</div>
               </div>
               <div class="cell" style="border-right:0">
                 <div class="l" data-zh="已部署 · 0G testnet 16602">Deployed · 0G testnet 16602</div>
