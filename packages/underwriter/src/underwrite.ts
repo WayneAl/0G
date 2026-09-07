@@ -344,7 +344,13 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
   // It used to be checked after the auditor had been paid and the seal signed,
   // which meant a cent bought a refusal with no seal in it. Every precondition
   // that costs nothing to check belongs above every step that costs something.
-  if (req.settle && deps.registry === null) {
+  //
+  // Not on a dry run, though: `settle` defaults to true, so guarding it here
+  // without this would refuse `acu underwrite <token>` — the funnel's first
+  // command, the one the site's hero opens with — before it ever reached the
+  // quote it exists to show. A dry run spends nothing, so there is nothing for
+  // the guard to protect.
+  if (req.settle && !deps.dryRun && deps.registry === null) {
     return {
       ok: false,
       stage: "settle",

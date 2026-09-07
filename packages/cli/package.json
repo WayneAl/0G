@@ -1,6 +1,6 @@
 {
   "name": "@0x402/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "acu \u2014 your agent hires an auditor, verifies the seal, and signs its own. Quote with no key at all; verify any seal offline.",
   "license": "MIT",
   "author": "Wayne Kuo",

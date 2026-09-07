@@ -347,6 +347,23 @@ describe("underwrite", () => {
    * own — and only then notice it had nowhere to list. The caller got a refusal
    * with no seal in it, having paid for exactly one.
    */
+  /**
+   * The funnel's first command is `acu underwrite <token>` with nothing set up,
+   * and `settle` defaults to true. Refusing it for a missing registry stops the
+   * one command the site's hero and both READMEs open with — before the quote
+   * it exists to show. A dry run spends nothing, so there is nothing to protect.
+   */
+  it("still reaches a quote on a dry run with no registry", async () => {
+    const result = await underwrite({ ...request, settle: true }, deps({
+      resolver: new StaticAgentIdResolver({ "1": agentA.address, "2": agentB.address }),
+      hire: async (opts, req) => fakeHire(await resealOverRequest(clean.sealB, req), {})(opts, req),
+      dryRun: true,
+      registry: null,
+    }));
+    expect(result.ok, JSON.stringify(result)).toBe(true);
+    expect(result.ok && result.kind).toBe("dry-run");
+  });
+
   it("refuses to settle without a registry before it spends anything", async () => {
     let hired = false;
     let read = false;
@@ -354,6 +371,7 @@ describe("underwrite", () => {
       await underwrite(
         { ...request, settle: true },
         liveDeps({
+          dryRun: false,
           fetchArtifact: async (...args) => {
             read = true;
             return (await import("../src/chain.js")).fetchTokenArtifact(...args);

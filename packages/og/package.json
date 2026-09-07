@@ -1,6 +1,6 @@
 {
   "name": "@0x402/og",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "0G Compute clients for TEE-attested inference \u2014 the Router (verified tier, attestation carried through) and a direct provider client behind one interface.",
   "license": "MIT",
   "author": "Wayne Kuo",

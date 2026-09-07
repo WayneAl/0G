@@ -1,6 +1,6 @@
 {
   "name": "@0x402/underwriter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The Agent A side, as a library: hire an x402 auditor, verify its seal, compose your own around it, publish it, list it \u2014 with a budget gate before any signature.",
   "license": "MIT",
   "author": "Wayne Kuo",

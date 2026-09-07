@@ -1,6 +1,6 @@
 {
   "name": "@0x402/seal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The seal format and every check that decides whether one is real: canonical encoding, EIP-191 signing, and verification that walks an underwriting seal into the audit seal embedded in it.",
   "license": "MIT",
   "author": "Wayne Kuo",
