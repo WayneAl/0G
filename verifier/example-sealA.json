@@ -9,13 +9,13 @@
       "service": "code-audit",
       "priceAtomic": "10000",
       "network": "eip155:84532",
-      "settlementTx": "0x9ca251201b245a2b83665f6cf31c76e87a2133ed7bf44181b132f0f655f92a48",
+      "settlementTx": "0x77572bb127e9847779ee06e98773b936673d08c785db9359aa12ec085ec2f13d",
       "seal": {
         "version": 1,
         "type": "audit",
         "agentId": "2",
         "subject": "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8",
-        "request": "0xbab8215771b2808913f0db726ba418fa5a4774051a9af1ba31f9ae584811406c",
+        "request": "0xc44923b185d0d54d0046a99a7216c14dd8cc67933e60ee8aa187199d3b449918",
         "inference": {
           "model": "qwen2.5-omni",
           "trustMode": "verified",
@@ -23,7 +23,7 @@
           "promptHash": "0xff524ac4abbb1ed55a0c4115d027f59ebd7492042442103ca25460f3cae5203f",
           "responseHash": "0x0a0023fecfcdf930efcef0e390aa600e52a23d1dd06bfc6f2cf2622a7d0b18f6",
           "teeAttestation": {
-            "chatId": "c24e1e77-251b-4006-83bf-fe4f36353795",
+            "chatId": "b94298b7-4ee8-404c-b868-ecd5a23c5ef4",
             "teeVerified": true,
             "teeSignerAddress": null,
             "signature": null,
@@ -36,9 +36,9 @@
           "action": "ALLOW",
           "maxLtvBps": 7500
         },
-        "issuedAt": 1788277578,
-        "expiresAt": 1788363978,
-        "signature": "0xb771b38bb325de7a03789f728aff6332409317d3e37d3846625823420abead36714aea09ac7e65745b6a2c5816a51fe926cc8e209fd3d6cfb30dae88963bc42d1b"
+        "issuedAt": 1788760091,
+        "expiresAt": 1796536091,
+        "signature": "0xc6772b1bde947a6c766b3dd21e4d696eee718fe63c8ee75578df2e7c1962093d4479ae00b1490c434828682ab9f4f0d6c9ed8e5755126fea285b400fe7e405391b"
       },
       "sealVerified": true
     }
@@ -51,7 +51,7 @@
   "verdict": {
     "action": "ALLOW",
     "maxLtvBps": 7500,
-    "expiresAt": 1788363978
+    "expiresAt": 1796536091
   },
-  "signature": "0xcc5e72619ea8151eeaf597ba68abd623175ca17f576c36945c52f23df4c3f7703b40a56e0d3bb8bbe92ce26f4c986a15a8340e6d939ee5c2774d5854e8147ca51b"
+  "signature": "0xf58f62d060fbc2668413b1409abbe543b5f31ac780643f7003ed77a6177d198353479ed6fda0d1b7ecf34a4841c32f0fed22a4e1b13e411b3ebb2d97f92bdb8a1b"
 }

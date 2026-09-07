@@ -1,12 +1,12 @@
 {
-  "recordedAt": "2026-09-01T15:47:24.331Z",
-  "label": "CleanUSD via agent B that skipped attestation",
+  "recordedAt": "2026-09-07T05:48:28.226Z",
+  "label": "CleanUSD (no attestation)",
   "token": "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8",
   "request": {
     "token": "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8",
     "artifact": "address: 0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8\nname: \"Clean USD\"\nsymbol: \"CUSD\"\ndecimals: 18\ntotalSupply: 1000000000000000000000000\nowner: (no owner() method -- ownership may be renounced or absent)\nruntimeBytecodeSize: 1825 bytes\nruntimeBytecodeHash: 0x1f93556347a2937ae0c477262ea46912ac4178948fe0dbe3a12c50dd133a7e8f\nselectorsPresentInBytecode: (none of the watched set)\n\nsource:\n// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\nimport {ERC20} from \"@openzeppelin/contracts/token/ERC20/ERC20.sol\";\n\n/// @notice The benign case. Fixed supply, no owner, no hooks, no upgrade path.\n/// Nothing here can take a lender's collateral away after the fact.\ncontract CleanUSD is ERC20 {\n    constructor(address holder) ERC20(\"Clean USD\", \"CUSD\") {\n        _mint(holder, 1_000_000e18);\n    }\n}\n",
-    "requestedAt": 1788277639,
-    "nonce": "66fc88f3ffb46e9841e949478d199258"
+    "requestedAt": 1788760104,
+    "nonce": "a1c0ec3021f8ee1b27195220f11a411d"
   },
   "quote": {
     "amountAtomic": "10000",
@@ -25,7 +25,7 @@
     "type": "audit",
     "agentId": "2",
     "subject": "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8",
-    "request": "0x24bf4661ae0be8aad50aa6c72a3ca5bb22153f58368ad3a914d62748918e5f40",
+    "request": "0xb38162de6c2b33e7ccc534b0ecba87873c71e65b2f4c600698414f910389ac37",
     "inference": {
       "model": "qwen2.5-omni",
       "trustMode": "verified",
@@ -39,10 +39,10 @@
       "action": "ALLOW",
       "maxLtvBps": 7500
     },
-    "issuedAt": 1788277643,
-    "expiresAt": 1788364043,
-    "signature": "0x5e7f26a3e2cf2753f370d60c062df6f59b41effb49ce983e2a7f39d6a4496a1f3e2a8e094b16579337f280649c0c28586c44ae2b9cef5afa39bc0ef8f2a221c91b"
+    "issuedAt": 1788760107,
+    "expiresAt": 1796536107,
+    "signature": "0x46ee7daa8cbdfcb952be5cbbef880cb34c4e35498dd76dda6d35fca4ef8b20b508334ffcc8778dcb78330c3e2e89a967e0a04f2879770b6ef116501fa4aa7ece1b"
   },
-  "settlementTx": "0xe7eb3b2a1b9edb1598995f4cd4bb41531f3d6e9c185aacfad7d89704981d8efc",
+  "settlementTx": "0xb55c166cdd24749ddc33a4bcacbab98a6268d903dd08d27bf3618c4c3af8a658",
   "listing": null
 }
