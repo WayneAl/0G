@@ -150,6 +150,15 @@ p { margin: 0; }
 .panel p { font-size: 14.5px; line-height: 1.5; color: var(--muted); }
 .panel.bad { border-left: 2px solid var(--fail); }
 .panel .who { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-top: 12px; }
+.panel .gone {
+  margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line);
+  font-size: 13px; line-height: 1.45; color: var(--muted);
+}
+.panel .gone b {
+  display: block; margin-bottom: 5px; font-weight: 500;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--fail);
+}
 
 /* definition list used for "what a seal carries" and 0G integration */
 .deflist { display: flex; flex-direction: column; gap: 16px; }
@@ -549,7 +558,7 @@ pre.code .kw { color: var(--accent); }
                 <div><span class="k">signature</span> <span class="v">0xcc5e72…7ca51b</span></div>
               </div>
             </div>
-            <p class="eyebrow" style="margin-top:12px" data-zh="repo 裡真實的一張章 —— verifier/example-sealA.json">an actual seal from this repo — verifier/example-sealA.json</p>
+            <p class="eyebrow" style="margin-top:12px" data-zh="repo 裡真實的一張章 —— web/public/examples/example-sealA.json">an actual seal from this repo — web/public/examples/example-sealA.json</p>
             </div>
             <dl class="deflist">
               <div class="row"><dt data-zh="額度,不是 boolean">A cap, not a boolean</dt>
@@ -689,16 +698,44 @@ sealedAuditRoute(app, config);
         </div>
       </section>
 
-      <!-- ⑨ 0G integration -->
-      <section class="slide" data-notes="2:55–3:15|評審要聽的是「真的接了、不是只改 base_url」。<span class='do'>講第一條就好:<code>verify_tee</code> 是 body 頂層欄位、chatId 從 <code>ZG-Res-Key</code> header 回來 —— <strong>所以我們用 raw fetch 不用 SDK,因為 SDK 剛好把證據藏掉</strong>。這句話很有說服力。下面地址不用唸,指一下就好。</span>">
+      <!-- ⑨ Why 0G -->
+      <section class="slide" data-notes="2:55–3:15|這頁回答評審一定會問的「<strong>為什麼是 0G</strong>」。<span class='do'>三張卡不要逐字唸,指著說:<strong>這三件事拿掉 0G 就不成立</strong> —— 答案沒有出處、章沒有地方活、三件事散在三個不同廠商。然後停在最下面那句,這句最重要:<strong>我們沒有把錢搬到 0G</strong>。x402 留在 Base 是因為 USDC 和 facilitator 在那裡。講了這句,前面三個整合聽起來就是<strong>選出來的,不是湊出來的</strong>。</span>">
+        <div class="eyebrow" data-zh="為什麼是 0G">Why 0G</div>
+        <h2 data-zh="把 0G 拿掉,就沒有東西可以驗了。">Take 0G out and there is nothing to verify.</h2>
+        <p class="lede" data-zh="這不是一張整合清單。是三件事,少一件這個產品就不存在。">Not a checklist of integrations — three things the product cannot exist without.</p>
+        <div class="body">
+          <div class="cols3">
+            <div class="panel">
+              <h3 data-zh="答案要有出處">An answer needs provenance</h3>
+              <p data-zh="Router 在 TEE 裡跑審核,而且證明錨在鏈上 —— 第三方可以自己複驗:<code class='mono'>GET /v1/proxy/signature/{chatId}</code>,對 provider 鏈上登記的 TEE 簽章地址做 EIP-191。">The Router runs the audit inside a TEE, and the attestation is anchored on chain — so a third party can re-check it: <code class="mono">GET /v1/proxy/signature/{chatId}</code>, EIP-191 against the provider’s registered TEE signer.</p>
+              <div class="gone" data-zh="<b>沒有的話</b>第 ⑦ 幕:一樣收錢、一樣回一個 ALLOW,但沒有一樣能驗。一般的模型 API 回的是文字,不是證據。"><b>without it</b>Scene ⑦: the same fee, the same ALLOW, and nothing to check. An ordinary model API returns text, not evidence.</div>
+            </div>
+            <div class="panel">
+              <h3 data-zh="章要活得比我們久">The seal has to outlive us</h3>
+              <p data-zh="我們什麼都不代管,所以一張章必須光靠一個 <code class='mono'>bytes32</code> 就找得回來。0G Storage 收下 bytes、用章自己的 <code class='mono'>sealHash</code> 當 tag,indexer 的 gateway 再直接餵給瀏覽器(<code class='mono'>access-control-allow-origin: *</code>)。">We host nothing, so a seal has to be reachable from a <code class="mono">bytes32</code> alone. 0G Storage takes the bytes tagged with the seal’s own <code class="mono">sealHash</code>, and the indexer’s gateway serves them straight to a browser (<code class="mono">access-control-allow-origin: *</code>).</p>
+              <div class="gone" data-zh="<b>沒有的話</b>合約上那個 <code class='mono'>sealHash</code> 就只指向「拿過它的人手上那一份」。沒有人能稽核這次稽核。"><b>without it</b>The registry’s <code class="mono">sealHash</code> points at something only whoever held it can produce. Nobody can audit the audit.</div>
+            </div>
+            <div class="panel">
+              <h3 data-zh="三件事要在同一個信任域">All of it must be one trust domain</h3>
+              <p data-zh="provider 的 TEE 簽章地址、章本體的 <code class='mono'>Flow.Submit</code> 交易、<code class='mono'>CollateralRegistry</code> —— 全部從同一個 RPC 讀得到,而且它直接回應瀏覽器。一個 endpoint 就驗得完整條保管鏈。">The provider’s TEE signer, the seal body’s <code class="mono">Flow.Submit</code> tx and <code class="mono">CollateralRegistry</code> are all read from one RPC — and it answers a browser directly. One endpoint verifies the whole chain of custody.</p>
+              <div class="gone" data-zh="<b>沒有的話</b>三個廠商、三個信任假設,而且沒有一條鏈能替你執行審核員寫下的那個額度上限。"><b>without it</b>Three vendors, three trust assumptions, and no chain in a position to enforce the cap the auditor wrote.</div>
+            </div>
+          </div>
+          <p class="callout" data-zh="還有我們<b>沒有</b>放上 0G 的東西:錢。x402 在 Base Sepolia 結算,因為 USDC 和 facilitator 在那裡。<b>錢在 Base,證明在 0G</b> —— 我們把「必須共用一條鏈才成立」的那三件事放上 0G,其他一件都沒有為了讓整合看起來多而搬過去。">And what we did <b>not</b> put on 0G: the money. x402 settles on Base Sepolia, because that is where USDC and the facilitator live.
+            <b>Money on Base, proof on 0G</b> — what went onto 0G is the three things that only work if they share a chain, and nothing else added to make the integration look bigger.</p>
+        </div>
+      </section>
+
+      <!-- ⑩ 0G integration -->
+      <section class="slide" data-notes="3:15–3:32|評審要聽的是「真的接了、不是只改 base_url」。<span class='do'>講第一條就好:<code>verify_tee</code> 是 body 頂層欄位、chatId 從 <code>ZG-Res-Key</code> header 回來 —— <strong>所以我們用 raw fetch 不用 SDK,因為 SDK 剛好把證據藏掉</strong>。這句話很有說服力。下面地址不用唸,指一下就好。</span>">
         <div class="eyebrow" data-zh="0G 接在哪裡">Where the 0G integration is</div>
-        <h2 data-zh="Compute、Storage、鏈 —— 三個 0G 介面,拔掉任何一個系統就不成立">Compute, Storage and the chain — three 0G surfaces, every one load-bearing</h2>
+        <h2 data-zh="接線細節 —— 每一個 endpoint、每一個 header、每一個地址">The exact wiring — every endpoint, every header, every address</h2>
         <div class="body">
           <dl class="deflist" style="margin-bottom:26px">
             <div class="row"><dt data-zh="Compute Router">Compute Router</dt>
-              <dd data-zh="<code>POST /v1/chat/completions</code>,帶 <code>X-0G-Provider-Trust-Mode: verified</code> 和 <code>verify_tee: true</code>。證明從 <code>ZG-Res-Key</code> header 和 <code>x_0g_trace.tee_verified</code> 回來。這裡故意用 raw <code>fetch</code> 不用 SDK —— SDK 幫你藏掉的,剛好就是這些證據。事後任何人都能自己複驗:<code>GET /v1/proxy/signature/{chatId}</code>,拿 provider 鏈上登記的 TEE 簽章地址做 EIP-191 驗簽。你連 Router 都不用信。"><code>POST /v1/chat/completions</code> with <code>X-0G-Provider-Trust-Mode: verified</code> and <code>verify_tee: true</code>.
+              <dd data-zh="<code>POST /v1/chat/completions</code>,帶 <code>X-0G-Provider-Trust-Mode: verified</code> 和 <code>verify_tee: true</code>。證明從 <code>ZG-Res-Key</code> header 和 <code>x_0g_trace.tee_verified</code> 回來。這裡故意用 raw <code>fetch</code> 不用 SDK —— SDK 幫你藏掉的,剛好就是這些證據。事後任何人都能自己複驗:<code>GET /v1/proxy/signature/{chatId}</code>。"><code>POST /v1/chat/completions</code> with <code>X-0G-Provider-Trust-Mode: verified</code> and <code>verify_tee: true</code>.
                 The attestation comes back as the <code>ZG-Res-Key</code> header and <code>x_0g_trace.tee_verified</code> — raw <code>fetch</code>, on purpose, because that is exactly what an SDK hides.
-                Anyone can re-check it afterwards: <code>GET /v1/proxy/signature/{chatId}</code>, verified as EIP-191 against the provider’s on-chain TEE signer. We do not ask you to trust the Router either.</dd></div>
+                Re-checkable afterwards by anyone: <code>GET /v1/proxy/signature/{chatId}</code>.</dd></div>
             <div class="row"><dt data-zh="0G Storage">0G Storage</dt>
               <dd data-zh="每一張章 A 都經 indexer 上傳,<code>tags</code> 帶著它自己的 <code>sealHash</code>。之後要找回它,不需要跟我們拿任何東西:掃 <code>Flow.Submit</code> 找那個 tag、從 indexer 的 HTTPS gateway 抓 bytes,<code>sealDigest(bytes) == sealHash</code> 就是完整性檢查。實測:root <code>0xfe2ebe72…</code>、txSeq 149639、<b>1.4 秒</b>找回來。(0G-KV 沒有一個公開節點連得上,所以我們走 log layer。)">Every seal A is uploaded through the indexer with its own <code>sealHash</code> in <code>tags</code>.
                 To find it again you need nothing from us: scan <code>Flow.Submit</code> for the tag, pull the bytes from the indexer’s HTTPS gateway, and
@@ -719,8 +756,8 @@ sealedAuditRoute(app, config);
         </div>
       </section>
 
-      <!-- ⑩ The public site -->
-      <section class="slide" data-notes="3:15–3:35|如果現場有時間就<strong>直接開頁面貼一張章當眾驗</strong>(這是加分項)。<span class='do'>一句話講完:這頁不是「顯示」一張章,是<strong>檢查</strong>它 —— 從章自己的 bytes 重算 digest、recover 出簽章者、再往下走進內嵌的章 B。第三顆範例是被改過 verdict 的那張,現場點它會紅。</span>">
+      <!-- ⑪ The public site -->
+      <section class="slide" data-notes="3:32–3:47|如果現場有時間就<strong>直接開頁面貼一張章當眾驗</strong>(這是加分項)。<span class='do'>一句話講完:這頁不是「顯示」一張章,是<strong>檢查</strong>它 —— 從章自己的 bytes 重算 digest、recover 出簽章者、再往下走進內嵌的章 B。第三顆範例是被改過 verdict 的那張,現場點它會紅。</span>">
         <div class="eyebrow" data-zh="公開的那一面">The public surface</div>
         <h2 data-zh="任何人做出來的章都會出現在這裡,而且任何人都能自己重驗一次">Every seal anyone makes shows up here — and anyone can re-check it</h2>
         <p class="lede" data-zh="一個靜態網站。<code class='mono'>@acu/seal</code> 直接打包進去,所有檢查都在你自己的分頁裡跑 —— 沒有一支我們的 API 可以騙你。">A static site. It bundles <code class="mono">@acu/seal</code>, so every check runs in your own tab — there is no API of ours that could lie to you.</p>
@@ -745,8 +782,8 @@ sealedAuditRoute(app, config);
         </div>
       </section>
 
-      <!-- ⑪ Honest -->
-      <section class="slide" data-notes="3:35–3:55|<strong>這頁是我們和其他隊伍的差別,不要跳過。</strong><span class='do'>先給數字:30 次全對、確定性判定。然後說最重要的一句 —— <strong>章保證的是可追溯,不是判斷正確</strong>。舉 InjectionUSD:模型 10/10 都答對 DENY,但理由是錯的,它看到注入就短路、根本沒去審合約。<strong>而我們知道這件事,正是因為有章把理由記下來。</strong>沒有章的系統,這個問題查不出來。</span>">
+      <!-- ⑫ Honest -->
+      <section class="slide" data-notes="3:47–4:05|<strong>這頁是我們和其他隊伍的差別,不要跳過。</strong><span class='do'>先給數字:30 次全對、確定性判定。然後說最重要的一句 —— <strong>章保證的是可追溯,不是判斷正確</strong>。舉 InjectionUSD:模型 10/10 都答對 DENY,但理由是錯的,它看到注入就短路、根本沒去審合約。<strong>而我們知道這件事,正是因為有章把理由記下來。</strong>沒有章的系統,這個問題查不出來。</span>">
         <div class="eyebrow" data-zh="我們敢說什麼、不敢說什麼">What we can and cannot claim</div>
         <h2 data-zh="章保證的是可追溯,不是判斷正確。">A seal proves traceability. It does not prove the judgement was right.</h2>
         <div class="body">
@@ -774,7 +811,7 @@ sealedAuditRoute(app, config);
         </div>
       </section>
 
-      <!-- ⑫ Close -->
+      <!-- ⑬ Close -->
       <section class="slide hero" data-notes="收尾|回到第一頁那句話收:<strong>每一跳都需要證明 —— 每一跳都出章。</strong><span class='do'>然後把 repo 網址留在畫面上,不要再多講。留時間給 Q&amp;A。</span>">
         <div class="eyebrow" data-zh="Attested Collateral Underwriter · 0G Taipei Hackathon">Attested Collateral Underwriter · 0G Taipei Hackathon</div>
         <div class="hero-grid">
