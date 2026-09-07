@@ -19,7 +19,7 @@ import { makeBudgetGate } from "../src/budget.js";
 import type { TokenArtifact } from "../src/chain.js";
 import { HireError, type HireOptions, type HireResult, type Quote } from "../src/hire.js";
 import type { PublishReceipt } from "../src/publisher.js";
-import type { SettleResult } from "../src/settle.js";
+import { mapListError, type SettleResult } from "../src/settle.js";
 import {
   composeSealA,
   hireAndVerify,
@@ -222,6 +222,21 @@ describe("hireAndVerify", () => {
     expect(r.detail).toContain("expected 402");
   });
 
+  it("blames the hire stage when the paid request itself failed", async () => {
+    const r = refused(
+      await hireAndVerify(
+        requestOf(clean),
+        deps({
+          hire: async () => {
+            throw new HireError("AUDIT_REQUEST_FAILED", "502 upstream model unavailable");
+          },
+        }),
+      ),
+    );
+    expect(r.stage).toBe("hire");
+    expect(r.code).toBe("AUDIT_REQUEST_FAILED");
+  });
+
   it("refuses an unlisted payee before anything is signed", async () => {
     const flags: { paid?: boolean } = {};
     const stranger = "0xcccccccccccccccccccccccccccccccccccccccc" as const;
@@ -240,10 +255,10 @@ describe("hireAndVerify", () => {
 });
 
 describe("composeSealA", () => {
-  it("wraps the recorded seal B verbatim, and the pair verifies as a chain", async () => {
-    const req = requestOf(clean);
-    const sealBody = clean.sealB as unknown as SealB;
-    const sealA = await composeSealA({
+  const req = requestOf(clean);
+  const sealBody = clean.sealB as unknown as SealB;
+  const compose = (ltvBps: number) =>
+    composeSealA({
       request: req,
       sealB: sealBody,
       hire: {
@@ -253,12 +268,20 @@ describe("composeSealA", () => {
         settlementTx: clean.settlementTx as `0x${string}` | null,
       },
       ownAnalysis: { liquidityDepthUsd: "0", top10HolderPct: 0, sourceHash: keccak256(toHex(req.artifact)) },
-      ltvBps: 7000,
+      ltvBps,
       agentId: "1",
       auditorAgentId: "2",
       network: "eip155:84532",
       account: agentA,
     });
+
+  it("caps at nothing when nothing was asked for", async () => {
+    const sealA = await compose(0);
+    expect(sealA.verdict.maxLtvBps).toBe(0);
+  });
+
+  it("wraps the recorded seal B verbatim, and the pair verifies as a chain", async () => {
+    const sealA = await compose(7000);
 
     expect(sealA.delegations[0]!.seal).toEqual(clean.sealB);
     expect(sealA.delegations[0]!.sealVerified).toBe(true);
@@ -345,6 +368,23 @@ describe("underwrite", () => {
     expect(listed).toBe(false);
   });
 
+  it("refuses rather than throws when the registry cannot say who it trusts", async () => {
+    const r = refused(
+      await underwrite(
+        { ...request, settle: true },
+        liveDeps({
+          registry: "0x1111111111111111111111111111111111111111",
+          trustedSigner: async () => {
+            throw new Error("HTTP request failed: 0G RPC 503");
+          },
+        }),
+      ),
+    );
+    expect(r.stage).toBe("settle");
+    expect(r.code).toBe("LIST_FAILED");
+    expect(r.detail).toContain("503");
+  });
+
   it("lists when the registry trusts this agent", async () => {
     const settleResult: SettleResult = {
       txHash: `0x${"ab".repeat(32)}`,
@@ -400,6 +440,12 @@ describe("underwrite", () => {
     expect(s.skipped.publish).toContain("indexer unreachable");
   });
 
+  it("says so when publishing was asked for with no publisher", async () => {
+    const s = sealed(await underwrite({ ...request, publish: true }, liveDeps()));
+    expect(s.storage).toBeNull();
+    expect(s.skipped.publish).toBe("NO_PUBLISHER");
+  });
+
   it("reports where the seal body was published", async () => {
     const receipts: PublishReceipt[] = [];
     const s = sealed(
@@ -426,5 +472,33 @@ describe("underwrite", () => {
     expect(s.storage).toEqual(receipts[0]);
     expect(s.storage!.sealHash).toBe(s.sealHash);
     expect(s.skipped).toEqual({});
+  });
+});
+
+describe("mapListError", () => {
+  const NAMED = [
+    "SEAL_SUBJECT_MISMATCH",
+    "AUDIT_FAILED",
+    "LTV_EXCEEDS_ATTESTED",
+    "SEAL_EXPIRED",
+    "NO_SEAL",
+    "BAD_SIGNATURE",
+  ] as const;
+
+  for (const name of NAMED) {
+    it(`reports ${name} as the registry's own refusal`, () => {
+      expect(mapListError(`The contract function "list" reverted with ${name}()`)).toEqual({
+        code: name,
+        detail: "reverted by CollateralRegistry",
+      });
+    });
+  }
+
+  it("keeps an unnamed failure readable instead of guessing at it", () => {
+    const noisy = `connection refused ${"x".repeat(400)}`;
+    const mapped = mapListError(noisy);
+    expect(mapped.code).toBe("LIST_FAILED");
+    expect(mapped.detail).toBe(noisy.slice(0, 300));
+    expect(mapped.detail).toHaveLength(300);
   });
 });

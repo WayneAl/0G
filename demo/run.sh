@@ -71,8 +71,8 @@ expect() {
   local want="$1"; shift
   [ -z "$LIVE" ] && want="○ DRY RUN"
   local out; out="$(agent_a "$@")"
-  local got; got="$(echo "$out" | grep -oE '^(✓ [A-Z_]+|✗ [A-Z_]+|○ DRY RUN)' | tail -1)"
-  echo "$out" | grep -E '^\[[0-9R]\] ' | sed 's/^/     /'
+  local got; got="$(echo "$out" | grep -oE '^(✓ [A-Z_]+|✗ [A-Z_]+|○ DRY RUN|○ NOT LISTED)' | tail -1)"
+  echo "$out" | grep -E '^\[[0-9RS]\] ' | sed 's/^/     /'
   if [ "$got" = "$want" ]; then
     if [ -z "$LIVE" ]; then
       echo "     => quoted and gated, stopped before signing  ✅ (dry run: outcome not exercised)"

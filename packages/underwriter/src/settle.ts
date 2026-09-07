@@ -1,6 +1,7 @@
 import { createWalletClient, http, createPublicClient, type Account, type Hex } from "viem";
 import { buildStubProof, type SealA } from "@acu/seal";
 import { OG_TESTNET } from "./chain.js";
+import type { UnderwriteFailure } from "./underwrite.js";
 
 const REGISTRY_ABI = [
   {
@@ -111,6 +112,27 @@ export async function listWithSeal(
   });
 
   return { txHash, listed: { active, ltvBps: listedLtv, sealHash, expiresAt } };
+}
+
+/**
+ * The custom errors this ABI declares, as they arrive inside viem's message.
+ * Named here, beside the ABI they come from, so every caller reports the same
+ * refusal for the same revert.
+ */
+const REVERT_NAMES = /(SEAL_SUBJECT_MISMATCH|AUDIT_FAILED|LTV_EXCEEDS_ATTESTED|SEAL_EXPIRED|NO_SEAL|BAD_SIGNATURE)/;
+
+/**
+ * What the registry actually refused, from whatever viem threw.
+ *
+ * A named revert is the contract saying why, and is surfaced verbatim; anything
+ * else is LIST_FAILED with the raw message, truncated — a failure we cannot name
+ * must still be readable.
+ */
+export function mapListError(message: string): { code: UnderwriteFailure; detail: string } {
+  const named = message.match(REVERT_NAMES)?.[1];
+  return named
+    ? { code: named as UnderwriteFailure, detail: "reverted by CollateralRegistry" }
+    : { code: "LIST_FAILED", detail: message.slice(0, 300) };
 }
 
 /**

@@ -14,6 +14,7 @@ import {
 import {
   listWithSeal,
   makeBudgetGate,
+  mapListError,
   underwrite,
   type Stage,
   type StepEvent,
@@ -288,9 +289,8 @@ async function submit(
     const result = await listWithSeal(seal, token, ltvBps, { registry, account });
     console.log(`\n✓ EXECUTED  ltv=${result.listed.ltvBps}bps  tx=${result.txHash}`);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    const named = msg.match(/(SEAL_SUBJECT_MISMATCH|AUDIT_FAILED|LTV_EXCEEDS_ATTESTED|SEAL_EXPIRED|NO_SEAL|BAD_SIGNATURE)/);
-    fail(named?.[1] ?? "LIST_FAILED", named ? "reverted by CollateralRegistry" : msg.slice(0, 300));
+    const { code, detail } = mapListError(err instanceof Error ? err.message : String(err));
+    fail(code, detail);
   }
 }
 

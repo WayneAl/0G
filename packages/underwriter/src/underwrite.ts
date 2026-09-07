@@ -15,7 +15,7 @@ import {
 import { BudgetExceededError, type BudgetGate } from "./budget.js";
 import { fetchTokenArtifact, makeOgClient, renderArtifact } from "./chain.js";
 import { hireAuditor, HireError, type Quote } from "./hire.js";
-import { listWithSeal, readTrustedSigner } from "./settle.js";
+import { listWithSeal, mapListError, readTrustedSigner } from "./settle.js";
 import type { PublishReceipt, SealPublisher } from "./publisher.js";
 
 /**
@@ -364,15 +364,22 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
 
   const skipped: { settle?: string; publish?: string } = {};
   let storage: PublishReceipt | null = null;
-  if (req.publish && deps.publisher) {
-    try {
-      storage = await deps.publisher.publish(sealA);
-      emit(deps, "publish", `published to 0G Storage · root ${storage.root} · tx ${storage.txHash}`);
-    } catch (err) {
-      // A seal nobody can fetch is still a valid seal; the caller holds it. Say
-      // so and carry on rather than losing a run to the storage layer.
-      skipped.publish = `PUBLISH_FAILED: ${err instanceof Error ? err.message : String(err)}`;
-      emit(deps, "publish", skipped.publish);
+  if (req.publish) {
+    if (deps.publisher) {
+      try {
+        storage = await deps.publisher.publish(sealA);
+        emit(deps, "publish", `published to 0G Storage · root ${storage.root} · tx ${storage.txHash}`);
+      } catch (err) {
+        // A seal nobody can fetch is still a valid seal; the caller holds it. Say
+        // so and carry on rather than losing a run to the storage layer.
+        skipped.publish = `PUBLISH_FAILED: ${err instanceof Error ? err.message : String(err)}`;
+        emit(deps, "publish", skipped.publish);
+      }
+    } else {
+      // Asked to publish with nothing to publish through. Silence here would
+      // read as "published" to anyone looking for the receipt.
+      skipped.publish = "NO_PUBLISHER";
+      emit(deps, "publish", "NO_PUBLISHER — publishing was asked for, no publisher is configured");
     }
   }
 
@@ -401,7 +408,19 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
   // The registry's verifier accepts exactly one signer. Asking first turns a
   // wasted revert into a refusal that names both addresses.
   const trustedSigner = deps.trustedSigner ?? readTrustedSigner;
-  const trusted = await trustedSigner(deps.registry, deps.rpcUrl);
+  let trusted: `0x${string}`;
+  try {
+    trusted = await trustedSigner(deps.registry, deps.rpcUrl);
+  } catch (err) {
+    // A registry that cannot say who it trusts is a settlement that cannot
+    // happen — a refusal like any other, not an exception out of underwrite().
+    return {
+      ok: false,
+      stage: "settle",
+      code: "LIST_FAILED",
+      detail: (err instanceof Error ? err.message : String(err)).slice(0, 300),
+    };
+  }
   if (!isAddressEqual(trusted, deps.account.address)) {
     skipped.settle = `UNTRUSTED_SIGNER: registry verifier trusts ${trusted}, this agent signs as ${deps.account.address}`;
     return sealedResult(null);
@@ -418,13 +437,10 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
     });
     return sealedResult({ txHash: result.txHash, ltvBps: result.listed.ltvBps });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    const named = msg.match(/(SEAL_SUBJECT_MISMATCH|AUDIT_FAILED|LTV_EXCEEDS_ATTESTED|SEAL_EXPIRED|NO_SEAL|BAD_SIGNATURE)/);
     return {
       ok: false,
       stage: "settle",
-      code: (named?.[1] ?? "LIST_FAILED") as UnderwriteFailure,
-      detail: named ? "reverted by CollateralRegistry" : msg.slice(0, 300),
+      ...mapListError(err instanceof Error ? err.message : String(err)),
     };
   }
 }
