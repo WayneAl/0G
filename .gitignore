@@ -10,3 +10,7 @@ contracts/broadcast/
 .DS_Store
 contracts/lib/
 .budget-ledger.json
+.claude/worktrees/
+.claude/sdd/
+web/dist/
+web/public/pitch/
