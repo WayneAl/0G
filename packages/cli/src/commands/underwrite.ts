@@ -334,6 +334,17 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
     const replayed = JSON.parse(readFileSync(args.sealFile, "utf8")) as SealA;
     step("R", `seal subject is ${replayed.subject}; listing it against ${args.token}`);
     if (!args.registry) return fail("NO_REGISTRY", "pass --registry <address> or set REGISTRY_ADDRESS");
+    // A seal that was signed while the publisher was unavailable — `skipped.publish`
+    // — otherwise has no way back onto the log layer, and a listing whose body
+    // nobody can fetch is a hash pointing at nothing. This is the way back.
+    if (args.publish) {
+      const receipt = await ogStoragePublisher({
+        privateKey: agentAKey,
+        rpcUrl: config.rpcUrl,
+        indexerUrl: config.indexerUrl,
+      }).publish(replayed);
+      step("S", `seal A on 0G Storage · root ${receipt.root} · txSeq ${receipt.txSeq}`);
+    }
     return submit(replayed, args.token, args.ltvBps, args.registry, agentA);
   }
 
