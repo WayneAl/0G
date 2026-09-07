@@ -20,6 +20,7 @@ import {
   type StepEvent,
   type UnderwriteDeps,
 } from "@acu/underwriter";
+import { ogStoragePublisher, OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@acu/storage/publish";
 import { loadFixture, fixtureRequest } from "./replay.js";
 
 loadEnv({ path: new URL("../../.env", import.meta.url).pathname });
@@ -105,7 +106,8 @@ const printStep = (e: StepEvent): void =>
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
-  const agentA = privateKeyToAccount(required("AGENT_A_PRIVATE_KEY") as `0x${string}`);
+  const agentAKey = required("AGENT_A_PRIVATE_KEY") as `0x${string}`;
+  const agentA = privateKeyToAccount(agentAKey);
   const agentAId = process.env["AGENT_A_ID"] ?? "1";
   const agentBId = process.env["AGENT_B_ID"] ?? "2";
   const agentBSealSigner = required("AGENT_B_SEAL_SIGNER") as `0x${string}`;
@@ -142,8 +144,15 @@ async function main(): Promise<void> {
     network,
     dryRun: !args.live,
     registry: args.registry,
-    // Task 2 hands this a 0G Storage publisher; until then --publish is inert.
-    publisher: null,
+    // Only built when asked for: constructing it is free, but --publish is what
+    // says "spend 0G gas to put this body on the log layer".
+    publisher: args.publish
+      ? ogStoragePublisher({
+          privateKey: agentAKey,
+          rpcUrl: process.env["OG_RPC_URL"] ?? OG_TESTNET_RPC,
+          indexerUrl: process.env["OG_INDEXER_URL"] ?? OG_TESTNET_INDEXER,
+        })
+      : null,
     onStep: printStep,
   };
 

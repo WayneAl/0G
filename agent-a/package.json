@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@acu/seal": "workspace:*",
+    "@acu/storage": "workspace:*",
     "@acu/underwriter": "workspace:*",
     "@x402/core": "^2.24.0",
     "@x402/evm": "^2.24.0",
