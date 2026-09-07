@@ -1,6 +1,25 @@
 {
   "name": "@acu/underwriter",
   "version": "0.1.0",
+  "description": "The Agent A side, as a library: hire an x402 auditor, verify its seal, compose your own around it, publish it, list it \u2014 with a budget gate before any signature.",
+  "license": "MIT",
+  "author": "Wayne Kuo",
+  "homepage": "https://wayneal.github.io/0G",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WayneAl/0G.git",
+    "directory": "packages/underwriter"
+  },
+  "bugs": {
+    "url": "https://github.com/WayneAl/0G/issues"
+  },
+  "keywords": [
+    "x402",
+    "agent",
+    "underwriting",
+    "0g",
+    "seal"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -8,7 +27,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public",
@@ -23,7 +43,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "pnpm run build",
+    "prepack": "cp ../../LICENSE . && pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

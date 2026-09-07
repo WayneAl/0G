@@ -1,6 +1,25 @@
 {
   "name": "@acu/cli",
   "version": "0.1.0",
+  "description": "acu \u2014 your agent hires an auditor, verifies the seal, and signs its own. Quote with no key at all; verify any seal offline.",
+  "license": "MIT",
+  "author": "Wayne Kuo",
+  "homepage": "https://wayneal.github.io/0G",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WayneAl/0G.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/WayneAl/0G/issues"
+  },
+  "keywords": [
+    "cli",
+    "x402",
+    "agent",
+    "seal",
+    "0g"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -12,7 +31,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public",
@@ -34,7 +54,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "pnpm run build",
+    "prepack": "cp ../../LICENSE . && pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

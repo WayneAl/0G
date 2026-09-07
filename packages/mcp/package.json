@@ -1,6 +1,25 @@
 {
   "name": "@acu/mcp",
   "version": "0.1.0",
+  "description": "An MCP server that lets your own agent hire an auditor, verify a seal and sign its own \u2014 seven tools, and no environment variables to install.",
+  "license": "MIT",
+  "author": "Wayne Kuo",
+  "homepage": "https://wayneal.github.io/0G",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WayneAl/0G.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/WayneAl/0G/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "x402",
+    "agent",
+    "seal"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -11,7 +30,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public",
@@ -29,7 +49,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "pnpm run build",
+    "prepack": "cp ../../LICENSE . && pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

@@ -1,5 +1,13 @@
 {
   "name": "attested-collateral-underwriter",
+  "description": "Agent A hires Agent B over x402, verifies the seal it gets back, and signs its own around it.",
+  "license": "MIT",
+  "author": "Wayne Kuo",
+  "homepage": "https://wayneal.github.io/0G",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WayneAl/0G.git"
+  },
   "private": true,
   "version": "0.1.0",
   "type": "module",

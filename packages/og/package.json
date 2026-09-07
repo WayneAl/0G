@@ -1,12 +1,34 @@
 {
   "name": "@acu/og",
   "version": "0.1.0",
+  "description": "0G Compute clients for TEE-attested inference \u2014 the Router (verified tier, attestation carried through) and a direct provider client behind one interface.",
+  "license": "MIT",
+  "author": "Wayne Kuo",
+  "homepage": "https://wayneal.github.io/0G",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WayneAl/0G.git",
+    "directory": "packages/og"
+  },
+  "bugs": {
+    "url": "https://github.com/WayneAl/0G/issues"
+  },
+  "keywords": [
+    "0g",
+    "tee",
+    "inference",
+    "attestation",
+    "llm"
+  ],
   "type": "module",
   "main": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public",
@@ -21,7 +43,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "pnpm run build",
+    "prepack": "cp ../../LICENSE . && pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke.ts"
@@ -31,5 +53,8 @@
     "viem": "^2.23.2",
     "zod": "^3.24.2"
   },
-  "devDependencies": { "tsx": "^4.19.2", "dotenv": "^16.4.7" }
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "dotenv": "^16.4.7"
+  }
 }

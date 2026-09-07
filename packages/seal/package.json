@@ -1,6 +1,25 @@
 {
   "name": "@acu/seal",
   "version": "0.1.0",
+  "description": "The seal format and every check that decides whether one is real: canonical encoding, EIP-191 signing, and verification that walks an underwriting seal into the audit seal embedded in it.",
+  "license": "MIT",
+  "author": "Wayne Kuo",
+  "homepage": "https://wayneal.github.io/0G",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WayneAl/0G.git",
+    "directory": "packages/seal"
+  },
+  "bugs": {
+    "url": "https://github.com/WayneAl/0G/issues"
+  },
+  "keywords": [
+    "seal",
+    "eip-191",
+    "attestation",
+    "verification",
+    "agent"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -8,7 +27,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public",
@@ -23,7 +43,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "pnpm run build",
+    "prepack": "cp ../../LICENSE . && pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "gen-fixture": "tsx scripts/gen-fixture.ts"
