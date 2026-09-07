@@ -1,7 +1,6 @@
 {
   "name": "@acu/storage",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -10,7 +9,36 @@
     "./locate": "./src/locate.ts",
     "./fetch": "./src/fetch.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./publish": {
+        "types": "./dist/publish.d.ts",
+        "default": "./dist/publish.js"
+      },
+      "./locate": {
+        "types": "./dist/locate.d.ts",
+        "default": "./dist/locate.js"
+      },
+      "./fetch": {
+        "types": "./dist/fetch.d.ts",
+        "default": "./dist/fetch.js"
+      }
+    }
+  },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

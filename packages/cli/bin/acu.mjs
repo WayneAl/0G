@@ -1,18 +1,14 @@
 #!/usr/bin/env node
-// The workspace consumes every @acu package as TypeScript source, so the bin
-// registers tsx before importing the entry point. Task 7 points this at a built
-// dist/index.js for npm; nothing else about the CLI changes.
+// The *workspace* bin. The repo consumes every @acu package as TypeScript
+// source, so this registers tsx and then hands straight over to `src/bin.ts` —
+// the same module the published `dist/bin.js` is compiled from, so the README's
+// `node packages/cli/bin/acu.mjs` and `npx @acu/cli` cannot drift apart.
+//
+// This file is not published: `files` ships `dist` only, and `publishConfig.bin`
+// points `acu` at `./dist/bin.js`, so an installed @acu/cli never needs tsx.
 //
 // `tsx/esm/api` rather than `node:module`'s register("tsx/esm"): tsx 4.23
 // refuses the latter outright — it is the deprecated --loader path.
 import { register } from "tsx/esm/api";
 register();
-const { main } = await import("../src/index.ts");
-try {
-  process.exit(await main(process.argv.slice(2)));
-} catch (err) {
-  // Everything a user can act on is already a printed refusal with a code. What
-  // reaches here is a broken environment, and the stack is the useful part.
-  console.error(err instanceof Error ? err.stack : err);
-  process.exit(1);
-}
+await import("../src/bin.ts");

@@ -1,11 +1,16 @@
 #!/usr/bin/env node
-// The workspace consumes every @acu package as TypeScript source, so the bin
-// registers tsx before importing the entry point. Task 7 points this at a built
-// dist/index.js for npm; nothing else about the server changes.
+// The *workspace* bin. The repo consumes every @acu package as TypeScript
+// source, so this registers tsx and then hands straight over to `src/bin.ts` —
+// the same module the published `dist/bin.js` is compiled from, so the README's
+// `node <repo>/packages/mcp/bin/acu-mcp.mjs` and `npx -y @acu/mcp` cannot drift
+// apart.
+//
+// This file is not published: `files` ships `dist` only, and `publishConfig.bin`
+// points `acu-mcp` at `./dist/bin.js`, so an installed @acu/mcp never needs tsx.
 //
 // `tsx/esm/api` rather than `node:module`'s register("tsx/esm"): tsx 4.23 refuses
 // the latter outright — it is the deprecated --loader path — and the process
 // dies before the server ever reads stdin.
 import { register } from "tsx/esm/api";
 register();
-await import("../src/index.ts");
+await import("../src/bin.ts");

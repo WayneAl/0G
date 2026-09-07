@@ -1,7 +1,6 @@
 {
   "name": "@acu/mcp",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -10,7 +9,27 @@
   "bin": {
     "acu-mcp": "./bin/acu-mcp.mjs"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "bin": {
+      "acu-mcp": "./dist/bin.js"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -20,12 +39,12 @@
     "@acu/storage": "workspace:*",
     "@acu/underwriter": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "tsx": "^4.19.2",
     "viem": "^2.23.2",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
+    "tsx": "^4.19.2",
     "vitest": "^3.0.5"
   }
 }
