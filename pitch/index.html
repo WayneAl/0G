@@ -66,10 +66,13 @@ p { margin: 0; }
 
 /* ── Shell ─────────────────────────────────────────────────────────────────── */
 .shell { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
-.viewport { flex: 1; position: relative; overflow: hidden; display: grid; place-items: center; }
+.viewport { flex: 1; position: relative; overflow: hidden; }
+/* Centred by absolute position + translate rather than grid, so an oversized
+   stage can never nudge the viewport's scroll offset and shift the slide. */
 .stage {
   width: 1280px; height: 720px;
-  position: relative;
+  position: absolute; left: 50%; top: 50%;
+  margin-left: -640px; margin-top: -360px;
   transform-origin: center center;
   background: var(--ground);
 }
@@ -210,7 +213,10 @@ p { margin: 0; }
 
 /* ── Flow diagram ──────────────────────────────────────────────────────────── */
 .figwrap { flex: 1; display: flex; align-items: center; justify-content: center; }
-.figwrap svg { width: 100%; height: auto; max-height: 380px; }
+.figwrap svg { width: 100%; height: auto; max-height: 440px; }
+.figwrap .f-d { font-family: var(--display); }
+.figwrap .f-s { font-family: var(--sans); }
+.figwrap .f-m { font-family: var(--mono); }
 
 /* ── Notes drawer (outside the scaled stage, so it stays readable) ─────────── */
 .notes {
@@ -243,7 +249,7 @@ p { margin: 0; }
   .shell { display: block; height: auto; }
   .viewport { display: block; overflow: visible; }
   .rail, .notes { display: none !important; }
-  .stage { transform: none !important; width: 1280px; height: auto; }
+  .stage { transform: none !important; position: static; margin: 0; width: 1280px; height: auto; }
   .slide, .slide[hidden] {
     display: flex !important;
     position: relative; inset: auto;
@@ -309,12 +315,12 @@ p { margin: 0; }
         </div>
       </section>
 
-      <!-- ③ The mechanism -->
-      <section class="slide" data-notes="0:40–1:10|照著箭頭走一遍,語速放慢。<span class='do'>重點在最後那個紅框:<strong>信任邊界在 Agent A,不在合約</strong>。「中間沒有人在看」的意思就是 A 必須自己有能力拒絕 B —— 不能推給合約擋。這句話講完再翻頁。</span>">
-        <div class="eyebrow" data-zh="一跳怎麼走">How one hop works</div>
-        <h2 data-zh="A 付錢、B 出證明、A 驗過 B,鏈才會知道這件事">A pays B, B proves it, A checks B, then the chain hears about it</h2>
+      <!-- ③ The mechanism: without us / with us, scene ① as run, three roles tagged -->
+      <section class="slide" data-notes="0:40–1:10|先點三個角色:<strong>Agent A 是用戶端的 agent</strong>(替放款方做准入)、<strong>Agent B 是收 x402 費用的服務 agent</strong>、<strong>0G Router 是 B 叫的算力</strong>,在 TEE 裡跑 —— 三個是三方,不是同一個人。Router 回給 B 的是<strong>回答加 TEE 證明</strong>,章 B 是 B 自己簽的;A 驗章時只用章的 bytes、鏈上的 key 和它自己送出的請求,所以不用信任何人。<span class='do'>上面框起來的是今天的做法:A 付錢、B 回一個 ALLOW、A 就拿去上架 —— 一樣會成功,但事後誰說的、憑什麼、哪個模型,什麼都查不到。下面是第 ① 幕實際跑出來的同一件事:同樣一塊錢、同樣一個 ALLOW,差別是每一跳都留下東西 —— TEE 證明、章 B、A 的六項檢查、章 A。最後停在:<strong>信任邊界在 Agent A,不在合約</strong>。</span>">
+        <div class="eyebrow" data-zh="一跳怎麼走 —— 有我們,和沒我們">How one hop works — with us, and without</div>
+        <h2 data-zh="同樣一塊錢、同樣一個 ALLOW,差別在留下了什麼。">Same $0.01, same ALLOW. The difference is what is left behind.</h2>
         <div class="figwrap">
-          <svg viewBox="0 0 1128 330" role="img" aria-label="Agent A pays Agent B over x402; Agent B runs inference on the 0G Compute Router in a TEE and returns seal B; Agent A verifies seal B and composes seal A around it; the registry lists the token against seal A">
+          <svg viewBox="0 0 1128 420" role="img" aria-label="Three roles: Agent A is the agent acting for the user, Agent B is an x402-paid service agent, the 0G Compute Router is the compute provider in a TEE. Top, framed: without us, A pays B, B returns a plain ALLOW, A lists, the registry takes A's word — nothing to check afterwards. Bottom: with us, the same hop as run in scene ①: A pays B over x402, B runs attested inference on the Router and returns seal B, A verifies six checks and composes seal A, the registry verifies seal A and executes.">
             <defs>
               <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                 <path d="M0,0 L10,5 L0,10 z" fill="#5d6b7e"></path>
@@ -324,56 +330,105 @@ p { margin: 0; }
               </marker>
             </defs>
 
-            <!-- Agent A -->
-            <rect x="0" y="96" width="212" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
-            <text x="20" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="19" font-weight="600">Agent A</text>
-            <text x="20" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13" data-zh="准入預審 · Agentic ID">Underwriter · Agentic ID</text>
-            <text x="20" y="172" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="從 0G RPC 讀代幣資料">reads token from 0G RPC</text>
+            <!-- ── WITHOUT US: the plain pipe, framed ─────────────────────── -->
+            <rect x="0.5" y="0.5" width="1127" height="132" rx="3" fill="none" stroke="#5d6b7e" stroke-dasharray="6 4"></rect>
+            <text x="14" y="21" fill="#8493a6" class="f-m" font-size="11" letter-spacing="1.5" data-zh="沒有我們">WITHOUT US</text>
+            <text x="1114" y="21" fill="#5d6b7e" class="f-m" font-size="11" text-anchor="end" data-zh="今天的做法">how it works today</text>
 
-            <!-- A -> B -->
-            <line x1="212" y1="128" x2="330" y2="128" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
-            <text x="222" y="118" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5">x402 · $0.01</text>
-            <text x="222" y="103" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="11">USDC · Base Sepolia</text>
-            <line x1="330" y1="164" x2="212" y2="164" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
-            <text x="228" y="182" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5" data-zh="章 B">seal B</text>
+            <text x="14" y="45" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2">AGENT AS USER</text>
+            <rect x="14" y="52" width="150" height="54" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="28" y="74" fill="#8493a6" class="f-d" font-size="15" font-weight="600">Agent A</text>
+            <text x="28" y="94" fill="#5d6b7e" class="f-s" font-size="11.5" data-zh="想把 CleanUSD 上架">wants CleanUSD listed</text>
 
-            <!-- Agent B -->
-            <rect x="330" y="96" width="212" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
-            <text x="350" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="19" font-weight="600">Agent B</text>
-            <text x="350" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13" data-zh="原始碼審核 · Agentic ID">Code Auditor · Agentic ID</text>
-            <text x="350" y="172" fill="#5d6b7e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="判定由自己簽章">signs its own verdict</text>
+            <line x1="164" y1="79" x2="252" y2="79" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <text x="208" y="70" fill="#5d6b7e" class="f-m" font-size="10.5" text-anchor="middle">$0.01</text>
 
-            <!-- B -> Router -->
-            <line x1="436" y1="96" x2="436" y2="52" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
-            <rect x="330" y="0" width="330" height="52" rx="3" fill="#1c1b3a" stroke="#6f63e8"></rect>
-            <text x="348" y="24" fill="#9186ff" font-family="Archivo, sans-serif" font-size="15" font-weight="600">0G Compute Router</text>
-            <text x="348" y="42" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5">trust mode verified · verify_tee · TDX attested</text>
+            <text x="252" y="45" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2">AGENT AS SERVICE</text>
+            <rect x="252" y="52" width="150" height="54" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="266" y="74" fill="#8493a6" class="f-d" font-size="15" font-weight="600">Agent B</text>
+            <text x="266" y="94" fill="#5d6b7e" class="f-s" font-size="11.5" data-zh="某個模型,在某個地方">some model, somewhere</text>
 
-            <!-- B -> A verify -->
-            <line x1="542" y1="144" x2="660" y2="144" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+            <line x1="402" y1="79" x2="540" y2="79" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <text x="471" y="70" fill="#5d6b7e" class="f-m" font-size="10.5" text-anchor="middle">"ALLOW"</text>
+            <text x="471" y="94" fill="#5d6b7e" class="f-m" font-size="10.5" text-anchor="middle" data-zh="純文字,沒簽章">plain text, unsigned</text>
 
-            <!-- Agent A verifies -->
-            <rect x="660" y="76" width="240" height="136" rx="3" fill="#141b24" stroke="#6f63e8"></rect>
-            <text x="680" y="104" fill="#9186ff" font-family="Archivo, sans-serif" font-size="16" font-weight="600" data-zh="Agent A 驗證章 B">Agent A verifies seal B</text>
-            <text x="680" y="128" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="簽章有效 · Agentic ID 還活著">signature · live Agentic ID</text>
-            <text x="680" y="148" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="標的相符 · 請求相符">subject · request binding</text>
-            <text x="680" y="168" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="沒過期 · 有 TEE 證明">expiry · TEE attestation</text>
-            <text x="680" y="194" fill="#f0656e" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="任何一項不過 → 拒絕,到此為止">any check fails → refuse, stop</text>
+            <text x="540" y="45" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2">AGENT AS USER</text>
+            <rect x="540" y="52" width="150" height="54" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="554" y="74" fill="#8493a6" class="f-d" font-size="15" font-weight="600">Agent A</text>
+            <text x="554" y="94" fill="#5d6b7e" class="f-s" font-size="11.5" data-zh="B 說什麼就信什麼">takes B's word</text>
 
-            <!-- verify -> registry -->
-            <line x1="900" y1="144" x2="960" y2="144" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
-            <text x="906" y="132" fill="#8493a6" font-family="IBM Plex Mono, monospace" font-size="11.5" data-zh="章 A ⊃ 章 B">seal A ⊃ seal B</text>
+            <line x1="690" y1="79" x2="828" y2="79" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <text x="759" y="70" fill="#5d6b7e" class="f-m" font-size="10.5" text-anchor="middle">list(CleanUSD, 7000)</text>
 
-            <!-- Registry -->
-            <rect x="960" y="96" width="168" height="96" rx="3" fill="#141b24" stroke="#232d3b"></rect>
-            <text x="980" y="128" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="17" font-weight="600" data-zh="見章合約">Registry</text>
-            <text x="980" y="150" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="13" data-zh="0G 測試網 16602">0G testnet 16602</text>
-            <text x="980" y="172" fill="#3cbf95" font-family="IBM Plex Mono, monospace" font-size="12" data-zh="list() 或 revert">list() or revert</text>
+            <text x="828" y="45" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2" data-zh="合約">CONTRACT</text>
+            <rect x="828" y="52" width="150" height="54" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="842" y="74" fill="#8493a6" class="f-d" font-size="15" font-weight="600" data-zh="見章合約">Registry</text>
+            <text x="842" y="94" fill="#5d6b7e" class="f-s" font-size="11.5" data-zh="A 說什麼就信什麼">takes A's word</text>
 
-            <!-- bottom note -->
-            <line x1="660" y1="248" x2="900" y2="248" stroke="#232d3b" stroke-width="1"></line>
-            <text x="660" y="278" fill="#e6ebf2" font-family="Archivo, sans-serif" font-size="15" font-weight="600" data-zh="信任邊界在這裡 ——">The trust boundary is here —</text>
-            <text x="660" y="300" fill="#8493a6" font-family="IBM Plex Sans, sans-serif" font-size="14" data-zh="不在合約。">not at the contract.</text>
+            <text x="994" y="84" fill="#8493a6" class="f-m" font-size="14" font-weight="600" data-zh="✓ 上架了">✓ listed</text>
+
+            <text x="14" y="124" fill="#d9a548" class="f-s" font-size="11.5" data-zh="事後:誰說的 ALLOW、憑什麼證據、哪個模型?什麼都查不到。">Afterwards: who said ALLOW, on what evidence, which model? Nothing to check.</text>
+
+            <!-- ── WITH US: scene ①, CleanUSD, as run ─────────────────────── -->
+            <text x="14" y="162" fill="#9186ff" class="f-m" font-size="11" letter-spacing="1.5" data-zh="有我們 —— 第 ① 幕,CleanUSD,實際跑出來的">WITH US — SCENE ①, CLEANUSD, AS RUN</text>
+
+            <!-- Compute provider -->
+            <rect x="300" y="176" width="300" height="54" rx="3" fill="#1c1b3a" stroke="#6f63e8"></rect>
+            <text x="314" y="191" fill="#6f63e8" class="f-m" font-size="9.5" letter-spacing="1.2">COMPUTE PROVIDER · TEE</text>
+            <text x="314" y="208" fill="#9186ff" class="f-d" font-size="14" font-weight="600">0G Compute Router</text>
+            <text x="314" y="223" fill="#8493a6" class="f-m" font-size="11">qwen2.5-omni · verified · teeVerified ✓</text>
+
+            <!-- Agent as user -->
+            <rect x="0" y="248" width="190" height="98" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="16" y="263" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2">AGENT AS USER</text>
+            <text x="16" y="285" fill="#e6ebf2" class="f-d" font-size="17" font-weight="600">Agent A</text>
+            <text x="16" y="305" fill="#8493a6" class="f-m" font-size="12">Agentic ID #1</text>
+            <text x="16" y="324" fill="#5d6b7e" class="f-m" font-size="11" data-zh="從 0G RPC 讀 CleanUSD">reads CleanUSD from 0G RPC</text>
+
+            <!-- A pays B -->
+            <line x1="190" y1="272" x2="330" y2="272" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <text x="260" y="264" fill="#8493a6" class="f-m" font-size="11" text-anchor="middle">x402 · $0.01 USDC</text>
+            <text x="260" y="287" fill="#5d6b7e" class="f-m" font-size="10.5" text-anchor="middle">tx 0x9ca251…f92a48</text>
+
+            <!-- Agent as service -->
+            <rect x="330" y="248" width="190" height="98" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="346" y="263" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2">AGENT AS SERVICE · x402</text>
+            <text x="346" y="285" fill="#e6ebf2" class="f-d" font-size="17" font-weight="600">Agent B</text>
+            <text x="346" y="305" fill="#8493a6" class="f-m" font-size="12">Agentic ID #2</text>
+            <text x="346" y="322" fill="#5d6b7e" class="f-m" font-size="10.5" data-zh="判定 + TEE 證明">verdict + attestation</text>
+            <text x="346" y="339" fill="#5d6b7e" class="f-m" font-size="10.5" data-zh="→ 章 B,#2 簽">→ seal B, signed by #2</text>
+            <line x1="400" y1="248" x2="400" y2="232" stroke="#5d6b7e" stroke-width="1.5" marker-end="url(#ar)"></line>
+            <text x="392" y="243" fill="#5d6b7e" class="f-m" font-size="10" text-anchor="end">prompt</text>
+            <line x1="450" y1="232" x2="450" y2="248" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+            <text x="460" y="243" fill="#9186ff" class="f-m" font-size="10" data-zh="回答 + TEE 證明">answer + attestation</text>
+
+            <!-- seal B travels back to A -->
+            <line x1="520" y1="297" x2="640" y2="297" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+            <text x="580" y="288" fill="#9186ff" class="f-m" font-size="11" text-anchor="middle" data-zh="章 B">seal B</text>
+            <text x="580" y="313" fill="#8493a6" class="f-m" font-size="10.5" text-anchor="middle">ALLOW · 7500</text>
+
+            <!-- Agent as user, verifying -->
+            <rect x="640" y="238" width="230" height="122" rx="3" fill="#141b24" stroke="#6f63e8"></rect>
+            <text x="656" y="253" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2">AGENT AS USER · VERIFIES</text>
+            <text x="656" y="273" fill="#9186ff" class="f-d" font-size="15" font-weight="600" data-zh="Agent A 驗章 B">Agent A verifies seal B</text>
+            <text x="656" y="293" fill="#8493a6" class="f-m" font-size="10.5" data-zh="簽章者 = #2 鏈上的 key ✓">signer = #2's on-chain key ✓</text>
+            <text x="656" y="311" fill="#8493a6" class="f-m" font-size="10.5" data-zh="同一枚代幣 · 同一個請求 ✓">same token · same request ✓</text>
+            <text x="656" y="329" fill="#8493a6" class="f-m" font-size="10.5" data-zh="沒過期 · 帶 TEE 證明 ✓">not expired · attestation ✓</text>
+            <text x="656" y="351" fill="#3cbf95" class="f-m" font-size="11" data-zh="6/6 → 章 A,#1 簽">6/6 → seal A, signed by #1</text>
+
+            <line x1="870" y1="297" x2="920" y2="297" stroke="#9186ff" stroke-width="1.5" marker-end="url(#ar-a)"></line>
+
+            <!-- Contract -->
+            <rect x="920" y="248" width="208" height="98" rx="3" fill="#141b24" stroke="#232d3b"></rect>
+            <text x="936" y="263" fill="#5d6b7e" class="f-m" font-size="9.5" letter-spacing="1.2" data-zh="合約 · 0G 鏈">CONTRACT · 0G CHAIN</text>
+            <text x="936" y="285" fill="#e6ebf2" class="f-d" font-size="17" font-weight="600" data-zh="見章合約">Registry</text>
+            <text x="936" y="305" fill="#8493a6" class="f-m" font-size="10.5">list(CleanUSD, 7000, sealA)</text>
+            <text x="936" y="321" fill="#8493a6" class="f-m" font-size="10.5" data-zh="章 A ⊃ 章 B · 7500 ✓">seal A ⊃ seal B · 7500 ✓</text>
+            <text x="936" y="341" fill="#3cbf95" class="f-m" font-size="13" font-weight="600">✓ EXECUTED</text>
+
+            <!-- what is different afterwards -->
+            <text x="0" y="394" fill="#e6ebf2" class="f-s" font-size="13.5" data-zh="A 只靠章本身的 bytes、鏈上資料,和它自己本來就知道的東西就能驗 —— 不需要任何人替 B 背書。">A verifies with nothing but the seal's own bytes, the chain, and what it already knows — nobody has to vouch for B.</text>
+            <text x="0" y="414" fill="#8493a6" class="f-s" font-size="12.5" data-zh="信任邊界在 Agent A,不在合約。事後任何人都能重驗每一跳。">The trust boundary is at Agent A, not at the contract. Afterwards anyone can re-verify every hop.</text>
           </svg>
         </div>
       </section>
@@ -624,6 +679,7 @@ p { margin: 0; }
 
   function fit() {
     var k = Math.min(viewport.clientWidth / 1280, viewport.clientHeight / 720);
+    viewport.scrollTop = 0; viewport.scrollLeft = 0;
     stage.style.transform = 'scale(' + k + ')';
   }
 
