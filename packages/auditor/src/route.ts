@@ -72,9 +72,30 @@ export function sealedAuditRoute(app: Express, config: AuditorConfig): MountedAu
     skipsAttestation: config.og.skipAttestation,
   });
 
-  /** Unprotected: lets a caller see who they would be hiring before paying. */
+  /**
+   * Unprotected, and readable from any page.
+   *
+   * The card is already public — that is its whole job — and the site's status
+   * pill is a browser on another origin asking "is this auditor up?". The header
+   * goes on this route and nowhere else: `POST /audit` is an x402 handshake
+   * between servers, a browser never performs one, and allowing a page to read
+   * that response would widen the surface for nothing.
+   */
+  const allowAnyPageToRead = (res: Parameters<Parameters<Express["get"]>[1]>[1]): void => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET");
+  };
+
   app.get("/agent", (_req, res) => {
+    allowAnyPageToRead(res);
     res.json(agentCard());
+  });
+
+  // Answered here rather than left to express's default OPTIONS handler, which
+  // replies without the headers and so fails the preflight.
+  app.options("/agent", (_req, res) => {
+    allowAnyPageToRead(res);
+    res.sendStatus(204);
   });
 
   app.post("/audit", async (req, res) => {
