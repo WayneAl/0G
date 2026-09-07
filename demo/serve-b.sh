@@ -17,6 +17,11 @@
 # The reference B needs AGENT_B_PRIVATE_KEY and TESTNET_API_KEY. It loads the
 # repo's .env itself (agent-b/src/server.ts); this script never reads or prints
 # anything from it.
+#
+# Run it in the foreground and stop it with Ctrl-C. Started in the background
+# instead (`./demo/serve-b.sh &`), SIGINT arrives already ignored and POSIX says a
+# signal ignored on entry cannot be trapped — so Ctrl-C's trap never runs there.
+# `kill <pid>` (SIGTERM) works either way and is what to use on a backgrounded run.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -55,9 +60,22 @@ T_LOG="$LOGS/cloudflared.log"
 B_PID=""
 T_PID=""
 
+# SIGTERM, then wait, then insist. cloudflared answers SIGTERM with a graceful
+# shutdown that can outlive this script — and a tunnel still up after "restored"
+# is a public endpoint nobody is watching any more.
+stop() {
+  [ -n "$1" ] || return 0
+  kill "$1" 2>/dev/null || return 0
+  for _ in $(seq 1 10); do
+    kill -0 "$1" 2>/dev/null || return 0
+    sleep 0.3
+  done
+  kill -9 "$1" 2>/dev/null
+}
+
 cleanup() {
-  [ -n "$T_PID" ] && kill "$T_PID" 2>/dev/null
-  [ -n "$B_PID" ] && kill "$B_PID" 2>/dev/null
+  stop "$T_PID"
+  stop "$B_PID"
   # Killing the pnpm wrapper leaves the tsx child holding the port; take the port.
   lsof -ti:$PORT 2>/dev/null | xargs kill -9 2>/dev/null
   echo
@@ -117,22 +135,29 @@ echo "  origin  $ORIGIN"
 echo "  card    $ORIGIN/agent"
 echo
 
-# The edge takes a moment to route a fresh quick tunnel; try for 20 s, then print
-# the response once. Headers included: the website's pill lives or dies on
-# access-control-allow-origin surviving the hop.
+# The edge takes a while to route a fresh quick tunnel — cloudflared's own banner
+# says "it may take some time to be reachable". Measured here on a machine whose
+# first resolver was timing out: cloudflared logged "Registered tunnel connection"
+# 2 m 45 s after launch, and the origin answered only after that. Try for 180 s,
+# then print the response once. Headers included: the website's pill lives or dies
+# on access-control-allow-origin surviving the hop.
 CARD=""
 CARD_OK=""
-for _ in $(seq 1 20); do
+for _ in $(seq 1 180); do
   if CARD="$(curl -sS -i -m 10 --fail "$ORIGIN/agent" 2>&1)"; then CARD_OK=1; break; fi
   sleep 1
 done
-[ -n "$CARD_OK" ] || {
-  echo "serve-b.sh: $ORIGIN/agent did not answer 200 within 20s" >&2
-  echo "$CARD" >&2
-  tail -20 "$T_LOG" >&2
-  exit 1
-}
-echo "$CARD" | sed 's/^/  /'
+if [ -n "$CARD_OK" ]; then
+  echo "$CARD" | sed 's/^/  /'
+else
+  # Loud, but not fatal. The probe is a proof, not the job: killing a tunnel that
+  # is merely slow to propagate would cost a working demo and a new subdomain.
+  echo "  ⚠ $ORIGIN/agent has not answered 200 yet (180s)." >&2
+  echo "    Registration can take minutes if DNS is slow; it is still serving." >&2
+  echo "    Last attempt said:" >&2
+  echo "$CARD" | sed 's/^/      /' >&2
+  echo "    Check again with: curl -i $ORIGIN/agent" >&2
+fi
 
 echo
 echo "  web/public/directory.json now points at the tunnel."
