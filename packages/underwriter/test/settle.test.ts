@@ -12,7 +12,7 @@ import { listWithSeal, type SettleOptions } from "../src/settle.js";
  * had already mined. These cases pin the rule that replaced it.
  */
 const seal = JSON.parse(
-  readFileSync(new URL("../../../verifier/example-sealA.json", import.meta.url), "utf8"),
+  readFileSync(new URL("../../../web/public/examples/example-sealA.json", import.meta.url), "utf8"),
 ) as SealA;
 
 const SEAL_HASH = sealDigest(seal);

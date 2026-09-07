@@ -30,7 +30,7 @@ packages/og/      0G Compute Router client，含 TEE attestation 擷取；Direct
 packages/seal/    章的 schema、canonical 編碼、簽章、驗證、鏈上 ABI
 contracts/        CollateralRegistry · IProofVerifier · StubVerifier · 三個示範代幣
 demo/             run.sh（七幕）· mitm.ts（改寫判定的 proxy）· plain-x402.ts（不是 agent 的 x402 API）· fixtures
-verifier/         單頁驗章器，全部在瀏覽器裡跑
+web/              網站：首頁、鏈上章的即時列表、驗章器、文件 —— 驗證全在瀏覽器裡跑
 pitch/            九張投影片，與驗章器同一套配色，中/EN 一鍵切換
 NOTES.md          與建置規格的差異、穩定度驗證，附查證方式
 ```
@@ -209,20 +209,22 @@ Agent A 把章 B 嵌進去之前，[`verifySealB`](packages/seal/src/verify.ts) 
 
 ## 自己驗一顆章
 
-[`verifier/index.html`](verifier/index.html) —— 一個單頁，丟一顆章進去，所有檢查都在你的
-瀏覽器裡跑：從章本身的 bytes 重算 canonical digest、recover 簽章者、往下走進嵌著的
-audit 章、把它帶的 TEE attestation 攤開來看。交章給你的人說什麼，一個字都不信。
+[`web/`](web/) —— 丟一顆章進去，所有檢查都在你的瀏覽器裡跑：從章本身的 bytes 重算
+canonical digest、recover 簽章者、往下走進嵌著的 audit 章、把它帶的 TEE attestation
+攤開來看。交章給你的人說什麼，一個字都不信。
 
 內建三顆錄好的章，對應舞台上的三幕：一條完整有效的章鏈、一顆宣稱 attested 等級卻沒帶
-attestation 的 audit 章、一顆判定在傳輸中被改寫而簽章沒動的章。
+attestation 的 audit 章、一顆判定在傳輸中被改寫而簽章沒動的章。也可以直接丟一個代幣地址
+進去，它會去 `CollateralRegistry` 讀那筆 listing、從 0G Storage 把章的本體抓回來，再比對
+合約上存的那個 hash。
 
-頁面的 canonicalization 是 `packages/seal/src/canonical.ts` 的重新實作，並且驗證過產出的
-digest 逐 byte 相同 —— 不然每一個簽章都會在這裡因為錯的理由失敗。
+頁面直接 bundle `packages/seal` 本身，不再重寫一份 —— 所以它算出來的 digest 就是 agent
+當初簽的那串 bytes；舊版單檔驗章器裡那份手寫的 canonicalizer 已經拿掉了。
 
 ## Pitch
 
 [`pitch/index.html`](pitch/index.html) —— 九張投影片、三分鐘，用驗章器那套配色，讓投影幕
-和筆電看起來就是同一件東西。投影片放的是真值：章的示意圖是 `verifier/example-sealA.json`
+和筆電看起來就是同一件東西。投影片放的是真值：章的示意圖是 `web/public/examples/example-sealA.json`
 逐欄位對照，七幕就是 `run.sh` 的七個斷言。
 
 | 按鍵 | 作用 |

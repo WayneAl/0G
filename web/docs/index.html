@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docs — Attested Collateral Underwriter</title>
+<meta name="description" content="Try it in 60 seconds. Be an Agent A with the CLI or the MCP, be an Agent B with the auditor SDK, and verify a seal anywhere.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script type="module" src="/src/docs.ts"></script>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>Docs</h1>
+  <span class="sub">Be an Agent A, be an Agent B, or just verify what somebody hands you.</span>
+  <nav>
+    <a href="../">Verifier</a>
+    <a href="../pitch/">Pitch</a>
+    <a href="https://github.com/WayneAl/0G">Source</a>
+  </nav>
+</div>
+
+<div class="prose">
+
+<h2>Try it in 60 seconds</h2>
+<p>
+  Six steps, no clone, no editor. Steps 1 and 2 need no key and spend nothing; the first
+  thing that costs money is step 5, and it costs one cent of testnet USDC.
+</p>
+
+<ol class="steps">
+  <li>
+    <span class="what">Get a quote. No key, no environment, no install.</span>
+    <div class="cmd">
+      <code>npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+    <p>
+      It reads the token's bytecode over RPC, asks the reference auditor for its 402 quote,
+      runs it past the budget gate, and stops — a dry run is the default, and without a key
+      it is the only thing that can happen. The last line names the next command.
+    </p>
+  </li>
+
+  <li>
+    <span class="what">Get a key.</span>
+    <div class="cmd">
+      <code>npx @acu/cli init</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+    <p>
+      Generates a burner key into <code>~/.acu/config.json</code> (<code>0600</code>, inside a
+      <code>0700</code> directory) and prints the address. It is a burner: fund it with testnet
+      USDC and nothing else.
+    </p>
+  </li>
+
+  <li>
+    <span class="what">Fund it, then ask whether you are ready.</span>
+    <div class="cmd">
+      <code>npx @acu/cli status</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+    <p>
+      Take the address <code>init</code> printed to the Circle faucet at
+      <a href="https://faucet.circle.com" target="_blank" rel="noreferrer noopener">faucet.circle.com</a>
+      and ask for Base Sepolia USDC. <code>status</code> reports key, balance, auditor, budget
+      and ledger, and ends with one arrow line: it flips from <code>Fund …</code> to
+      <code>Ready: acu underwrite 0xDB08…</code>. If you jump the gun,
+      <code>INSUFFICIENT_USDC</code> repeats the address and the faucet URL.
+    </p>
+  </li>
+
+  <li>
+    <span class="what">Buy one real seal.</span>
+    <div class="cmd">
+      <code>npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8 --live</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+    <p>
+      Your agent pays the auditor over x402, verifies the seal B that comes back against all
+      eight checks, refuses to compose anything if one of them fails, signs seal A around it,
+      publishes the body to 0G Storage and lists the token on <code>CollateralRegistry</code>.
+      Every step prints as it happens; the verdict line is <code>✓ EXECUTED</code> or
+      <code>✗ CODE</code> with the reason indented under it.
+    </p>
+  </li>
+
+  <li>
+    <span class="what">Open the share link it printed.</span>
+    <p>
+      The last line is <code>Share it: …/#seal=…</code>. That link carries the whole seal in its
+      fragment, which a browser never sends to a server — so the page that verifies it never
+      learns what it verified. Your listing also shows up in
+      <a href="../#feed">Seals on chain</a>, where every visitor's browser re-verifies it.
+    </p>
+  </li>
+
+  <li>
+    <span class="what">Make it your agent's job instead of yours.</span>
+    <div class="cmd">
+      <code>claude mcp add acu -- npx -y @acu/mcp</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+    <p>
+      Zero environment variables: the server reads the same <code>~/.acu/config.json</code> the
+      CLI wrote. Then say it in words — <em>"underwrite 0xDB08…9eB8 at 70% LTV"</em> — and your
+      agent hires the auditor, checks the seal and signs its own. That is the whole thesis; the
+      five steps above exist to get you here.
+    </p>
+  </li>
+</ol>
+
+<h2>Two sides</h2>
+<div class="cols">
+
+  <!-- ── Agent A ─────────────────────────────────────────────────────────── -->
+  <div>
+    <h3>Be an Agent A</h3>
+    <p>
+      An Agent A is whoever needs a decision they can defend later. It hires, verifies, signs
+      and lists; nothing about it is hosted by us, and its key never leaves its own process.
+    </p>
+
+    <table class="api">
+      <thead><tr><th>Command</th><th>Does</th></tr></thead>
+      <tbody>
+        <tr><td>acu init</td><td>Generate a burner key into <code>~/.acu/config.json</code> and print the address and faucet.</td></tr>
+        <tr><td>acu status</td><td>Key, USDC balance, auditor reachability, budget left, and the single next step. <code>--json</code> for a machine.</td></tr>
+        <tr><td>acu quote &lt;token&gt;</td><td>What an audit would cost. Free, no key, never signs.</td></tr>
+        <tr><td>acu underwrite &lt;token&gt;</td><td>Hire, verify, seal, publish, list. Dry run unless <code>--live</code>.</td></tr>
+        <tr><td>acu verify &lt;file|-&gt;</td><td>Check a seal A or B locally. Exit 0 valid, 1 invalid.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>The same agent, inside your agent</h3>
+    <div class="cmd">
+      <code>claude mcp add acu -- npx -y @acu/mcp</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+    <p>
+      No <code>-e</code> flags. Configuration resolves <b>env &gt; <code>~/.acu/config.json</code>
+      &gt; built-in default</b>, so the environment is only ever an override:
+      <code>ACU_AGENT_KEY</code> to use a different key for one process,
+      <code>ACU_AUDITOR_URL</code> to point at an auditor that is not the reference one,
+      <code>ACU_DIRECTORY_URL</code> to trust a different directory than this site's.
+      Without any key at all the server still starts, and every paid tool stops at the quote.
+    </p>
+
+    <table class="api">
+      <thead><tr><th>Tool</th><th>Does</th></tr></thead>
+      <tbody>
+        <tr><td>agent_status</td><td>Can this agent underwrite right now, and what is the one next step. Call it first.</td></tr>
+        <tr><td>describe_auditor</td><td>Fetch an auditor's card from <code>GET /agent</code>. Free, and never trusted.</td></tr>
+        <tr><td>quote_audit</td><td>Price an audit past the budget gate. Never pays, never signs.</td></tr>
+        <tr><td>hire_audit</td><td>Pay over x402 and return a <em>verified</em> seal B, or the check that failed.</td></tr>
+        <tr><td>underwrite</td><td>Hire → verify → sign seal A → publish → list, refusing with a named code.</td></tr>
+        <tr><td>verify_seal</td><td>Verify a seal A or B locally, in this process.</td></tr>
+        <tr><td>get_listing</td><td>What the registry says, what the stored seal says, and whether they agree.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Or as a library</h3>
+    <pre class="snippet">import { underwrite } from "@acu/underwriter";
+
+const result = await underwrite(
+  {
+    token,
+    ltvBps: 7000,
+    source: null,
+    settle: true,
+    publish: true,
+  },
+  {
+    account,      // A's key. Nothing else can sign.
+    agentId: "1",
+    auditor: { url, agentId: "2" },
+    resolver,     // AgentIdResolver: the directory
+    budget,       // gate, before any signature
+    network: "eip155:84532",
+    dryRun: false,
+    registry,
+    rpcUrl,
+    onStep: (e) =&gt; console.log(e),
+  },
+);
+
+// ok:  { ok: true,  sealA, sealHash, hire, listing }
+// no:  { ok: false, stage, code, detail }</pre>
+    <p>
+      No console, no <code>process.exit</code>, no environment: the CLI and the MCP are both
+      printers over this one function.
+    </p>
+  </div>
+
+  <!-- ── Agent B ─────────────────────────────────────────────────────────── -->
+  <div>
+    <h3>Be an Agent B</h3>
+    <p>
+      An Agent B is any x402 service willing to sign what it did. A plain x402 API is not an
+      Agent B — it takes the money and answers with prose, and an A has nothing to embed. What
+      makes you a B is issuing a seal.
+    </p>
+
+    <pre class="snippet">import express from "express";
+import { sealedAuditRoute } from "@acu/auditor";
+
+const app = express();
+app.use(express.json({ limit: "1mb" }));
+
+sealedAuditRoute(app, {
+  sealAccount,  // your key, in your process
+  agentId: "2",
+  priceUsd: "$0.01",
+  payToAddress,
+  network: "eip155:84532",
+  facilitatorUrl,
+  sealTtlSeconds: 86_400,
+  og: {
+    network: "testnet",
+    apiKey,
+    model: undefined,
+    skipAttestation: false,
+  },
+});
+
+app.listen(4021);</pre>
+    <p>
+      That mounts two routes: <code>GET /agent</code>, free, the card that says who a caller
+      would be hiring and what you charge; and <code>POST /audit</code>, gated by x402 v2, which
+      runs the inference and returns a signed seal B. The package never reads
+      <code>process.env</code> — a misconfigured B fails at construction, not at the first
+      customer.
+    </p>
+
+    <h3>What the seal carries</h3>
+    <table class="api">
+      <thead><tr><th>Field</th><th>Why it is there</th></tr></thead>
+      <tbody>
+        <tr><td>subject</td><td>The token this seal is about. It cannot be replayed onto another one.</td></tr>
+        <tr><td>request</td><td>A hash of the exact request answered, so an answer cannot be moved to another question.</td></tr>
+        <tr><td>inference</td><td>Model, trust mode, provider, prompt and response hashes — what actually ran.</td></tr>
+        <tr><td>teeAttestation</td><td>The TEE evidence from the 0G Compute Router: chat id, <code>teeVerified</code>, signed response hash.</td></tr>
+        <tr><td>findings</td><td>The reasoning, recorded. This is how a wrong answer is caught later.</td></tr>
+        <tr><td>verdict</td><td><code>ALLOW</code> or <code>DENY</code> plus <code>maxLtvBps</code> — a credit limit, not a boolean.</td></tr>
+        <tr><td>expiresAt</td><td>Seals expire. A stale audit is not evidence about today's contract.</td></tr>
+        <tr><td>signature</td><td>Over the canonical encoding of every field above, so any edit is visible.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>The 502 rule</h3>
+    <p>
+      If the inference fails, or the attestation does not come back, or the seal cannot be
+      signed, <code>POST /audit</code> answers <b>502 <code>AUDIT_FAILED</code></b> and no seal is
+      issued. <b>No seal, no charge.</b> The alternative — charging for an answer you could not
+      sign — is exactly the failure Agent A's attestation check exists to catch, and a B should
+      not be committing it on purpose.
+    </p>
+  </div>
+</div>
+
+<h2>Verify anywhere</h2>
+<p>
+  Verification never crosses the network. There is no endpoint of ours that will tell you
+  whether a seal is good, because such an endpoint would be a thing to trust. The same
+  <code>@acu/seal</code> runs in the CLI, in the MCP, in an Agent A, and in
+  <a href="../#verify">the page on this site</a>.
+</p>
+
+<pre class="snippet">import { verifySealA, SealVerificationError } from "@acu/seal";
+
+try {
+  await verifySealA(seal, { expectedSubject: token, resolver, now });
+  // Every check below passed, including the seal B embedded inside.
+} catch (err) {
+  if (err instanceof SealVerificationError) console.log(err.failure, err.message);
+}</pre>
+
+<table class="api">
+  <thead><tr><th>Check</th><th>Refusal</th><th>What it means</th></tr></thead>
+  <tbody>
+    <tr><td>SCHEMA</td><td>SCHEMA_INVALID</td><td>Not a seal of the shape and version claimed.</td></tr>
+    <tr><td>AGENT_ID_LIVE</td><td>AGENT_ID_NOT_LIVE</td><td>The agent id resolves to no signer in the directory.</td></tr>
+    <tr><td>SIGNATURE</td><td>SIGNATURE_INVALID · SIGNER_MISMATCH</td><td>The digest recomputed from the seal's own bytes recovers to somebody else, or to nobody.</td></tr>
+    <tr><td>SUBJECT</td><td>SUBJECT_MISMATCH</td><td>The seal is about a different token than the one asked about.</td></tr>
+    <tr><td>REQUEST</td><td>REQUEST_MISMATCH</td><td>Seal B answers a different request than the one made.</td></tr>
+    <tr><td>EXPIRY</td><td>SEAL_EXPIRED</td><td>The seal's window has closed; a fresh audit is required.</td></tr>
+    <tr><td>ATTESTATION</td><td>ATTESTATION_MISSING</td><td>An attested tier is claimed and no attestation is carried.</td></tr>
+    <tr><td>TRUST_TIER</td><td>TRUST_MODE_INSUFFICIENT</td><td>The inference ran below the tier an underwriter will act on.</td></tr>
+  </tbody>
+</table>
+<p>
+  A seal A runs the first four and expiry over itself, and runs all eight over the seal B
+  embedded in it. Verification stops at the first failure and names it, which is why the
+  verifier marks the rows after it <em>not reached</em> rather than green: "we did not look" is
+  not the same claim as "it is fine".
+</p>
+
+<h2>What a seal does not prove</h2>
+<p>
+  It proves traceability, not correctness. A perfectly signed wrong answer still verifies —
+  and that is the point of recording the reasoning: on <code>InjectionUSD</code> the model
+  returned <code>DENY</code> ten times out of ten and every time for the wrong reason, and the
+  only way anyone found out was that the seal wrote the reasoning down. A TEE is not
+  trustlessness, the seal does not cover the invoice, and holder concentration is left
+  <code>null</code> rather than invented.
+</p>
+
+</div>
+
+<footer class="foot">
+  <p>
+    <a href="../">Verify a seal</a> ·
+    <a href="../pitch/">The deck</a> ·
+    <a href="../directory.json">directory.json</a> ·
+    <a href="https://github.com/WayneAl/0G">Source</a>
+  </p>
+</footer>
+
+</body>
+</html>

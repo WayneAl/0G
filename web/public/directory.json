@@ -1,0 +1,16 @@
+{
+  "agents": [
+    {
+      "agentId": "1",
+      "signer": "0x6ddF162A95123AaD1355E5D2FB66C2B1015Adc41",
+      "role": "underwriter"
+    },
+    {
+      "agentId": "2",
+      "signer": "0xC1Dba83fd85838542b09ec44e6372485f6EE2D9E",
+      "role": "auditor",
+      "endpoint": "http://localhost:4021",
+      "price": "$0.01"
+    }
+  ]
+}

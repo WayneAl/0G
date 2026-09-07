@@ -17,17 +17,15 @@ const capture = (env: NodeJS.ProcessEnv): { io: { out: (l: string) => void; env:
 const repoFile = (rel: string): string => fileURLToPath(new URL(`../../../${rel}`, import.meta.url));
 
 /**
- * The seals the browser verifier ships, read from the same files it reads.
+ * The seals the site ships, read from the same files it serves.
  *
- * They are moving from `verifier/` into `web/public/examples/` as the site is
- * built; look in both rather than pinning a path that is mid-flight, and say so
- * loudly if they are in neither.
+ * `web/public/examples/` is where they live now that the single-file verifier is
+ * gone; a missing one says so rather than failing later as a JSON parse error.
  */
 const fixture = (name: string): string => {
-  for (const rel of [`web/public/examples/${name}`, `verifier/${name}`]) {
-    if (existsSync(repoFile(rel))) return repoFile(rel);
-  }
-  throw new Error(`example seal ${name} is in neither web/public/examples/ nor verifier/`);
+  const path = repoFile(`web/public/examples/${name}`);
+  if (!existsSync(path)) throw new Error(`example seal ${name} is not in web/public/examples/`);
+  return path;
 };
 
 const SEAL_A = fixture("example-sealA.json");

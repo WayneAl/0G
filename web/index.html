@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attested Collateral Underwriter</title>
+<meta name="description" content="Your agent hires an auditor. Every hop is signed. Verify any seal in your browser — nothing is taken on trust from whoever handed it to you.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>Attested Collateral Underwriter</h1>
+  <span class="sub">Money on Base, proof on 0G.</span>
+  <nav>
+    <a href="docs/">Docs</a>
+    <a href="pitch/">Pitch</a>
+    <a href="https://github.com/WayneAl/0G">Source</a>
+  </nav>
+</div>
+
+<!-- (0) Hero: what this is, and the two commands that make it happen. -->
+<section class="hero">
+  <h2>Your agent hires an auditor. Every hop is signed.</h2>
+  <p class="sub">
+    Agent A pays Agent B over x402 to audit a token. B runs the inference inside a TEE and
+    issues a seal. A verifies that seal — signature, live agent id, subject, request, expiry,
+    attestation — and only then signs its own around it. The registry lists the token against
+    seal A and enforces the LTV ceiling the seal carries.
+  </p>
+
+  <div class="installs">
+    <div class="install">
+      <span class="eyebrow">See it work</span>
+      <div class="cmd">
+        <code>npx @acu/cli init</code>
+        <button class="copy" type="button">Copy</button>
+      </div>
+      <div class="cmd">
+        <code>npx @acu/cli underwrite 0xDB08Ce217Ce842b06baf76a0Bbb2C10f47fF9eB8</code>
+        <button class="copy" type="button">Copy</button>
+      </div>
+      <p class="caption">
+        The second one runs without a key too: it stops at the auditor's quote and names the
+        next step. <code>init</code> writes a burner key to <code>~/.acu/config.json</code>
+        and prints the faucet.
+      </p>
+    </div>
+
+    <div class="install">
+      <span class="eyebrow">Now let your own agent do it</span>
+      <div class="cmd">
+        <code>claude mcp add acu -- npx -y @acu/mcp</code>
+        <button class="copy" type="button">Copy</button>
+      </div>
+      <p class="caption">
+        No environment variables — it reads the key <code>acu init</code> wrote. Then say
+        "underwrite 0xDB08…9eB8" in words, and your agent hires the auditor itself.
+      </p>
+    </div>
+  </div>
+
+  <span class="pill" id="pill" title="Checking the reference auditor named in directory.json.">reference auditor — checking…</span>
+</section>
+
+<!-- (1) Feed: what has actually been underwritten. -->
+<section id="feed">
+  <h2>Seals on chain</h2>
+  <p class="lede">
+    Every token the reference underwriter has listed on <code>CollateralRegistry</code>, newest
+    first, read straight from 0G testnet. Each card's seal body is then fetched from 0G Storage
+    and verified in your browser before it is coloured — a listing is not a verdict.
+  </p>
+  <div class="cards" id="cards">
+    <p class="empty">Reading the registry's <code>Listed</code> logs…</p>
+  </div>
+</section>
+
+<!-- (2) The verifier, ported whole from the old single-file page. -->
+<section class="tool" id="verify">
+  <h2>Verify a seal</h2>
+  <p class="lede">
+    Every check below runs in your browser against the seal's own bytes, with the same
+    <code>@acu/seal</code> the agents use. Nothing is taken on trust from the page that issued
+    it, and nothing you paste leaves this tab.
+  </p>
+
+  <div class="wrap">
+    <aside class="rail">
+      <div>
+        <span class="eyebrow">Recorded seals</span>
+        <div class="samples" id="samples"></div>
+      </div>
+
+      <div>
+        <span class="eyebrow">Or look up a token</span>
+        <div class="field">
+          <input id="token" spellcheck="false" autocomplete="off" placeholder="0xDB08Ce21…f47fF9eB8" aria-label="Token address">
+          <button class="go" id="lookup" type="button">Look up</button>
+        </div>
+        <p class="hint">
+          Reads <code>listings(token)</code> from the registry, fetches the seal body from 0G
+          Storage by its hash, and shows whether the two agree.
+        </p>
+      </div>
+
+      <div>
+        <span class="eyebrow">Or paste one</span>
+        <textarea id="input" spellcheck="false" placeholder="{ &quot;version&quot;: 1, &quot;type&quot;: &quot;underwriting&quot;, ... }" aria-label="Seal JSON"></textarea>
+      </div>
+
+      <button class="go" id="run" type="button">Verify seal</button>
+    </aside>
+
+    <main class="report">
+      <div class="verdict idle" id="verdict">
+        <h2>No seal loaded</h2>
+        <p>Choose a recorded seal, look up a token, or paste your own.</p>
+      </div>
+      <div id="onchain"></div>
+      <div id="out"><p class="empty">The report appears here.</p></div>
+      <div class="share" id="share" hidden>
+        <button class="go" id="share-btn" type="button">Copy share link</button>
+        <span class="out" id="share-out"></span>
+      </div>
+      <div class="note" id="note" hidden></div>
+    </main>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>
+    Static site, no backend: verification runs here, and the only things it reads over the
+    network are 0G testnet chain state, the 0G Storage indexer gateway, and this site's own
+    <a href="directory.json">directory.json</a>.
+  </p>
+  <p>
+    <a href="docs/">Docs — be an Agent A, be an Agent B, verify anywhere</a> ·
+    <a href="pitch/">The deck</a> ·
+    <a href="https://github.com/WayneAl/0G">Source</a>
+  </p>
+</footer>
+
+</body>
+</html>

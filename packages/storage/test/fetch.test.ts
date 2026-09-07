@@ -8,9 +8,9 @@ const repoFile = (path: string): string =>
   readFileSync(new URL(`../../../${path}`, import.meta.url), "utf8");
 
 /** A real seal A, signed by the reference agent — the same one the verifier ships. */
-const exampleSealA = JSON.parse(repoFile("verifier/example-sealA.json")) as Record<string, unknown>;
+const exampleSealA = JSON.parse(repoFile("web/public/examples/example-sealA.json")) as Record<string, unknown>;
 /** A real seal too, just not the one anybody asked for. */
-const otherSeal = (JSON.parse(repoFile("verifier/examples.json")) as Record<string, unknown>)[
+const otherSeal = (JSON.parse(repoFile("web/public/examples/examples.json")) as Record<string, unknown>)[
   "tampered"
 ] as Record<string, unknown>;
 

@@ -33,7 +33,7 @@ packages/og/      0G Compute Router client with TEE attestation capture; Direct 
 packages/seal/    seal schema, canonical encoding, signing, verification, on-chain ABI
 contracts/        CollateralRegistry · IProofVerifier · StubVerifier · three mock tokens
 demo/             run.sh (seven scenes) · mitm.ts (verdict-rewriting proxy) · plain-x402.ts (an x402 API that is not an agent) · fixtures
-verifier/         single-page seal verifier, runs entirely in the browser
+web/              the site: landing page, live seal feed, verifier and docs — verifies in the browser
 pitch/            nine-slide deck, same palette as the verifier, 中/EN on one key
 NOTES.md          deviations from the build spec and the stability run, with evidence
 ```
@@ -219,24 +219,26 @@ Scene ⑤ dies at the last row; scene ⑥ at `SIGNER_MISMATCH`.
 
 ## Verify a seal yourself
 
-[`verifier/index.html`](verifier/index.html) — a single page that takes a seal and runs every
-check in your browser: recompute the canonical digest from the seal's own bytes, recover the
-signer, walk down into the embedded audit seal, and show the TEE attestation it carries.
-Nothing is taken on trust from whoever handed you the seal.
+[`web/`](web/) — the site takes a seal and runs every check in your browser: recompute the
+canonical digest from the seal's own bytes, recover the signer, walk down into the embedded
+audit seal, and show the TEE attestation it carries. Nothing is taken on trust from whoever
+handed you the seal.
 
 Three recorded seals are built in, matching the three scenes shown on stage: a full valid
 chain, an audit seal that claims an attested tier and carries no attestation, and one whose
-verdict was rewritten in flight with the signature left untouched.
+verdict was rewritten in flight with the signature left untouched. You can also give it a
+token address and it will read the listing off `CollateralRegistry`, fetch the seal body from
+0G Storage, and check the hash the registry stores.
 
-The page's canonicalization is a reimplementation of `packages/seal/src/canonical.ts`, and is
-checked to produce byte-identical digests — otherwise every signature would fail here for the
-wrong reason.
+The page bundles `packages/seal` itself rather than reimplementing it, so the digests it
+computes are the same bytes the agents signed — the hand-written canonicalizer the old
+single-file verifier carried is gone.
 
 ## The pitch
 
 [`pitch/index.html`](pitch/index.html) — nine slides, three minutes, on the verifier's
 palette so the projector and the laptop are visibly one thing. Slides carry real values: the
-seal figure is `verifier/example-sealA.json` field for field, and the seven scenes are the seven
+seal figure is `web/public/examples/example-sealA.json` field for field, and the seven scenes are the seven
 `run.sh` asserts.
 
 | Key | Does |

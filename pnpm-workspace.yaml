@@ -3,3 +3,4 @@ packages:
   - "agent-a"
   - "agent-b"
   - "demo"
+  - "web"

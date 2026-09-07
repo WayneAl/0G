@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Directory, HttpAgentIdResolver, resolverFromDirectory } from "../src/index.js";
 
 /**
- * The signer Agent B actually used for `verifier/examples.json`, checksummed as
+ * The signer Agent B actually used for `web/public/examples/examples.json`, checksummed as
  * viem recovers it. Checksum casing is the point of the lowercasing assertions:
  * every other consumer compares addresses against seal fields that were
  * canonicalized to lowercase.
