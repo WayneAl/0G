@@ -1,7 +1,7 @@
 {
   "name": "@0x402/mcp",
-  "version": "0.1.1",
-  "description": "An MCP server that lets your own agent hire an auditor, verify a seal and sign its own \u2014 seven tools, and no environment variables to install.",
+  "version": "0.1.2",
+  "description": "An MCP server that lets your own agent hire an auditor, verify a seal and sign its own — seven tools, and no environment variables to install.",
   "license": "MIT",
   "author": "Wayne Kuo",
   "homepage": "https://wayneal.github.io/0G",

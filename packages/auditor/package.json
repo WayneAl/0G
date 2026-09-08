@@ -1,6 +1,6 @@
 {
   "name": "@0x402/auditor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The Agent B side, as one Express route: an x402-paid audit that answers with a signed seal, plus the free agent card a caller reads before paying.",
   "license": "MIT",
   "author": "Wayne Kuo",

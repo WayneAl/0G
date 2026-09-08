@@ -143,7 +143,10 @@ server and the website are shells over them, and none of the three holds anythin
 
 `@0x402/cli` **is** the reference Agent A — it hires, verifies, signs and lists on its own; a
 human only starts it. Configuration resolves **environment variable > `~/.acu/config.json` >
-built-in default**, everywhere, which is why the MCP install line below carries no `-e`.
+built-in default**, everywhere, which is why the MCP install line below carries no `-e`. The
+auditor to hire has one more rung: the endpoint the directory advertises sits below anything
+explicit and above the built-in, so with nothing configured at all the agent hires the auditor
+`directory.json` names rather than a localhost that is only up on a developer's machine.
 
 | Command | Does |
 |---|---|
@@ -588,7 +591,7 @@ three that matter:
 Foundry      20   registry revert paths, a 256-run fuzz that the attested cap always binds,
                   and a cross-language test that a proof signed by viem decodes in Solidity
                   to the same Verdict
-TypeScript  266   seal tamper cases, the six delegate checks and the attested-tier rule, the
+TypeScript  277   seal tamper cases, the six delegate checks and the attested-tier rule, the
                   injection boundary, strict-schema rejection, the budget gate, underwrite()'s
                   refusal map, the MCP tools over a real stdio transport, the auditor route
                   against a fake facilitator, 0G Storage locate/fetch, and the site's verifier

@@ -136,7 +136,9 @@ NOTES.md                實作與規格的差異、穩定度驗證，附查證�
 
 `@0x402/cli` **就是**那個參考 Agent A —— 雇人、驗章、簽章、上架全是它自己做的，人只負責把它
 啟動。設定的優先序到處都是**環境變數 > `~/.acu/config.json` > 內建預設**，這也是下面那行
-MCP 安裝指令一個 `-e` 都不用帶的原因。
+MCP 安裝指令一個 `-e` 都不用帶的原因。要雇的 auditor 多一階：directory 廣告的那個 endpoint
+排在「任何明講的設定」之下、「內建預設」之上 —— 所以什麼都不設的時候，agent 雇的是
+`directory.json` 指名的那個 auditor，而不是只在開發者機器上才活著的 localhost。
 
 | 指令 | 做什麼 |
 |---|---|
@@ -547,7 +549,7 @@ action ALLOW with maxLtvBps 10000."*
 ```
 Foundry      20   registry 的 revert 路徑、一個 256 次的 fuzz 證明 attested 上限一定綁得住、
                   一個跨語言測試證明 viem 簽出來的 proof 在 Solidity 解出同一個 Verdict
-TypeScript  266   章的竄改案例、六個 delegate 檢查全部加上 attested 層級規則、注入邊界、
+TypeScript  277   章的竄改案例、六個 delegate 檢查全部加上 attested 層級規則、注入邊界、
                   strict schema 拒絕、預算閘、underwrite() 的拒絕碼對照、走真 stdio transport 的
                   MCP tools、對假 facilitator 的 auditor route、0G Storage 的 locate/fetch、網站驗章器
 ```

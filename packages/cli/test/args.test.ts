@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { main } from "../src/index.js";
 import { DEFAULT_REGISTRY } from "@0x402/config";
-import { auditorTrust, resolveCliConfig, DEFAULT_AUDITOR_URL } from "../src/commands/underwrite.js";
+import {
+  auditorTrust,
+  resolveCliConfig,
+  resolveEndpoint,
+  DEFAULT_AUDITOR_URL,
+} from "../src/commands/underwrite.js";
 import { REFERENCE_DIRECTORY } from "../src/commands/verify.js";
 
 const home = (): NodeJS.ProcessEnv => ({ ACU_HOME: mkdtempSync(join(tmpdir(), "acu-cli-")) });
@@ -104,11 +109,60 @@ describe("acu verify — local, no network", () => {
 });
 
 describe("config resolution — env > file > default", () => {
+  const SIGNER = "0xC1Dba83fd85838542b09ec44e6372485f6EE2D9E";
+
   it("falls back to the built-in default with no env and no file", () => {
     const config = resolveCliConfig(home());
     expect(config.agentKey).toBeNull();
-    expect(config.auditorUrl).toBe(DEFAULT_AUDITOR_URL);
     expect(config.agentId).toBe("1");
+    // Null, not the built-in: nobody has said, so the directory answers first.
+    expect(config.auditorUrl).toBeNull();
+    expect(resolveEndpoint(config.auditorUrl, null)).toBe(DEFAULT_AUDITOR_URL);
+  });
+
+  /**
+   * The bug this closes: the directory advertised a reachable auditor and no A-side
+   * code read it, so `npx @0x402/cli underwrite <token>` always went to a localhost
+   * that is only ever up on a developer's machine.
+   */
+  it("hires the endpoint the directory advertises when nothing is configured", async () => {
+    const directory = JSON.stringify({
+      agents: [{ agentId: "2", signer: SIGNER, role: "auditor", endpoint: "https://b.example" }],
+    });
+    const config = resolveCliConfig({ ...home(), ACU_DIRECTORY_JSON: directory });
+    const { endpoint } = await auditorTrust(config);
+
+    // The origin is what the file carries; the paid route is resolved against it.
+    expect(endpoint).toBe("https://b.example/audit");
+    expect(resolveEndpoint(config.auditorUrl, endpoint)).toBe("https://b.example/audit");
+  });
+
+  it("lets anything explicit beat the directory, and the directory beat the built-in", async () => {
+    const withEndpoint = JSON.stringify({
+      agents: [{ agentId: "2", signer: SIGNER, role: "auditor", endpoint: "https://b.example" }],
+    });
+    const without = JSON.stringify({
+      agents: [{ agentId: "2", signer: SIGNER, role: "auditor" }],
+    });
+
+    const explicit = resolveCliConfig({
+      ...home(),
+      ACU_DIRECTORY_JSON: withEndpoint,
+      ACU_AUDITOR_URL: "http://mine/audit",
+    });
+    expect(resolveEndpoint(explicit.auditorUrl, (await auditorTrust(explicit)).endpoint)).toBe(
+      "http://mine/audit",
+    );
+
+    const silent = resolveCliConfig({ ...home(), ACU_DIRECTORY_JSON: without });
+    expect(resolveEndpoint(silent.auditorUrl, (await auditorTrust(silent)).endpoint)).toBe(
+      DEFAULT_AUDITOR_URL,
+    );
+  });
+
+  it("names no endpoint when the auditor's signer was configured by hand", async () => {
+    const config = resolveCliConfig({ ...home(), ACU_AUDITOR_SIGNER: SIGNER });
+    expect((await auditorTrust(config)).endpoint).toBeNull();
   });
 
   it("reads the file the CLI wrote when the environment says nothing", async () => {

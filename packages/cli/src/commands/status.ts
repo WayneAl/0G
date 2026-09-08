@@ -2,7 +2,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { agentStatus, type AgentStatus } from "@0x402/underwriter";
 import { configPath } from "@0x402/config";
 import type { Io } from "../index.js";
-import { resolveCliConfig } from "./underwrite.js";
+import { auditorTrust, resolveCliConfig, resolveEndpoint } from "./underwrite.js";
 
 /**
  * `acu status` — "can this agent do the job right now, and if not, what next?"
@@ -14,10 +14,23 @@ export async function status(argv: string[], io: Io): Promise<number> {
   const config = resolveCliConfig(io.env);
   const address = config.agentKey === null ? null : privateKeyToAccount(config.agentKey).address;
 
+  // The directory is read here too, so the address this probes is the address a
+  // following `acu underwrite` would actually hire. Reporting the built-in
+  // localhost while the run would go somewhere else is the one thing a status
+  // command must not do. A directory that cannot be read is not fatal here —
+  // the probe below then reports the built-in as offline, which is what it is.
+  let fromDirectory: string | null = null;
+  try {
+    fromDirectory = (await auditorTrust(config)).endpoint;
+  } catch {
+    /* left null on purpose */
+  }
+  const auditorUrl = resolveEndpoint(config.auditorUrl, fromDirectory);
+
   const report = await agentStatus({
     agentId: config.agentId,
     address,
-    auditor: { url: config.auditorUrl, agentId: config.auditorAgentId },
+    auditor: { url: auditorUrl, agentId: config.auditorAgentId },
     ledgerPath: config.ledgerPath,
     directoryUrl: config.directoryUrl,
     usdc: config.usdc,

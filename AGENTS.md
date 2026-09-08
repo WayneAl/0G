@@ -33,7 +33,7 @@ deliberate and the reason is recorded.
 ```bash
 pnpm install                       # Node 22, pnpm pinned by packageManager
 pnpm -r typecheck                  # tsc across the workspace
-pnpm -r test                       # 266 vitest tests across nine packages
+pnpm -r test                       # 277 vitest tests across nine packages
 forge test --root contracts        # 20 Foundry tests
 
 ./demo/run.sh --offline            # the seven scenes from recordings, no network, no key

@@ -7,7 +7,7 @@ import {
   resolve,
   type UserConfig,
 } from "@0x402/config";
-import { Directory, HttpAgentIdResolver } from "@0x402/seal";
+import { Directory, HttpAgentIdResolver, auditorEndpoint } from "@0x402/seal";
 import { BASE_SEPOLIA_RPC, BASE_SEPOLIA_USDC, CIRCLE_FAUCET } from "@0x402/underwriter";
 import { OG_TESTNET_INDEXER, OG_TESTNET_RPC } from "@0x402/storage/publish";
 
@@ -31,7 +31,7 @@ export interface McpConfig {
   agentKey: `0x${string}` | null;
   /** ACU_AGENT_ID, default "1". */
   agentId: string;
-  /** ACU_AUDITOR_URL, default "http://localhost:4021/audit". */
+  /** ACU_AUDITOR_URL, then the directory's auditor endpoint, then localhost:4021. */
   auditorUrl: string;
   /** ACU_AUDITOR_AGENT_ID, default "2". */
   auditorAgentId: string;
@@ -199,7 +199,14 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
   return {
     agentKey,
     agentId: resolve(env["ACU_AGENT_ID"], user.agentId, "1"),
-    auditorUrl: resolve(env["ACU_AUDITOR_URL"], user.auditorUrl, "http://localhost:4021/audit"),
+    // The directory sits below anything explicit and above the built-in, so a
+    // zero-env install hires the auditor the directory actually advertises
+    // instead of a localhost that is only ever up on a developer's machine.
+    auditorUrl: resolve(
+      env["ACU_AUDITOR_URL"],
+      user.auditorUrl,
+      auditorEndpoint(directory) ?? "http://localhost:4021/audit",
+    ),
     auditorAgentId: resolve(env["ACU_AUDITOR_AGENT_ID"], null, "2"),
     directory,
     registry,

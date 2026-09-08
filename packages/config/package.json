@@ -1,6 +1,6 @@
 {
   "name": "@0x402/config",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "~/.acu/config.json, read the same way by every shell: env > file > default, written 0600 inside a 0700 directory, atomically.",
   "license": "MIT",
   "author": "Wayne Kuo",

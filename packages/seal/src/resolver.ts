@@ -32,6 +32,25 @@ export type DirectoryEntry = z.infer<typeof DirectoryEntry>;
 export const Directory = z.object({ agents: z.array(DirectoryEntry) });
 export type Directory = z.infer<typeof Directory>;
 
+/**
+ * The `POST /audit` URL the directory advertises, or null if it names none.
+ *
+ * A directory entry carries an *origin* — that is what the website's pill needs,
+ * which reads `GET /agent` off it. An Agent A needs the paid route, so the path
+ * is resolved against that origin here rather than being written into the file
+ * twice and drifting.
+ *
+ * This is what lets `npx @0x402/cli underwrite <token>` reach a real auditor with
+ * nothing configured. It is not a new trust step: the same file already decides
+ * `allowedPayTo`, so it already says who may be *paid*; this only says who to
+ * ask. Anything explicit — `--endpoint`, `ACU_AUDITOR_URL`, `~/.acu/config.json`
+ * — still wins, and the payee allowlist still runs before anything is signed.
+ */
+export function auditorEndpoint(d: Directory): string | null {
+  const agent = d.agents.find((a) => a.role === "auditor" && a.endpoint !== undefined);
+  return agent?.endpoint === undefined ? null : new URL("/audit", agent.endpoint).toString();
+}
+
 /** The in-memory resolver a directory describes. */
 export function resolverFromDirectory(d: Directory): StaticAgentIdResolver {
   const table: Record<string, `0x${string}`> = {};

@@ -406,6 +406,46 @@ describe("loadConfig — the directory, with nothing configured", () => {
     const env = { ...bare(), ACU_DIRECTORY_JSON: JSON.stringify({ agents: [] }) };
     await expect(loadConfig(env)).rejects.toThrow(/DIRECTORY_HAS_NO_AUDITOR/);
   });
+
+  /**
+   * The zero-env install is the whole point of this server, and it used to hire
+   * `http://localhost:4021/audit` no matter what the directory said — a URL that
+   * is only ever up on a developer's machine.
+   */
+  it("hires the endpoint the directory advertises when ACU_AUDITOR_URL is unset", async () => {
+    const env = {
+      ...bare(),
+      ACU_DIRECTORY_JSON: JSON.stringify({
+        agents: [
+          { agentId: "2", signer: `0x${"2b".repeat(20)}`, role: "auditor", endpoint: "https://b.example" },
+        ],
+      }),
+    };
+    expect((await loadConfig(env)).auditorUrl).toBe("https://b.example/audit");
+  });
+
+  it("still lets ACU_AUDITOR_URL beat the directory", async () => {
+    const env = {
+      ...bare(),
+      ACU_AUDITOR_URL: "http://mine/audit",
+      ACU_DIRECTORY_JSON: JSON.stringify({
+        agents: [
+          { agentId: "2", signer: `0x${"2b".repeat(20)}`, role: "auditor", endpoint: "https://b.example" },
+        ],
+      }),
+    };
+    expect((await loadConfig(env)).auditorUrl).toBe("http://mine/audit");
+  });
+
+  it("falls back to the built-in when the directory names no endpoint", async () => {
+    const env = {
+      ...bare(),
+      ACU_DIRECTORY_JSON: JSON.stringify({
+        agents: [{ agentId: "2", signer: `0x${"2b".repeat(20)}`, role: "auditor" }],
+      }),
+    };
+    expect((await loadConfig(env)).auditorUrl).toBe("http://localhost:4021/audit");
+  });
 });
 
 describe("bigintReplacer", () => {

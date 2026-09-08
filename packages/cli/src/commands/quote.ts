@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
 import { makeBudgetGate, underwrite, type Stage, type UnderwriteDeps } from "@0x402/underwriter";
 import type { Io } from "../index.js";
-import { DRY_RUN_KEY, NEXT_STEP_INIT, auditorTrust, resolveCliConfig, withoutCode } from "./underwrite.js";
+import {
+  DRY_RUN_KEY,
+  NEXT_STEP_INIT,
+  auditorTrust,
+  resolveCliConfig,
+  resolveEndpoint,
+  withoutCode,
+} from "./underwrite.js";
 
 /**
  * `acu quote <token>` — step 1 of the funnel, and the only command that is
@@ -37,7 +44,7 @@ export async function quote(argv: string[], io: Io): Promise<number> {
   const deps: UnderwriteDeps = {
     account: privateKeyToAccount(config.agentKey ?? DRY_RUN_KEY),
     agentId: config.agentId,
-    auditor: { url: config.auditorUrl, agentId: config.auditorAgentId },
+    auditor: { url: resolveEndpoint(config.auditorUrl, trusted.endpoint), agentId: config.auditorAgentId },
     resolver,
     budget: makeBudgetGate(allowedPayTo, config.ledgerPath),
     network: config.network,

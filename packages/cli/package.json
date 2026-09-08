@@ -1,7 +1,7 @@
 {
   "name": "@0x402/cli",
-  "version": "0.1.1",
-  "description": "acu \u2014 your agent hires an auditor, verifies the seal, and signs its own. Quote with no key at all; verify any seal offline.",
+  "version": "0.1.2",
+  "description": "acu — your agent hires an auditor, verifies the seal, and signs its own. Quote with no key at all; verify any seal offline.",
   "license": "MIT",
   "author": "Wayne Kuo",
   "homepage": "https://wayneal.github.io/0G",

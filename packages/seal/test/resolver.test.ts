@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Directory, HttpAgentIdResolver, resolverFromDirectory } from "../src/index.js";
+import { Directory, HttpAgentIdResolver, auditorEndpoint, resolverFromDirectory } from "../src/index.js";
 
 /**
  * The signer Agent B actually used for `web/public/examples/examples.json`, checksummed as
@@ -77,5 +77,46 @@ describe("resolverFromDirectory", () => {
     expect(await resolver.resolve("1")).toBe(A_SIGNER.toLowerCase());
     expect(await resolver.resolve("2")).toBe(B_SIGNER.toLowerCase());
     expect(await resolver.resolve("3")).toBeNull();
+  });
+});
+
+describe("auditorEndpoint", () => {
+  it("resolves the paid route against the origin the directory carries", () => {
+    const d = Directory.parse({
+      agents: [{ agentId: "2", signer: B_SIGNER, role: "auditor", endpoint: "https://b.example" }],
+    });
+    expect(auditorEndpoint(d)).toBe("https://b.example/audit");
+  });
+
+  /**
+   * The website reads `GET /agent` off the same field, so an entry written for
+   * the pill carries an origin with no path — and one written by hand may carry
+   * `/audit` already. Both have to land on the same URL.
+   */
+  it("replaces a path rather than appending to it", () => {
+    const d = Directory.parse({
+      agents: [{ agentId: "2", signer: B_SIGNER, role: "auditor", endpoint: "https://b.example/audit" }],
+    });
+    expect(auditorEndpoint(d)).toBe("https://b.example/audit");
+  });
+
+  it("is null when the directory names an auditor but no endpoint", () => {
+    const d = Directory.parse({ agents: [{ agentId: "2", signer: B_SIGNER, role: "auditor" }] });
+    expect(auditorEndpoint(d)).toBeNull();
+  });
+
+  it("is null when the directory has no auditor at all", () => {
+    const d = Directory.parse({ agents: [{ agentId: "1", signer: A_SIGNER, role: "underwriter" }] });
+    expect(auditorEndpoint(d)).toBeNull();
+  });
+
+  it("ignores an underwriter that happens to publish an endpoint", () => {
+    const d = Directory.parse({
+      agents: [
+        { agentId: "1", signer: A_SIGNER, role: "underwriter", endpoint: "https://a.example" },
+        { agentId: "2", signer: B_SIGNER, role: "auditor", endpoint: "https://b.example" },
+      ],
+    });
+    expect(auditorEndpoint(d)).toBe("https://b.example/audit");
   });
 });

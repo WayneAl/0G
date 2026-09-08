@@ -20,6 +20,7 @@ import {
   StaticAgentIdResolver,
   HttpAgentIdResolver,
   resolverFromDirectory,
+  auditorEndpoint,
   SealVerificationError,
   auditRequestHash,
   type AgentIdResolver,
@@ -51,7 +52,8 @@ interface Args {
   settle: boolean;
   /** Upload the seal A body to 0G Storage after signing it. */
   publish: boolean;
-  endpoint: string;
+  /** Null until `auditorTrust` has had its say; see `auditorEndpoint`. */
+  endpoint: string | null;
   registry: `0x${string}` | null;
   sourcePath: string | null;
   /** Write the composed seal A here, so a later run can replay it. */
@@ -105,7 +107,9 @@ export interface CliConfig {
   agentKey: `0x${string}` | null;
   agentId: string;
   auditorAgentId: string;
-  auditorUrl: string;
+  /** Explicit only — `--endpoint` > ACU_AUDITOR_URL / AGENT_B_URL > the file.
+   *  Null means "nobody said", and the directory answers instead. */
+  auditorUrl: string | null;
   /** The auditor's seal signer, when an operator names one explicitly. */
   auditorSigner: `0x${string}` | null;
   allowedPayTo: `0x${string}`[] | null;
@@ -169,7 +173,11 @@ export function resolveCliConfig(env: NodeJS.ProcessEnv = process.env, file?: Us
     agentKey: key === null ? null : requireKey(key, envOf(env, "ACU_AGENT_KEY", "AGENT_A_PRIVATE_KEY") !== undefined, env),
     agentId: resolve(envOf(env, "ACU_AGENT_ID", "AGENT_A_ID"), user.agentId, "1"),
     auditorAgentId: resolve(envOf(env, "ACU_AUDITOR_AGENT_ID", "AGENT_B_ID"), null, "2"),
-    auditorUrl: resolve(envOf(env, "ACU_AUDITOR_URL", "AGENT_B_URL"), user.auditorUrl, DEFAULT_AUDITOR_URL),
+    // Null, not the built-in, when nothing explicit was configured: the
+    // directory gets its say first, in `auditorTrust`, and only then does
+    // DEFAULT_AUDITOR_URL stand in. Resolving it here would mean deciding
+    // before the file that knows the answer has been read.
+    auditorUrl: resolve<string | null>(envOf(env, "ACU_AUDITOR_URL", "AGENT_B_URL"), user.auditorUrl, null),
     // Kept exactly as configured, checksum case and all: it is printed back at
     // step [5], and every comparison it feeds is case-insensitive already.
     auditorSigner: signer === undefined ? null : (signer as `0x${string}`),
@@ -209,19 +217,31 @@ export function resolveCliConfig(env: NodeJS.ProcessEnv = process.env, file?: Us
  * underwrite <token>` work with no environment at all — and it is only fetched
  * when it is actually needed.
  */
-export async function auditorTrust(
-  config: CliConfig,
-): Promise<{ resolver: AgentIdResolver; allowedPayTo: `0x${string}`[] }> {
+export interface Trust {
+  resolver: AgentIdResolver;
+  allowedPayTo: `0x${string}`[];
+  /** What the directory advertises, or null when it names no endpoint. */
+  endpoint: string | null;
+}
+
+export async function auditorTrust(config: CliConfig): Promise<Trust> {
   if (config.auditorSigner !== null) {
+    // A named signer answers "who is agent B", but says nothing about where to
+    // reach them; the endpoint stays null and the built-in default stands in.
     return {
       resolver: new StaticAgentIdResolver({ [config.auditorAgentId]: config.auditorSigner }),
       allowedPayTo: config.allowedPayTo ?? [config.auditorSigner],
+      endpoint: null,
     };
   }
 
   if (config.directoryJson !== null) {
     const inline = Directory.parse(JSON.parse(config.directoryJson));
-    return { resolver: resolverFromDirectory(inline), allowedPayTo: payToOf(config, inline) };
+    return {
+      resolver: resolverFromDirectory(inline),
+      allowedPayTo: payToOf(config, inline),
+      endpoint: auditorEndpoint(inline),
+    };
   }
 
   const resolver = new HttpAgentIdResolver(config.directoryUrl);
@@ -244,13 +264,24 @@ export async function auditorTrust(
     return {
       resolver: resolverFromDirectory(REFERENCE_DIRECTORY),
       allowedPayTo: payToOf(config, REFERENCE_DIRECTORY),
+      endpoint: auditorEndpoint(REFERENCE_DIRECTORY),
     };
   }
   return {
     resolver,
     allowedPayTo: payToOf(config, directory),
+    endpoint: auditorEndpoint(directory),
   };
 }
+
+/**
+ * The auditor to hire, once every source has had its say.
+ *
+ * `--endpoint` > ACU_AUDITOR_URL / AGENT_B_URL > `~/.acu/config.json` > the
+ * endpoint the directory advertises > the built-in localhost.
+ */
+export const resolveEndpoint = (explicit: string | null, fromDirectory: string | null): string =>
+  explicit ?? fromDirectory ?? DEFAULT_AUDITOR_URL;
 
 /**
  * Nobody named a payee, so the auditors this agent already knows about are the
@@ -375,12 +406,14 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
     return fail("NO_DIRECTORY", withoutCode(detailOf(err)));
   }
   const { resolver, allowedPayTo } = trusted;
+  // Now, and not in parseArgs: the directory has only just been read.
+  const endpoint = resolveEndpoint(args.endpoint, trusted.endpoint);
 
   const emitSeal = args.emitSeal;
   const deps: UnderwriteDeps = {
     account: agentA,
     agentId: agentAId,
-    auditor: { url: args.endpoint, agentId: agentBId },
+    auditor: { url: endpoint, agentId: agentBId },
     resolver,
     budget: makeBudgetGate(
       // The allowlist is the real protection. A compromised endpoint that quotes a
@@ -445,7 +478,7 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
     // Tuesday and gets a code the reader can act on.
     if (stage === "read") throw err;
     if (stage !== "quote" && stage !== "hire") throw err;
-    return fail("AUDITOR_UNREACHABLE", `${args.endpoint} — ${detailOf(err)}`);
+    return fail("AUDITOR_UNREACHABLE", `${endpoint} — ${detailOf(err)}`);
   }
 
   if (!result.ok) {

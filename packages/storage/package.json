@@ -1,7 +1,7 @@
 {
   "name": "@0x402/storage",
-  "version": "0.1.1",
-  "description": "Put a seal on the 0G Storage log layer and find it again by its own hash. The root export is isomorphic \u2014 no ethers, no SDK \u2014 so a browser can do the lookup.",
+  "version": "0.1.2",
+  "description": "Put a seal on the 0G Storage log layer and find it again by its own hash. The root export is isomorphic — no ethers, no SDK — so a browser can do the lookup.",
   "license": "MIT",
   "author": "Wayne Kuo",
   "homepage": "https://wayneal.github.io/0G",
