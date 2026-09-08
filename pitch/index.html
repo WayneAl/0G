@@ -379,7 +379,7 @@ pre.code .kw { color: var(--accent); }
               <span data-zh="<b>Agent A</b> 做准入預審 · <b>Agent B</b> 做原始碼審核 · A 用 x402 付錢請 B"><b>Agent A</b> underwrites · <b>Agent B</b> audits · A pays B over x402</span>
               <span data-zh="推理在 <b>0G Compute Router</b> 的 TEE 裡跑,章本體存在 <b>0G Storage</b>">Inference in a TEE on the <b>0G Compute Router</b>, seal bodies on <b>0G Storage</b></span>
               <span data-zh="<b>CollateralRegistry</b> 見章才上架 · 0G testnet 16602"><b>CollateralRegistry</b> lists nothing without a seal · 0G testnet 16602</span>
-              <span data-zh="出貨形式:<b>npx @0x402/cli</b> 和 <b>claude mcp add acu</b> —— 我們什麼都不代管">Shipped as <b>npx @0x402/cli</b> and <b>claude mcp add acu</b> — we host nothing</span>
+              <span data-zh="出貨形式:<b>npx @0x402/cli</b> 和 <b>claude mcp add acu</b> —— 參考審核員已上線,你的鑰匙永遠不會經過我們">Shipped as <b>npx @0x402/cli</b> and <b>claude mcp add acu</b> — a reference auditor is live, and no key of yours ever reaches us</span>
             </div>
           </div>
         </div>
@@ -575,14 +575,15 @@ pre.code .kw { color: var(--accent); }
       </section>
 
       <!-- ⑤ What we shipped -->
-      <section class="slide" data-notes="1:15–1:35|這頁講<strong>我們到底交付了什麼</strong>:章加兩邊的 SDK 是核心,CLI、MCP、靜態網站是三個外殼。<span class='do'>左邊八個套件不要逐一唸,說「核心五個、外殼三個,全部在 npm 上」就好。重點在右邊:<strong>要當 A,一行指令;要當 B,掛一條路由</strong> —— 而且審核失敗回 502,<strong>沒有章就不收錢</strong>。最後停在最下面那句:我們不代管任何一把碰得到真錢的鑰匙,唯一放上線的東西是一個 JSON 檔。</span>">
+      <section class="slide" data-notes="1:15–1:35|這頁講<strong>我們到底交付了什麼</strong>:章加兩邊的 SDK 是核心,CLI、MCP、靜態網站是三個外殼。<span class='do'>左邊九個套件不要逐一唸,說「核心六個、外殼三個,八個在 npm 上」就好。重點在右邊:<strong>要當 A,一行指令;要當 B,掛一條路由</strong> —— 而且審核失敗回 502,<strong>沒有章就不收錢</strong>。最後停在最下面那句:我們不握任何一把你的鑰匙;上線的只有一個 JSON 檔,和一個用我們自己 burner key 簽章、沒人問就縮到零的參考審核員。</span>">
         <div class="eyebrow" data-zh="我們交付了什麼">What we shipped</div>
-        <h2 data-zh="一個核心、三個外殼,什麼都不代管。">One core. Three shells. Nothing hosted.</h2>
+        <h2 data-zh="一個核心、三個外殼,不碰你的鑰匙。">One core. Three shells. None of your keys.</h2>
         <div class="body">
           <div class="cols2" style="grid-template-columns:1.08fr 1fr;gap:40px">
             <div class="stack">
               <div class="grp" data-zh="核心 —— 發佈在 npm 的 @0x402/*">core — published on npm as @0x402/*</div>
               <div class="pkg"><span class="n">@0x402/seal</span><span class="d" data-zh="canonical bytes、簽章、驗章">canonical bytes · sign · verify</span></div>
+              <div class="pkg"><span class="n">@0x402/og</span><span class="d" data-zh="0G Compute Router 客戶端,verified 層,帶回 TEE 證明">0G Compute Router client · verified tier · attested</span></div>
               <div class="pkg"><span class="n">@0x402/underwriter</span><span class="d" data-zh="當 A:雇人、驗章、組章、上架">be an A: hire, verify, compose, list</span></div>
               <div class="pkg"><span class="n">@0x402/auditor</span><span class="d" data-zh="當 B:一條 x402 路由,會出章">be a B: one x402 route that seals</span></div>
               <div class="pkg"><span class="n">@0x402/storage</span><span class="d" data-zh="章本體上 0G Storage,靠 hash 找回來">seal bodies on 0G Storage, found by hash</span></div>
@@ -605,9 +606,9 @@ sealedAuditRoute(app, config);
               <div class="cmdnote" data-zh="一個普通的 x402 API 不算 B(第 ⑦ 幕)。掛上這條路由,才是「答案值不值錢」的分界線。">a plain x402 API is not a B (scene ⑦). Mounting this route is the line between getting paid and being worth paying.</div>
             </div>
           </div>
-          <p class="callout" data-zh="我們不代管任何一把碰得到真錢的鑰匙。A 的鑰匙在 A 自己的 process,B 的鑰匙在 B 自己的 server,錢只有一跳:A → B,走 x402。<b>我們唯一放上線的東西是一個檔案</b> —— <code class='mono'>directory.json</code> 把 agentId 對到 signer;哪天換成 ERC-7857 註冊表,呼叫端一行都不用改。">We host nothing that holds a key that touches real money. A’s key stays in A’s process, B’s key in B’s own server,
-            and money is one hop: A → B over x402. <b>The only thing we put online is a file</b> — <code class="mono">directory.json</code> maps agentId → signer,
-            and an ERC-7857 registry replaces it without a caller changing a line.</p>
+          <p class="callout" data-zh="我們不握任何一把你的鑰匙。A 的鑰匙在 A 自己的 process,B 的鑰匙在 B 自己的 server,錢只有一跳:A → B,走 x402。<b>我們放上線的是一個檔案和一個容器</b> —— <code class='mono'>directory.json</code> 把 agentId 對到 signer、並點名參考審核員;那個審核員跑在 Cloud Run,簽的是我們自己的 burner key,沒人問就縮到零。要自己當 B 就是右邊那幾行;換成 ERC-7857 註冊表,呼叫端一行都不用改。">We hold no key of yours. A’s key stays in A’s process, B’s key in B’s own server, and money is one hop: A → B over x402.
+            <b>What we put online is a file and one container</b> — <code class="mono">directory.json</code> maps agentId → signer and names the reference auditor,
+            which runs on Cloud Run with our own burner key and scales to zero. Your own B is the route above; an ERC-7857 registry replaces the file without a caller changing a line.</p>
         </div>
       </section>
 
@@ -628,7 +629,7 @@ sealedAuditRoute(app, config);
             <div class="term"><span class="cmd">npx @0x402/cli underwrite 0xDB08Ce21…7fF9eB8 --live --publish</span>
 <span class="s">[2]</span> reading token from 0G testnet RPC
 <span class="s">[2]</span> CUSD · 1825B code · owner none · flagged selectors: none
-<span class="s">[3]</span> hiring agent B at https://…trycloudflare.com/audit
+<span class="s">[3]</span> hiring agent B at https://zerog-x402-auditor-…run.app/audit
 <span class="s">[3]</span> paid $0.01 · settlement 0xe0578d97…785ebc
 <span class="s">[4]</span> agent B returned <span class="ok">ALLOW</span> maxLtvBps=7500
 <span class="s">[5]</span> verifying seal B
@@ -712,7 +713,7 @@ sealedAuditRoute(app, config);
             </div>
             <div class="panel">
               <h3 data-zh="章要活得比我們久">The seal has to outlive us</h3>
-              <p data-zh="我們什麼都不代管,所以一張章必須光靠一個 <code class='mono'>bytes32</code> 就找得回來。0G Storage 收下 bytes、用章自己的 <code class='mono'>sealHash</code> 當 tag,indexer 的 gateway 再直接餵給瀏覽器(<code class='mono'>access-control-allow-origin: *</code>)。">We host nothing, so a seal has to be reachable from a <code class="mono">bytes32</code> alone. 0G Storage takes the bytes tagged with the seal’s own <code class="mono">sealHash</code>, and the indexer’s gateway serves them straight to a browser (<code class="mono">access-control-allow-origin: *</code>).</p>
+              <p data-zh="章不能靠我們的伺服器活著,所以一張章必須光靠一個 <code class='mono'>bytes32</code> 就找得回來。0G Storage 收下 bytes、用章自己的 <code class='mono'>sealHash</code> 當 tag,indexer 的 gateway 再直接餵給瀏覽器(<code class='mono'>access-control-allow-origin: *</code>)。">A seal must not depend on a server of ours, so it has to be reachable from a <code class="mono">bytes32</code> alone. 0G Storage takes the bytes tagged with the seal’s own <code class="mono">sealHash</code>, and the indexer’s gateway serves them straight to a browser (<code class="mono">access-control-allow-origin: *</code>).</p>
               <div class="gone" data-zh="<b>沒有的話</b>合約上那個 <code class='mono'>sealHash</code> 就只指向「拿過它的人手上那一份」。沒有人能稽核這次稽核。"><b>without it</b>The registry’s <code class="mono">sealHash</code> points at something only whoever held it can produce. Nobody can audit the audit.</div>
             </div>
             <div class="panel">
@@ -789,9 +790,9 @@ sealedAuditRoute(app, config);
         <div class="body">
           <div class="stats" style="margin-bottom:28px">
             <div class="stat"><div class="num pass">30/30</div><div class="lbl" data-zh="次結果一致 —— 3 種代幣 × 10 次,判定和額度每次都一樣">runs agree — 3 tokens × 10, deterministic verdict and cap</div></div>
-            <div class="stat"><div class="num">146</div><div class="lbl" data-zh="個測試 —— Foundry 20(含 256 輪 fuzz)、TypeScript 126,九個套件">tests — 20 Foundry incl. a 256-run fuzz, 126 TypeScript across nine packages</div></div>
+            <div class="stat"><div class="num">297</div><div class="lbl" data-zh="個測試 —— Foundry 20(含 256 輪 fuzz)、TypeScript 277,九個套件">tests — 20 Foundry incl. a 256-run fuzz, 277 TypeScript across nine packages</div></div>
             <div class="stat"><div class="num">3.5s</div><div class="lbl" data-zh="推理延遲中位數,30 次全部 TEE 驗證通過">p50 inference latency, TEE-attested every run</div></div>
-            <div class="stat"><div class="num">0</div><div class="lbl" data-zh="把私鑰寫進 repo;六幕每一幕都 assert 結果">private keys in the repo; every scene asserts its outcome</div></div>
+            <div class="stat"><div class="num">0</div><div class="lbl" data-zh="把私鑰寫進 repo;七幕每一幕都 assert 結果">private keys in the repo; every scene asserts its outcome</div></div>
           </div>
           <div class="cols2">
             <div class="panel" style="border-left:2px solid var(--warn)">
@@ -804,8 +805,8 @@ sealedAuditRoute(app, config);
                 auditable, attributable, <b style="color:var(--ink);font-weight:600">expiring</b> credential.</p>
               <p class="lede" style="font-size:15px" data-zh="README 裡也直接寫明:TEE 不等於 trustless;章不涵蓋帳單;持有人集中度沒有 indexer 可查,就留 <code class='mono'>null</code>,不編數字。">Also stated plainly in the README: a TEE is not trustlessness, the seal does not cover the invoice,
                 and holder concentration is left <code class="mono">null</code> rather than invented — there is no indexer on this testnet.</p>
-              <p class="lede" style="font-size:15px" data-zh="v1 沒做完的也直接講:合約目前只信一個 underwriter 簽章者;Agentic ID 是章上的一個欄位,還不是活的 ERC-7857 註冊表;參考用的 Agent B 跑在一台筆電上、靠 tunnel 對外,所以網站上那顆燈會誠實告訴你它現在是不是關的。">And what v1 does not do yet, said out loud: the registry trusts one underwriter signer, Agentic ID is a field rather than a live ERC-7857 registry,
-                and the reference Agent B runs on a laptop behind a tunnel — so the site’s pill tells you honestly when it is off.</p>
+              <p class="lede" style="font-size:15px" data-zh="v1 沒做完的也直接講:合約目前只信一個 underwriter 簽章者;Agentic ID 是章上的一個欄位,還不是活的 ERC-7857 註冊表;參考用的 Agent B 是一個沒人問就縮到零的容器,一天只有 50 次 testnet 審計額度,所以網站上那顆燈會誠實告訴你它現在是不是關的。">And what v1 does not do yet, said out loud: the registry trusts one underwriter signer, Agentic ID is a field rather than a live ERC-7857 registry,
+                and the reference Agent B is one container that scales to zero, on a 50-audits-a-day testnet quota — so the site’s pill tells you honestly when it is off.</p>
             </div>
           </div>
         </div>
@@ -833,6 +834,7 @@ sealedAuditRoute(app, config);
               <div class="cell" style="border-right:0;border-bottom:1px solid var(--line)">
                 <div class="l" data-zh="看章、驗章">See and verify every seal</div>
                 <div class="v">wayneal.github.io/0G</div>
+                <div class="v">github.com/WayneAl/0G</div>
               </div>
               <div class="cell" style="border-right:0">
                 <div class="l" data-zh="已部署 · 0G testnet 16602">Deployed · 0G testnet 16602</div>
