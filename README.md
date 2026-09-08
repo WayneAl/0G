@@ -1,6 +1,6 @@
 # Attested Collateral Underwriter
 
-[![CI](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml/badge.svg)](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml)
+[![CI](https://github.com/WayneAl/0G/actions/workflows/ci.yml/badge.svg)](https://github.com/WayneAl/0G/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@0x402/cli?label=%400x402%2Fcli&color=cb3837)](https://www.npmjs.com/package/@0x402/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -603,4 +603,4 @@ MIT — see [`LICENSE`](LICENSE). Everything in this repo is testnet, and every 
 anywhere in it is a burner. Use it against mainnet money at your own risk, and read *Known
 limitations* first.
 
-Issues and pull requests: <https://github.com/WayneAl/0G-x402/issues>.
+Issues and pull requests: <https://github.com/WayneAl/0G/issues>.

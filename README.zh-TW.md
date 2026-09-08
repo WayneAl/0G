@@ -1,6 +1,6 @@
 # Attested Collateral Underwriter
 
-[![CI](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml/badge.svg)](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml)
+[![CI](https://github.com/WayneAl/0G/actions/workflows/ci.yml/badge.svg)](https://github.com/WayneAl/0G/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@0x402/cli?label=%400x402%2Fcli&color=cb3837)](https://www.npmjs.com/package/@0x402/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -560,4 +560,4 @@ TypeScript 那一側跑在九個套件上，用 `pnpm -r test`；Foundry 那一�
 MIT，見 [`LICENSE`](LICENSE)。這個 repo 裡的一切都是測試網，裡面提到的每一把 key 都是 burner。
 要拿去碰主網的錢請自行承擔風險，而且請先讀過*已知限制*。
 
-Issue 和 PR：<https://github.com/WayneAl/0G-x402/issues>。
+Issue 和 PR：<https://github.com/WayneAl/0G/issues>。

@@ -46,7 +46,12 @@ jobs:
         env:
           BASE_PATH: /0G/
 
+      # `enablement` turns Pages on the first time this runs, so the site does
+      # not depend on someone having visited Settings. Without it the step fails
+      # with "Get Pages site failed" on a repo where Pages was never enabled.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
