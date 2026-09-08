@@ -1,4 +1,5 @@
 import {
+  DEFAULT_REGISTRY,
   DEFAULT_WEB_URL,
   DRY_RUN_KEY,
   configDir,
@@ -36,7 +37,7 @@ export interface McpConfig {
   auditorAgentId: string;
   /** ACU_DIRECTORY_JSON (inline), else fetched from ACU_DIRECTORY_URL / the file. */
   directory: Directory;
-  /** ACU_REGISTRY. */
+  /** ACU_REGISTRY, default DEFAULT_REGISTRY. Null only when explicitly cleared. */
   registry: `0x${string}` | null;
   /** ACU_RPC_URL, default OG_TESTNET_RPC. */
   rpcUrl: string;
@@ -170,7 +171,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
       ? null
       : requireHex(rawKey.trim(), keySource(env), HEX_KEY, "a 0x-prefixed 32-byte private key", true);
 
-  const rawRegistry = resolve<string | null>(env["ACU_REGISTRY"], user.registry, null);
+  const rawRegistry = resolve<string | null>(env["ACU_REGISTRY"], user.registry, DEFAULT_REGISTRY);
   const registry =
     rawRegistry === null
       ? null
@@ -185,8 +186,10 @@ export async function loadConfig(env: NodeJS.ProcessEnv, fetchImpl?: typeof fetc
   const allowedPayTo =
     rawPayTo === undefined || rawPayTo.trim() === ""
       ? // Nobody configured a payee allowlist, so the auditors we already know
-        // about are the only addresses this agent may ever pay.
-        directory.agents.filter((a) => a.role === "auditor").map((a) => a.signer)
+        // about are the only addresses this agent may ever pay — at the payee
+        // each one names, which an auditor is allowed to keep separate from the
+        // key it seals with.
+        directory.agents.filter((a) => a.role === "auditor").map((a) => a.payTo ?? a.signer)
       : rawPayTo
           .split(",")
           .map((s) => s.trim())

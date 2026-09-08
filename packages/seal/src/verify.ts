@@ -20,7 +20,20 @@ export type SealFailure =
 export class SealVerificationError extends Error {
   constructor(
     readonly failure: SealFailure,
-    detail?: string,
+    /** Kept, not only formatted into the message: a re-throw has to carry it. */
+    readonly detail?: string,
+    /**
+     * True when the failure belongs to an *embedded* seal rather than to the one
+     * being verified. Every check on the outer seal passed; the broken one is a
+     * hop down, and that is where a report must draw it.
+     *
+     * Without this a caller can only match the code against its own list of
+     * rows, and the codes overlap: a delegate's `AGENT_ID_NOT_LIVE` matches seal
+     * A's own "issuer is known" row, so the report reddens that row — accusing
+     * an agent that is perfectly live — and then calls seal A's signature,
+     * subject and expiry "not reached" when all three were checked and passed.
+     */
+    readonly delegate = false,
   ) {
     super(detail ? `DELEGATE_SEAL_INVALID: ${failure} (${detail})` : `DELEGATE_SEAL_INVALID: ${failure}`);
     this.name = "SealVerificationError";
@@ -167,13 +180,23 @@ export async function verifySealA(input: unknown, ctx: VerifySealAContext): Prom
     throw new SealVerificationError("SEAL_EXPIRED");
   }
 
+  // Everything above is seal A's own. Anything that fails below is a hop down,
+  // and is re-thrown saying so: the code alone cannot tell the two apart, and a
+  // report that guesses blames the wrong agent.
   for (const d of seal.delegations) {
-    await verifySealB(d.seal, {
-      expectedSubject: seal.subject,
-      expectedRequest: d.seal.request,
-      resolver: ctx.resolver,
-      now: ctx.now,
-    });
+    try {
+      await verifySealB(d.seal, {
+        expectedSubject: seal.subject,
+        expectedRequest: d.seal.request,
+        resolver: ctx.resolver,
+        now: ctx.now,
+      });
+    } catch (err) {
+      if (err instanceof SealVerificationError && !err.delegate) {
+        throw new SealVerificationError(err.failure, err.detail, true);
+      }
+      throw err;
+    }
   }
   return seal;
 }

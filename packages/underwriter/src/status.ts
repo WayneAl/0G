@@ -150,7 +150,20 @@ export async function agentStatus(deps: AgentStatusDeps): Promise<AgentStatus> {
   }
 
   const price = typeof card?.["price"] === "string" ? (card["price"] as string) : null;
-  const needAtomic = usdcToAtomic(price ?? ASSUMED_PRICE);
+  // The card is written by whoever runs the auditor, and `usdcToAtomic` throws on
+  // anything it cannot parse — "0.01 USD", an empty string, more decimals than
+  // USDC has. A price this agent cannot read is the auditor's fault, and this
+  // function has promised its callers it does not throw for one of those: `acu
+  // status` must still print a table, and the MCP tools must still answer. So the
+  // assumed price stands in and the reason travels on the auditor's own line.
+  let needAtomic: bigint;
+  let priceError: string | null = null;
+  try {
+    needAtomic = usdcToAtomic(price ?? ASSUMED_PRICE);
+  } catch (err) {
+    priceError = `AUDITOR_PRICE_UNREADABLE: ${err instanceof Error ? err.message : String(err)}`;
+    needAtomic = usdcToAtomic(ASSUMED_PRICE);
+  }
 
   return {
     agentId: deps.agentId,
@@ -164,7 +177,7 @@ export async function agentStatus(deps: AgentStatusDeps): Promise<AgentStatus> {
       online: card !== null,
       price,
       card,
-      error: auditorError,
+      error: auditorError ?? priceError,
     },
     directoryUrl: deps.directoryUrl ?? null,
     nextStep:

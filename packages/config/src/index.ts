@@ -213,6 +213,21 @@ function readRaw(path: string): Record<string, unknown> | null {
 export const DEFAULT_WEB_URL = "https://wayneal.github.io/0G";
 
 /**
+ * `CollateralRegistry` on 0G Galileo testnet — the one this project deployed.
+ *
+ * A built-in default for the same reason the RPC has one: the install line
+ * promises no environment variables, and without an address every shell that
+ * was asked to settle had to refuse before it had done anything, naming a CLI
+ * flag the MCP does not even expose. An operator still overrides it with
+ * `ACU_REGISTRY` (or `registry` in the config file) to point at their own.
+ *
+ * Listing against it needs the signer its verifier trusts; an agent that is not
+ * that signer is told so by name at the settle step, and keeps the seal it paid
+ * for. That is a far more useful answer than refusing before the quote.
+ */
+export const DEFAULT_REGISTRY = "0xc1aafd71480ebc92c7f9fcc4d24272bd7b46a65e" as const;
+
+/**
  * An account for the dry-run path to hold and never use.
  *
  * `underwrite()` builds its deps before it knows whether it will sign, so it

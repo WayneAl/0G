@@ -112,15 +112,24 @@ export async function hireAuditor(
   const client = new x402Client().register(opts.network, new ExactEvmScheme(opts.account));
   const fetchWithPay = wrapFetchWithPayment(fetch, client);
 
+  // Recorded *before* the wire, not after it. The EIP-3009 authorization is
+  // signed and handed over inside the call below, so a non-2xx, a reset
+  // connection and a timeout all leave a spend that may well have settled —
+  // and recording on the way out means none of the three ever reaches the
+  // ledger. A retry loop against a flaky auditor could then re-authorize
+  // forever without approaching the per-hour cap, which is the exact failure
+  // this ledger exists to stop. Counting a request that never left the machine
+  // is the safe direction to be wrong in; the other way round drains a wallet.
+  //
+  // It is also the only order in which a ledger that cannot be written stops
+  // the payment instead of losing the record of one.
+  opts.budget.record(quote.amountAtomic, quote.payTo);
+
   const res = await fetchWithPay(opts.endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
   });
-
-  // Recorded even on a non-2xx: the authorization was signed and handed over,
-  // so it counts against the budget whether or not we got value for it.
-  opts.budget.record(quote.amountAtomic, quote.payTo);
 
   if (!res.ok) {
     throw new HireError("AUDIT_REQUEST_FAILED", `${res.status} ${(await res.text()).slice(0, 300)}`);

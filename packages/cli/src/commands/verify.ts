@@ -40,6 +40,12 @@ interface Row {
   label: string;
   codes: SealFailure[];
   detail: (seal: Record<string, any>) => string;
+  /**
+   * The row a failure one hop down belongs to, whatever its code says. Seal A
+   * and seal B share their codes, so a delegate's SIGNER_MISMATCH would
+   * otherwise land on seal A's own "Signature" row.
+   */
+  delegate?: true;
 }
 
 const short = (a: unknown): string =>
@@ -65,6 +71,7 @@ const ROWS_A: Row[] = [
     label: "Embedded seal B",
     codes: ["REQUEST_MISMATCH", "ATTESTATION_MISSING", "TRUST_MODE_INSUFFICIENT"],
     detail: (s) => `${(s["delegations"] as unknown[] | undefined)?.length ?? 0} delegation(s), each held to the same checks`,
+    delegate: true,
   },
 ];
 
@@ -123,6 +130,7 @@ export async function verify(argv: string[], io: Io): Promise<number> {
   const subject = String(candidate["subject"]).toLowerCase() as `0x${string}`;
 
   let failure: SealFailure | null = null;
+  let delegate = false;
   let detail = "";
   let signer: `0x${string}` | null = null;
   try {
@@ -141,12 +149,22 @@ export async function verify(argv: string[], io: Io): Promise<number> {
   } catch (err) {
     if (!(err instanceof SealVerificationError)) throw err;
     failure = err.failure;
+    delegate = err.delegate;
     detail = err.message;
   }
 
   // Everything before the failing row was checked and passed; everything after
   // it was never reached, and saying "not reached" is not the same as "fine".
-  const failedAt = failure === null ? -1 : Math.max(0, rows.findIndex((r) => r.codes.includes(failure)));
+  // A failure one hop down is the delegation row's, whatever code it carries:
+  // the library says so, because the codes alone cannot tell a seal B that
+  // expired from a seal A that did.
+  const delegateRow = rows.findIndex((r) => r.delegate === true);
+  const failedAt =
+    failure === null
+      ? -1
+      : delegate && delegateRow !== -1
+        ? delegateRow
+        : Math.max(0, rows.findIndex((r) => r.codes.includes(failure)));
   rows.forEach((row, i) => {
     const mark = failure === null || i < failedAt ? "✓" : i === failedAt ? "✗" : "·";
     const text = failure !== null && i > failedAt ? "not reached" : safely(row.detail, candidate);

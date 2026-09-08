@@ -82,6 +82,27 @@ describe("acu init", () => {
     expect(text()).toContain("BAD_KEY");
     expect(() => keyOnDisk(env)).toThrow();
   });
+
+  /**
+   * `--key` with the value missing is a fumbled paste, and generating one
+   * instead would hand someone importing a funded key a brand-new empty burner
+   * with nothing said about the key that went missing.
+   */
+  it("refuses --key with nothing after it rather than generating one", async () => {
+    const env = home();
+    const { io, text } = capture(env);
+    expect(await main(["init", "--key"], io)).toBe(1);
+    expect(text()).toContain("BAD_KEY");
+    expect(() => keyOnDisk(env)).toThrow();
+  });
+
+  it("refuses --key followed only by another flag", async () => {
+    const env = home();
+    const { io, text } = capture(env);
+    expect(await main(["init", "--key", "--force"], io)).toBe(1);
+    expect(text()).toContain("BAD_KEY");
+    expect(() => keyOnDisk(env)).toThrow();
+  });
 });
 
 /**

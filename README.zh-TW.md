@@ -54,8 +54,9 @@ claude mcp add acu -- npx -y @0x402/mcp
 第 4 步的 `--no-settle` 不是在偷跑：示範用的 registry 上，`StubVerifier` 只信一個簽章者，
 所以能在它上面上架的只有參考 Agent A（見下面〈已知限制〉第 6 點）。你自己簽出來的章是完全有效的章、
 驗起來也全綠，它只是上不了**這一個** registry —— 而網站上的即時列表就是這個 registry 的
-上架紀錄。沒設 registry 又要求上架的話，指令會回 `NO_REGISTRY`，而且是**在花任何錢之前**；
-`--registry <address>` 可以指向你自己部署的那一個。
+上架紀錄。把 `--no-settle` 拿掉，這一步會一路跑到上架前才停在 `UNTRUSTED_SIGNER`，把兩個
+位址都講清楚，而且**你付錢換來的那顆章會留著**。上面那個 registry 位址是內建的，所以上架同樣
+不用設定；`--registry <address>` 或 `ACU_REGISTRY` 可以指向你自己部署的那一個。
 
 > **在套件上 npm 之前**，同樣六步可以從 clone 跑：把 `npx @0x402/cli` 換成
 > `node packages/cli/bin/acu.mjs <command>`，把最後那行換成

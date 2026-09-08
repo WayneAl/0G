@@ -22,7 +22,13 @@ const BURNER_WARNING = "this is a burner key for testnet — never fund it with 
 export function init(argv: string[], io: Io): number {
   const flag = (name: string): string | undefined => {
     const i = argv.indexOf(`--${name}`);
-    return i === -1 ? undefined : argv[i + 1];
+    if (i === -1) return undefined;
+    // Present with nothing after it is a fumbled paste, not "generate one for
+    // me". Answering `undefined` here would take the generate branch and write a
+    // fresh empty burner over the funded key someone was trying to import,
+    // saying nothing at all about the value that went missing. The empty string
+    // fails the hex test one branch down and comes back as BAD_KEY.
+    return argv[i + 1] ?? "";
   };
   const force = argv.includes("--force");
   const supplied = flag("key");

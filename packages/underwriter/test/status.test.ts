@@ -191,4 +191,31 @@ describe("agentStatus — the one next step", () => {
     expect(status.auditor.online).toBe(false);
     expect(status.auditor.card).toBeNull();
   });
+
+  // The card is written by whoever runs the auditor. A price this side cannot
+  // parse is their fault, and must not become a stack trace where `acu status`
+  // should have printed a table — or a throw out of an MCP tool handler.
+  it.each([["0.01 USD"], [""], ["1e-2"], ["0.0000001"], ["free"]])(
+    "survives an auditor that prices itself %j",
+    async (price) => {
+      const status = await agentStatus(
+        deps({ fetchImpl: cardServer({ ...CARD, price }), usdcClient: clientReturning(0n) }),
+      );
+
+      expect(status.auditor.online).toBe(true);
+      // Reported verbatim: it is what the auditor said, however unreadable.
+      expect(status.auditor.price).toBe(price);
+      expect(status.auditor.error).toMatch(/^AUDITOR_PRICE_UNREADABLE: /);
+      // And the assumed cent stands in, so the funding hint is still an answer.
+      expect(status.nextStep).toBe(fundingHint(PAYER, 10_000n, 0n));
+    },
+  );
+
+  it("says nothing about the price when the auditor's is readable, and charges it", async () => {
+    const status = await agentStatus(
+      deps({ fetchImpl: cardServer({ ...CARD, price: "0.25" }), usdcClient: clientReturning(100_000n) }),
+    );
+    expect(status.auditor.error).toBeNull();
+    expect(status.nextStep).toBe(fundingHint(PAYER, 250_000n, 100_000n));
+  });
 });

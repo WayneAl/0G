@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { main } from "../src/index.js";
+import { DEFAULT_REGISTRY } from "@0x402/config";
 import { auditorTrust, resolveCliConfig, DEFAULT_AUDITOR_URL } from "../src/commands/underwrite.js";
 import { REFERENCE_DIRECTORY } from "../src/commands/verify.js";
 
@@ -137,6 +138,21 @@ describe("config resolution — env > file > default", () => {
     const env = home();
     expect(resolveCliConfig(env).ledgerPath).toBe(join(env["ACU_HOME"] as string, "budget-ledger.json"));
   });
+
+  /**
+   * The install line promises no environment variables. Without a built-in
+   * registry, every settle refused before it had done anything — and told the
+   * reader to pass a flag the MCP does not have.
+   */
+  it("knows the deployed registry without being told", () => {
+    expect(resolveCliConfig(home()).registry).toBe(DEFAULT_REGISTRY);
+  });
+
+  it("lets an operator point at their own registry, from either name", () => {
+    const mine = "0x00000000000000000000000000000000000000ff";
+    expect(resolveCliConfig({ ...home(), ACU_REGISTRY: mine }).registry).toBe(mine);
+    expect(resolveCliConfig({ ...home(), REGISTRY_ADDRESS: mine }).registry).toBe(mine);
+  });
 });
 
 describe("who agent B is", () => {
@@ -159,6 +175,26 @@ describe("who agent B is", () => {
     );
     expect(await resolver.resolve("2")).toBe(SIGNER.toLowerCase());
     expect(allowedPayTo).toEqual([SIGNER.toLowerCase()]);
+  });
+
+  /**
+   * An auditor may settle to a wallet that is not the key it seals with —
+   * `AuditorConfig` says so and its agent card publishes both. An allowlist
+   * built from `signer` alone refused to pay such an agent before the quote,
+   * and the only way out was to set ACU_ALLOWED_PAYTO by hand.
+   */
+  it("allows the payee a directory names, not the seal signer that names it", async () => {
+    const payTo = "0x00000000000000000000000000000000000000aa";
+    const directory = JSON.stringify({
+      agents: [{ agentId: "2", signer: SIGNER, role: "auditor", payTo }],
+    });
+    const { resolver, allowedPayTo } = await auditorTrust(
+      resolveCliConfig({ ...home(), ACU_DIRECTORY_JSON: directory }),
+    );
+
+    // The seal is still checked against the signer; only the money moved.
+    expect(await resolver.resolve("2")).toBe(SIGNER.toLowerCase());
+    expect(allowedPayTo).toEqual([payTo]);
   });
 
   /**
@@ -209,4 +245,39 @@ describe("who agent B is", () => {
     expect(await main(["quote", "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8"], io)).toBe(1);
     expect(text()).toContain("✗ NO_DIRECTORY");
   });
+});
+
+/**
+ * `acu quote` is the first command in the funnel, run by someone who has
+ * configured nothing. Both of the things that can be down have to name
+ * themselves — and name the *right* one: `underwrite()` reads the token off the
+ * 0G RPC at step (2), before the auditor is contacted at all, so labelling every
+ * throw AUDITOR_UNREACHABLE sends people to debug an agent that is running.
+ */
+describe("acu quote — which end of the wire is down", () => {
+  const SIGNER = "0xC1Dba83fd85838542b09ec44e6372485f6EE2D9E";
+  const DEAD = "http://127.0.0.1:1";
+  const TOKEN = "0xdb08ce217ce842b06baf76a0bbb2c10f47ff9eb8";
+
+  // A named signer, so nothing here needs a directory it cannot fetch.
+  const configured = (over: NodeJS.ProcessEnv): NodeJS.ProcessEnv => ({
+    ...home(),
+    ACU_AUDITOR_SIGNER: SIGNER,
+    ...over,
+  });
+
+  it("names the 0G RPC when the token read is what failed", async () => {
+    const env = configured({ ACU_RPC_URL: `${DEAD}/rpc` });
+    const { io, text } = capture(env);
+
+    expect(await main(["quote", TOKEN], io)).toBe(1);
+    expect(text()).toContain("✗ RPC_UNREACHABLE");
+    expect(text()).toContain(`${DEAD}/rpc`);
+    expect(text()).not.toContain("AUDITOR_UNREACHABLE");
+  });
+
+  // The other half — an RPC that answers and an auditor that does not — needs a
+  // live 0G read to get that far, so it is covered over the wire by the MCP
+  // suite's "turns an auditor that never answers into a refusal at the quote
+  // stage" rather than faked here.
 });

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, toHex } from "viem";
 import {
+  DEFAULT_REGISTRY,
   DEFAULT_WEB_URL,
   DRY_RUN_KEY,
   configDir,
@@ -159,7 +160,7 @@ export function resolveCliConfig(env: NodeJS.ProcessEnv = process.env, file?: Us
   const registry = resolve<string | null>(
     envOf(env, "ACU_REGISTRY", "REGISTRY_ADDRESS"),
     user.registry,
-    null,
+    DEFAULT_REGISTRY,
   );
   const signer = envOf(env, "ACU_AUDITOR_SIGNER", "AGENT_B_SEAL_SIGNER");
   const payTo = envOf(env, "ACU_ALLOWED_PAYTO", "AGENT_B_PAYTO");
@@ -257,7 +258,12 @@ export async function auditorTrust(
  */
 const payToOf = (config: CliConfig, directory: Directory): `0x${string}`[] =>
   config.allowedPayTo ??
-  directory.agents.filter((a) => a.role === "auditor").map((a) => lower<`0x${string}`>(a.signer));
+  directory.agents
+    .filter((a) => a.role === "auditor")
+    // `payTo` when the directory names one: an auditor may settle to a wallet
+    // that is not the key it seals with, and the allowlist has to be about the
+    // former or it refuses to pay an agent that is doing nothing wrong.
+    .map((a) => lower<`0x${string}`>(a.payTo ?? a.signer));
 
 /** What every command says when there is no key to sign with. */
 export const NEXT_STEP_INIT = "Run: npx @0x402/cli init";
@@ -345,7 +351,7 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv = process.env)
       }).publish(replayed);
       step("S", `seal A on 0G Storage · root ${receipt.root} · txSeq ${receipt.txSeq}`);
     }
-    return submit(replayed, args.token, args.ltvBps, args.registry, agentA);
+    return submit(replayed, args.token, args.ltvBps, args.registry, agentA, config.rpcUrl);
   }
 
   if (args.offline) {
@@ -597,9 +603,13 @@ async function submit(
   ltvBps: number,
   registry: `0x${string}`,
   account: ReturnType<typeof privateKeyToAccount>,
+  /** Passed, never defaulted: a private or paid 0G endpoint is configured for a
+   *  reason, and silently sending the listing to the public RPC instead is the
+   *  kind of thing nobody notices until a rate limit does it for them. */
+  rpcUrl: string,
 ): Promise<number> {
   try {
-    const result = await listWithSeal(seal, token, ltvBps, { registry, account });
+    const result = await listWithSeal(seal, token, ltvBps, { registry, account, rpcUrl });
     console.log(`\n✓ EXECUTED  ltv=${result.listed.ltvBps}bps  tx=${result.txHash}`);
     return 0;
   } catch (err) {

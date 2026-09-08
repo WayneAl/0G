@@ -8,6 +8,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { recoverSealSigner } from "@0x402/seal";
 import { refusalForThrow } from "../src/tools/underwrite.js";
 import { bigintReplacer } from "../src/tools/shared.js";
+import { DEFAULT_REGISTRY } from "@0x402/config";
 import { DEFAULT_WEB_URL, loadConfig } from "../src/config.js";
 import { configPath } from "@0x402/config";
 
@@ -259,6 +260,37 @@ describe("loadConfig — env > ~/.acu/config.json > default", () => {
     const env = home();
     const config = await loadConfig(env);
     expect(config.ledgerPath).toBe(join(env["ACU_HOME"] as string, "budget-ledger.json"));
+  });
+
+  /**
+   * `underwrite` defaults `settle` to true, so with no registry the headline
+   * tool refused before it had quoted, hired or signed anything — pointing at a
+   * `--registry` flag this server does not have. The install line promises no
+   * environment variables, so the address is built in.
+   */
+  it("knows the deployed registry with nothing configured", async () => {
+    expect((await loadConfig(home())).registry).toBe(DEFAULT_REGISTRY);
+  });
+
+  it("lets ACU_REGISTRY name another one", async () => {
+    const mine = `0x${"ab".repeat(20)}`;
+    expect((await loadConfig({ ...home(), ACU_REGISTRY: mine })).registry).toBe(mine);
+  });
+
+  /**
+   * An auditor is allowed to settle to a wallet that is not the key it seals
+   * with. Deriving the allowlist from `signer` alone made any such agent
+   * unpayable on the zero-config path.
+   */
+  it("allows the payee a directory entry names, not the signer that names it", async () => {
+    const payTo = `0x${"cd".repeat(20)}`;
+    const env = {
+      ...home(),
+      ACU_DIRECTORY_JSON: JSON.stringify({
+        agents: [{ agentId: "2", signer: `0x${"2b".repeat(20)}`, role: "auditor", payTo }],
+      }),
+    };
+    expect((await loadConfig(env)).allowedPayTo).toEqual([payTo]);
   });
 
   it("throws rather than running with a key that is not a key", async () => {

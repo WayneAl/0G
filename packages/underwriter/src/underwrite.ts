@@ -328,10 +328,15 @@ export async function composeSealA(args: {
     ],
     ownAnalysis: args.ownAnalysis,
     verdict: {
-      // Agent A relays the auditor's verdict rather than softening it, and can
-      // only ever tighten the cap, never raise it.
+      // The cap in the seal is the auditor's attestation, not the LTV this run
+      // asks to list at. `underwrite()` calls `list()` with `ltvBps`, and the
+      // registry is what checks that against this number — LTV_EXCEEDS_ATTESTED.
+      // So Agent A relays the cap rather than narrowing it to one listing, and
+      // can never raise it. Asking for nothing attests nothing: a run that wants
+      // no LTV at all signs a seal that grants none, rather than a credit limit
+      // it did not ask for.
       action: args.sealB.verdict.action,
-      maxLtvBps: Math.min(args.sealB.verdict.maxLtvBps, args.ltvBps > 0 ? args.sealB.verdict.maxLtvBps : 0),
+      maxLtvBps: args.ltvBps > 0 ? args.sealB.verdict.maxLtvBps : 0,
       expiresAt: args.sealB.expiresAt,
     },
   };
@@ -356,8 +361,9 @@ export async function underwrite(req: UnderwriteRequest, deps: UnderwriteDeps): 
       stage: "settle",
       code: "NO_REGISTRY",
       detail:
-        "settle was asked for and no registry is configured — set ACU_REGISTRY, " +
-        "or pass --registry <address> to the CLI. Nothing was spent.",
+        "settle was asked for and no registry is configured — set ACU_REGISTRY to " +
+        "the CollateralRegistry address, or ask for settle=false to stop at the " +
+        "seal. Nothing was spent.",
     };
   }
 

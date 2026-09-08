@@ -99,6 +99,7 @@ export async function reportSeal(input: unknown, opts: ReportOptions): Promise<S
   const recovered = await recoverQuietly(seal);
 
   let failure: SealFailure | null = null;
+  let delegate = false;
   let detail = "";
   try {
     if (kind === "underwriting") {
@@ -114,14 +115,19 @@ export async function reportSeal(input: unknown, opts: ReportOptions): Promise<S
   } catch (err) {
     if (!(err instanceof SealVerificationError)) throw err;
     failure = err.failure;
+    delegate = err.delegate;
     detail = err.message.replace(/^DELEGATE_SEAL_INVALID: /, "");
   }
 
   const names: readonly string[] = kind === "audit" ? ROWS_B : ROWS_A;
   // A seal A can only fail on a row of its own or inside a delegation. When the
-  // failing code belongs to seal B, every row here was reached and passed; the
-  // broken row is on the child card, where the containment drawing puts it.
-  const failedRow = failure === null ? null : FAILS_AT[failure];
+  // failure belongs to an embedded seal B, every row here was reached and
+  // passed; the broken row is on the child card, where the containment drawing
+  // puts it. The library says which it is, because the codes overlap: matching
+  // on the code alone would redden *this* seal's issuer, signature, subject or
+  // expiry row for a delegate that broke, and then call the rows below it "not
+  // reached" when every one of them was checked.
+  const failedRow = failure === null || delegate ? null : FAILS_AT[failure];
   const failedAt = failedRow === null ? -1 : names.indexOf(failedRow);
 
   const checks: CheckRow[] = names.map((name, i) => {

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
-import { makeBudgetGate, underwrite, type UnderwriteDeps } from "@0x402/underwriter";
+import { makeBudgetGate, underwrite, type Stage, type UnderwriteDeps } from "@0x402/underwriter";
 import type { Io } from "../index.js";
 import { DRY_RUN_KEY, NEXT_STEP_INIT, auditorTrust, resolveCliConfig, withoutCode } from "./underwrite.js";
 
@@ -47,6 +47,17 @@ export async function quote(argv: string[], io: Io): Promise<number> {
     rpcUrl: config.rpcUrl,
   };
 
+  // Which step was in flight when something threw. `underwrite()` returns its
+  // refusals and throws only for a broken environment, so this is the only way to
+  // tell an auditor that will not answer from a 0G RPC that will not answer once
+  // the throw has escaped — and step (2) reads the token before the auditor is
+  // ever contacted. Naming the auditor for a dead RPC sends someone to debug an
+  // agent that is running perfectly well.
+  let stage: Stage = "read";
+  deps.onStep = (e) => {
+    stage = e.stage;
+  };
+
   let result: Awaited<ReturnType<typeof underwrite>>;
   try {
     result = await underwrite(
@@ -60,10 +71,20 @@ export async function quote(argv: string[], io: Io): Promise<number> {
       deps,
     );
   } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
     // The auditor not being up is the most ordinary thing that can happen here,
-    // and it has to name itself rather than escaping as a bare fetch error.
+    // and it has to name itself rather than escaping as a bare fetch error. So
+    // does the RPC — this is the first command in the funnel, run by someone with
+    // nothing configured, and a stack trace is not an answer from either of them.
+    // Step (2) is the only one the auditor has no part in; a quote never reaches
+    // compose or settle, so everything past the read is agent B's end of the wire.
+    if (stage === "read") {
+      io.out("✗ RPC_UNREACHABLE");
+      io.out(`  ${config.rpcUrl} — ${detail}`);
+      return 1;
+    }
     io.out("✗ AUDITOR_UNREACHABLE");
-    io.out(`  ${config.auditorUrl} — ${err instanceof Error ? err.message : String(err)}`);
+    io.out(`  ${config.auditorUrl} — ${detail}`);
     return 1;
   }
 

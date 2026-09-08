@@ -15,6 +15,7 @@ import {
   type SealA,
   type SealB,
   type Unsigned,
+  type VerifySealAContext,
 } from "../src/index.js";
 
 // Test-only keys. Never used on any network.
@@ -267,6 +268,61 @@ describe("seal chain — seal A embeds seal B", () => {
     await expect(verifySealA(sealA, { ...ctxA, expectedSubject: OTHER_TOKEN })).rejects.toThrow(
       /SUBJECT_MISMATCH/,
     );
+  });
+
+  /**
+   * Seal A and seal B share their failure codes, so a report that matches on the
+   * code alone cannot tell "agent 1 is not live" from "the agent 1 vouched for is
+   * not live" — and draws the second as the first, on agent 1's own row.
+   */
+  describe("a failure one hop down says so", () => {
+    const failed = async (
+      sealA: SealA,
+      ctx: VerifySealAContext = ctxA,
+    ): Promise<SealVerificationError> => {
+      try {
+        await verifySealA(sealA, ctx);
+      } catch (err) {
+        return err as SealVerificationError;
+      }
+      throw new Error("expected verifySealA to reject");
+    };
+
+    it("marks a delegate's failure as the delegate's, keeping the code and the detail", async () => {
+      // Agent 3 is nobody: this seal B is signed by a key the directory has
+      // never heard of, and seal A is honestly signed by a live agent 1 over it.
+      const strangerB = await signSealB(unsignedSealB({ agentId: "3" }), impostor);
+      const err = await failed(await makeSealA(strangerB));
+
+      expect(err.failure).toBe("AGENT_ID_NOT_LIVE");
+      expect(err.delegate).toBe(true);
+      expect(err.detail).toBe("3");
+    });
+
+    it("leaves seal A's own failures unmarked", async () => {
+      const sealB = await signSealB(unsignedSealB(), agentB);
+      const sealA = await makeSealA(sealB);
+
+      const wrongSubject = await failed(sealA, { ...ctxA, expectedSubject: OTHER_TOKEN });
+      expect(wrongSubject.failure).toBe("SUBJECT_MISMATCH");
+      expect(wrongSubject.delegate).toBe(false);
+
+      const expired = await failed(sealA, { ...ctxA, now: NOW + 90_000 });
+      expect(expired.failure).toBe("SEAL_EXPIRED");
+      expect(expired.delegate).toBe(false);
+    });
+
+    it("marks an expired delegate even though seal A carries the same code", async () => {
+      // Both seals expire at NOW + 86_400 and seal A is checked first, so the
+      // delegate has to outlive its parent for this to be reachable at all.
+      const shortB = await signSealB(unsignedSealB({ expiresAt: NOW + 10 }), agentB);
+      const sealA = await makeSealA(shortB, { verdict: { action: "ALLOW", maxLtvBps: 7500, expiresAt: NOW + 86_400 } });
+
+      const err = await failed(sealA, { ...ctxA, now: NOW + 100 });
+
+      expect(err.failure).toBe("SEAL_EXPIRED");
+      expect(err.delegate).toBe(true);
+    });
   });
 });
 

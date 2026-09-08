@@ -17,6 +17,15 @@ export const DirectoryEntry = z.object({
   role: z.enum(["auditor", "underwriter"]),
   endpoint: z.string().url().optional(),
   price: z.string().optional(),
+  /**
+   * Where this agent's x402 payments land, when that is not the key it seals
+   * with. An auditor is explicitly allowed to settle to a wallet separate from
+   * its seal signer (`AuditorConfig.payToAddress`), and its `/agent` card says
+   * so — but a payee allowlist derived from `signer` alone would then refuse to
+   * pay a perfectly conforming agent, before the quote, with no fix short of
+   * setting `ACU_ALLOWED_PAYTO` by hand. Absent, `signer` is the payee.
+   */
+  payTo: Address.optional(),
 });
 export type DirectoryEntry = z.infer<typeof DirectoryEntry>;
 

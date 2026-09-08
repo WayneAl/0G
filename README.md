@@ -57,9 +57,11 @@ on stderr, rather than dying on a setting you were never told to set.
 `--no-settle` in step 4 is not a shortcut past anything: the demo registry's `StubVerifier`
 trusts exactly one signer, so only the reference Agent A can list on it (*Known limitations*,
 point 6). A seal you sign yourself is a fully valid seal and verifies green — it just does not
-go onto *this* registry, and the site's feed is a feed of that registry's listings. Ask to
-settle with no registry configured and the command refuses `NO_REGISTRY` **before it spends
-anything**; `--registry <address>` points it at your own deployment.
+go onto *this* registry, and the site's feed is a feed of that registry's listings. Drop
+`--no-settle` and the run gets that far and then stops with `UNTRUSTED_SIGNER`, naming both
+addresses and **keeping the seal you paid for**. The registry address above is built in, so
+settling needs no configuration either; `--registry <address>` or `ACU_REGISTRY` points it at
+your own deployment.
 
 > **Until the packages are on npm** the same six steps run from a clone: `node
 > packages/cli/bin/acu.mjs <command>` in place of `npx @0x402/cli`, and `claude mcp add acu --
