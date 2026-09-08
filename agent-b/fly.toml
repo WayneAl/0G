@@ -7,7 +7,9 @@
 # `app` decides the hostname, and the hostname is what goes into the website's
 # directory.json — so changing it later means editing that file and redeploying
 # the site. Pick it once.
-app = "acu-agent-b"
+# "auditor", not "agent-b": this string becomes a public hostname, and the site's
+# pill, directory.json's `role` and the CLI's refusals all call it the auditor.
+app = "0g-x402-auditor"
 primary_region = "nrt"
 
 # Run every fly command from the repo root: the build context has to be the

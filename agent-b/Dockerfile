@@ -5,7 +5,7 @@
 # the npm tarballs are compiled), so the build needs the workspace, the lockfile
 # and pnpm's resolution, not just this directory.
 #
-#   docker build -f agent-b/Dockerfile -t acu-agent-b .
+#   docker build -f agent-b/Dockerfile -t 0g-x402-auditor .
 #
 # Nothing secret is baked in. AGENT_B_PRIVATE_KEY and TESTNET_API_KEY arrive at
 # runtime; the server reads `../../.env` first, finds none in the image, and
@@ -14,7 +14,7 @@
 # Running it locally against the repo's .env needs one override, because
 # `--env-file` keeps the quotes that dotenv would strip:
 #
-#   docker run --rm --env-file .env -e 'AGENT_B_PRICE=$0.01' -p 4021:4021 acu-agent-b
+#   docker run --rm --env-file .env -e 'AGENT_B_PRICE=$0.01' -p 4021:4021 0g-x402-auditor
 FROM node:22-alpine
 
 RUN corepack enable
