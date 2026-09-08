@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The *workspace* bin. The repo consumes every @acu package as TypeScript
+// The *workspace* bin. The repo consumes every @0x402 package as TypeScript
 // source, so this registers tsx and then hands straight over to `src/bin.ts` —
 // the same module the published `dist/bin.js` is compiled from, so the README's
 // `node <repo>/packages/mcp/bin/acu-mcp.mjs` and `npx -y @0x402/mcp` cannot drift
