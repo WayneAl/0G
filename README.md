@@ -251,18 +251,26 @@ try {
 
 The same `@0x402/seal` runs in the CLI, in the MCP server, in an Agent A and in the page.
 
-### The reference auditor is not hosted
+### The reference auditor, and whose key it is
 
-Deliberately. Agent B's key signs seals and Agent B's 0G Compute account pays for inference;
-putting either on a host we operate would make us a party that holds a key, which is the one
-thing this design is against. So the reference B is started from a laptop —
-[`demo/serve-b.sh`](demo/serve-b.sh) runs it on `:4021`, opens a cloudflared quick tunnel, and
-writes the rotating tunnel origin into `web/public/directory.json` for the run.
+The reference Agent B runs on Cloud Run, from [`agent-b/Dockerfile`](agent-b/Dockerfile) —
+one container that scales to zero, with its two secrets in Secret Manager rather than in the
+service config. It signs with *our* burner key and spends *our* 0G Compute deposit, and that
+is the only kind of key this project ever holds: nothing in this design asks you to hand us
+yours. An Agent B signs with the key of whoever runs it, which is why `sealedAuditRoute` is a
+library and not a service — running your own B is a dozen lines, above.
+([`agent-b/fly.toml`](agent-b/fly.toml) is a working alternative, kept for the day the free
+tier stops being free; Fly has no free tier, which is why it is not the one deployed.)
 
-When it is down, the site's pill reads **reference auditor offline**, and `acu quote` /
-`acu underwrite` refuse with `✗ AUDITOR_UNREACHABLE` naming the URL that would not answer.
-That is not a broken demo; it is what "we host nothing" costs, and the fix in the message is
-to try later or to run your own B with the snippet above.
+Expect it to be offline sometimes. 0G testnet allows 50 audits a day and the machine sleeps
+when nobody is asking; neither is a fault. The site's pill then reads **reference auditor
+offline**, and `acu quote` / `acu underwrite` refuse with `✗ AUDITOR_UNREACHABLE` naming the
+URL that would not answer. The fix in the message is to try later, or to run your own.
+
+[`demo/serve-b.sh`](demo/serve-b.sh) is the other direction: it puts *this checkout* behind a
+cloudflared quick tunnel and points the site's directory at it for the length of a run, so the
+Agent B a stranger hires is the code you are editing. On exit it restores `directory.json`
+from git, which is what puts the deployed endpoint back.
 
 ## Run it
 

@@ -241,17 +241,24 @@ try {
 
 CLI、MCP server、Agent A 和網頁跑的是同一份 `@0x402/seal`。
 
-### 參考 auditor 沒有託管在任何地方
+### 參考 auditor，以及那把 key 是誰的
 
-這是刻意的。Agent B 的 key 要簽章、Agent B 的 0G Compute 帳戶要付推理的錢；把其中任何一個
-放到我們自己維運的主機上，我們就變成一個握著 key 的角色，而那正是這整套設計反對的事。所以
-參考 B 是從一台筆電啟動的 —— [`demo/serve-b.sh`](demo/serve-b.sh) 在 `:4021` 起它、開一條
-cloudflared quick tunnel，再把每次都會換的 tunnel 位址寫進 `web/public/directory.json`。
+參考 Agent B 跑在 Cloud Run 上，用的是 [`agent-b/Dockerfile`](agent-b/Dockerfile) —— 一個沒人
+問就縮到零的容器，兩把 secret 放在 Secret Manager 而不是服務設定裡。它用的是**我們自己**的
+burner key、花的是**我們自己**的 0G Compute 押金，而這也是這個專案唯一會握著的那種 key：
+整套設計裡沒有任何一個地方會要你把你的交出來。Agent B 是用「誰在跑它、誰的 key」簽章的，
+所以 `sealedAuditRoute` 是一個函式庫而不是一項服務 —— 自己起一個 B 就是上面那十幾行。
+（[`agent-b/fly.toml`](agent-b/fly.toml) 是另一條可用的路，留著以備免費額度哪天不免費；
+Fly 已經沒有免費方案，所以部署的不是它。）
 
-它沒開的時候，網站上那顆 pill 會寫 **reference auditor offline**，`acu quote` 和
-`acu underwrite` 會回 `✗ AUDITOR_UNREACHABLE` 並點名那個沒回應的 URL。那不是 demo 壞了，
-那是「我們不 host 任何東西」的代價；訊息裡給的解法是等一下再試，或是用上面那段程式碼自己起
-一個 B。
+它有時候會是離線的，這很正常。0G testnet 一天只給 50 次審計，機器沒人問就會睡，兩件事都不是
+故障。那時候網站上那顆 pill 會寫 **reference auditor offline**，`acu quote` 和
+`acu underwrite` 會回 `✗ AUDITOR_UNREACHABLE` 並點名那個沒回應的 URL。訊息裡給的解法是等一下
+再試，或是自己起一個。
+
+[`demo/serve-b.sh`](demo/serve-b.sh) 是反方向的東西：它把**你這份 checkout** 掛到一條
+cloudflared quick tunnel 後面，並在這段期間把網站的 directory 指過去，讓陌生人雇到的 Agent B
+就是你正在改的那份程式碼。它結束時會用 git 還原 `directory.json`，把部署好的位址放回去。
 
 ## 跑起來
 

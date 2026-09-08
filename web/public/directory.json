@@ -9,7 +9,7 @@
       "agentId": "2",
       "signer": "0xC1Dba83fd85838542b09ec44e6372485f6EE2D9E",
       "role": "auditor",
-      "endpoint": "http://localhost:4021",
+      "endpoint": "https://zerog-x402-auditor-324845613691.asia-east1.run.app",
       "price": "$0.01"
     }
   ]

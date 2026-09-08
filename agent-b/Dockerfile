@@ -15,6 +15,26 @@
 # `--env-file` keeps the quotes that dotenv would strip:
 #
 #   docker run --rm --env-file .env -e 'AGENT_B_PRICE=$0.01' -p 4021:4021 0g-x402-auditor
+#
+# Deployed to Cloud Run, in project zerog-x402. `--platform linux/amd64` is not
+# optional: this is developed on arm64 and Cloud Run is not. Cloud Build would
+# avoid the emulation, but a project created after the legacy build service
+# account was retired answers `gcloud builds submit` with PERMISSION_DENIED
+# until a service account is named, and buildx needs no IAM at all.
+#
+#   docker buildx build --platform linux/amd64 -f agent-b/Dockerfile \
+#     -t asia-east1-docker.pkg.dev/zerog-x402/agent-b/auditor:latest --push .
+#
+#   gcloud run deploy zerog-x402-auditor \
+#     --image=asia-east1-docker.pkg.dev/zerog-x402/agent-b/auditor:latest \
+#     --region=asia-east1 --project=zerog-x402 --allow-unauthenticated --port=8080 \
+#     --set-env-vars='AGENT_B_PORT=8080,OG_NETWORK=testnet,AGENT_B_PRICE=$0.01' \
+#     --set-secrets='AGENT_B_PRIVATE_KEY=AGENT_B_PRIVATE_KEY:latest,TESTNET_API_KEY=TESTNET_API_KEY:latest' \
+#     --memory=512Mi --min-instances=0 --max-instances=3 --timeout=60s
+#
+# The two secrets live in Secret Manager, never in the service config, and the
+# runtime service account is granted roles/secretmanager.secretAccessor on each.
+# AGENT_B_PORT is 8080 there because that is the port Cloud Run routes to.
 FROM node:22-alpine
 
 RUN corepack enable

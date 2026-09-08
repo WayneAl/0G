@@ -7,12 +7,16 @@
 #   ./demo/serve-b.sh          serve until Ctrl-C, then restore directory.json
 #   ./demo/serve-b.sh --keep   leave the tunnel origin in directory.json (demo day)
 #
-# Nothing is deployed: cloudflared runs a quick tunnel that terminates at
-# localhost:4021 here. Its subdomain rotates on every launch, which is why the
-# origin is parsed out of cloudflared's banner and written into
-# web/public/directory.json each run rather than committed. On exit the endpoint
-# goes back to http://localhost:4021 so the committed file never points at a
-# tunnel that is down; --keep skips that for the one commit a demo needs.
+# This is for putting *this checkout* in front of a stranger — the deployed
+# reference B is on Cloud Run (agent-b/Dockerfile) and directory.json names it. Here
+# cloudflared runs a quick tunnel that terminates at localhost:4021, so the code
+# being hired is the code in this working tree. The subdomain rotates on every
+# launch, which is why the origin is parsed out of cloudflared's banner and
+# written into web/public/directory.json each run rather than committed.
+#
+# On exit the file is restored from git, putting the deployed endpoint back — never
+# to a hardcoded localhost, which would take the public auditor offline on the
+# next Pages deploy. --keep skips the restore for the one commit a demo needs.
 #
 # The reference B needs AGENT_B_PRIVATE_KEY and TESTNET_API_KEY. It loads the
 # repo's .env itself (agent-b/src/server.ts); this script never reads or prints
@@ -82,10 +86,12 @@ cleanup() {
   if [ -n "$KEEP" ]; then
     echo "  --keep: directory.json still names the tunnel, which is now down."
     echo "          commit it only for a demo, and put it back with:"
-    echo "          node demo/set-directory-endpoint.mjs http://localhost:$PORT"
+    echo "          git checkout -- web/public/directory.json"
+  elif git -C "$ROOT" checkout -- web/public/directory.json 2>/dev/null; then
+    echo "  directory.json restored to the committed endpoint"
   else
-    node "$ROOT/demo/set-directory-endpoint.mjs" "http://localhost:$PORT" >/dev/null
-    echo "  directory.json restored to http://localhost:$PORT"
+    echo "  !! could not restore web/public/directory.json from git." >&2
+    echo "     It still names a tunnel that is down — fix it before deploying the site." >&2
   fi
   echo "  logs: $LOGS"
 }
@@ -161,6 +167,6 @@ fi
 
 echo
 echo "  web/public/directory.json now points at the tunnel."
-echo "  Ctrl-C to stop; the endpoint goes back to http://localhost:$PORT on the way out."
+echo "  Ctrl-C to stop; the committed (deployed) endpoint goes back on the way out."
 
 wait "$B_PID" "$T_PID"
