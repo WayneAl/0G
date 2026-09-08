@@ -1,0 +1,58 @@
+# Both halves of the repo, on every push and every pull request.
+#
+# Nothing here needs a secret. The TypeScript suite fakes the facilitator, the
+# Router and the chain; the Foundry suite runs against an in-process EVM. A run
+# that needed a key would be a run a stranger could not reproduce.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push supersedes an in-flight one on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` — action-setup v4 reads `packageManager` out of
+      # package.json, so the lockfile stays the single place pnpm is pinned.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - run: pnpm -r test
+
+  contracts:
+    name: Foundry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      # `contracts/lib/` is gitignored, so CI fetches the two dependencies at
+      # the tags the contracts were written against. Cloned rather than
+      # `forge install`ed: the tag is then the only thing that decides what
+      # compiles, independent of how the installer behaves this month.
+      - name: Fetch Foundry dependencies
+        run: |
+          git clone --depth 1 --branch v1.16.2 \
+            https://github.com/foundry-rs/forge-std contracts/lib/forge-std
+          git clone --depth 1 --branch v5.0.2 \
+            https://github.com/OpenZeppelin/openzeppelin-contracts contracts/lib/openzeppelin-contracts
+
+      - run: forge test --root contracts -vv

@@ -1,6 +1,10 @@
 # Attested Collateral Underwriter
 
-**English** · [繁體中文](README.zh-TW.md)
+[![CI](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml/badge.svg)](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@0x402/cli?label=%400x402%2Fcli&color=cb3837)](https://www.npmjs.com/package/@0x402/cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**English** · [繁體中文](README.zh-TW.md) · [AGENTS.md](AGENTS.md) if you are an agent
 
 > Agents are starting to take orders, charge fees, and hire other agents. When agents call
 > each other with nobody watching, "I trust you" stops being a usable security model:
@@ -63,9 +67,9 @@ addresses and **keeping the seal you paid for**. The registry address above is b
 settling needs no configuration either; `--registry <address>` or `ACU_REGISTRY` points it at
 your own deployment.
 
-> **Until the packages are on npm** the same six steps run from a clone: `node
-> packages/cli/bin/acu.mjs <command>` in place of `npx @0x402/cli`, and `claude mcp add acu --
-> node <repo>/packages/mcp/bin/acu-mcp.mjs` in place of the `npx` line.
+All eight packages are on npm under the `@0x402` scope, so nothing above needs a clone. From a
+checkout the same six steps run as `node packages/cli/bin/acu.mjs <command>`, and the MCP line
+becomes `claude mcp add acu -- node <repo>/packages/mcp/bin/acu-mcp.mjs`.
 
 ## Repository layout
 
@@ -85,7 +89,8 @@ agent-b/                the reference B against the repo's .env; loadConfig + se
 contracts/              CollateralRegistry · IProofVerifier · StubVerifier · three mock tokens
 demo/                   run.sh (seven scenes) · serve-b.sh (tunnel the reference B) · mitm.ts (verdict-rewriting proxy) · plain-x402.ts (an x402 API that is not an agent) · fixtures
 pitch/                  nine-slide deck, same palette as the verifier, 中/EN on one key
-NOTES.md                deviations from the build spec and the stability run, with evidence
+AGENTS.md               for an AI agent working in this repo: commands, invariants, conventions
+NOTES.md                where the build diverged from the spec, and the stability run, with evidence
 ```
 
 ## Where the 0G integration is
@@ -246,7 +251,7 @@ try {
 
 The same `@0x402/seal` runs in the CLI, in the MCP server, in an Agent A and in the page.
 
-### The reference auditor runs on the author's machine
+### The reference auditor is not hosted
 
 Deliberately. Agent B's key signs seals and Agent B's 0G Compute account pays for inference;
 putting either on a host we operate would make us a party that holds a key, which is the one
@@ -422,7 +427,7 @@ because seal A carries seal B and its TEE attestation whole; that is fine in a b
 some chat clients truncate past ~2,000, and for those `acu verify <file>` checks the same seal
 locally and exits non-zero if it does not hold up.
 
-Three recorded seals are built in, matching the three scenes shown on stage: a full valid
+Three recorded seals are built in, matching three of the seven scenes above: a full valid
 chain, an audit seal that claims an attested tier and carries no attestation, and one whose
 verdict was rewritten in flight with the signature left untouched. They are recorded with a
 **90-day TTL** on purpose, so the demo does not show its own example as `SEAL_EXPIRED`; the
@@ -455,10 +460,10 @@ older `@0glabs/0g-ts-sdk` reverts on `Flow.submit` and is not used. 0G-KV was tr
 dropped: the only documented public KV node times out and there is no HTTPS one. Details and
 evidence in [`NOTES.md`](NOTES.md) §G.
 
-## The pitch
+## Slides
 
 [`pitch/index.html`](pitch/index.html) — nine slides, three minutes, on the verifier's
-palette so the projector and the laptop are visibly one thing. Slides carry real values: the
+palette so the deck and the site are visibly one thing. Slides carry real values: the
 seal figure is `web/public/examples/example-sealA.json` field for field, and the seven scenes are the seven
 `run.sh` asserts.
 
@@ -468,7 +473,7 @@ seal figure is `web/public/examples/example-sealA.json` field for field, and the
 | `L` | switch 中/EN; remembered per browser |
 | `N` | presenter notes with per-slide timing |
 | `F` | full screen |
-| `Cmd+P` | nine landscape pages, for a PDF submission |
+| `Cmd+P` | nine landscape pages, for a PDF |
 
 ## Design decisions worth a sentence each
 
@@ -553,9 +558,11 @@ Stated plainly, because the alternative is worse:
    it sits behind `AgentIdResolver` / `IProofVerifier`, so a real ERC-7857 registry and a real
    proof verifier slot in without touching the agents or the registry contract.
 
-## Deviations from the build spec
+## Where the implementation diverged from the design
 
-Recorded in [`NOTES.md`](NOTES.md), with how each was verified. The three that matter:
+The design this was built to is [`0g-collateral-underwriter-spec.md`](0g-collateral-underwriter-spec.md);
+every divergence from it is recorded in [`NOTES.md`](NOTES.md) with how it was verified. The
+three that matter:
 
 - The spec treated the Router/Direct split as the project's single point of failure, believing
   the Router had no usable proof surface. **It has one** — `verify_tee` + `ZG-Res-Key` + the
@@ -573,7 +580,7 @@ Recorded in [`NOTES.md`](NOTES.md), with how each was verified. The three that m
 Foundry      20   registry revert paths, a 256-run fuzz that the attested cap always binds,
                   and a cross-language test that a proof signed by viem decodes in Solidity
                   to the same Verdict
-TypeScript  232   seal tamper cases, the six delegate checks and the attested-tier rule, the
+TypeScript  266   seal tamper cases, the six delegate checks and the attested-tier rule, the
                   injection boundary, strict-schema rejection, the budget gate, underwrite()'s
                   refusal map, the MCP tools over a real stdio transport, the auditor route
                   against a fake facilitator, 0G Storage locate/fetch, and the site's verifier
@@ -585,3 +592,15 @@ runs the Foundry side.
 `contracts/test/CrossLanguage.t.sol` is the one to read. TypeScript signs the seal and
 Solidity verifies it; nothing forces those two encoders to agree, so a fixture generated by
 `packages/seal` is decoded in Foundry and asserted field by field.
+
+Both suites run on every push and every pull request —
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml). Neither needs a key: the TypeScript
+side fakes the facilitator, the Router and the chain, and Foundry runs an in-process EVM.
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE). Everything in this repo is testnet, and every key mentioned
+anywhere in it is a burner. Use it against mainnet money at your own risk, and read *Known
+limitations* first.
+
+Issues and pull requests: <https://github.com/WayneAl/0G-x402/issues>.

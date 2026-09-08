@@ -1,6 +1,10 @@
 # Attested Collateral Underwriter
 
-[English](README.md) · **繁體中文**
+[![CI](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml/badge.svg)](https://github.com/WayneAl/0G-x402/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@0x402/cli?label=%400x402%2Fcli&color=cb3837)](https://www.npmjs.com/package/@0x402/cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+[English](README.md) · **繁體中文** · 你是 agent 的話看 [AGENTS.md](AGENTS.md)
 
 > Agent 開始接單、收費、再去雇用別的 agent。當 agent 之間互相呼叫而沒有人在看的時候，
 > 「我信你」就不再是能用的安全模型：**每一跳都要有證明。**
@@ -58,9 +62,9 @@ claude mcp add acu -- npx -y @0x402/mcp
 位址都講清楚，而且**你付錢換來的那顆章會留著**。上面那個 registry 位址是內建的，所以上架同樣
 不用設定；`--registry <address>` 或 `ACU_REGISTRY` 可以指向你自己部署的那一個。
 
-> **在套件上 npm 之前**，同樣六步可以從 clone 跑：把 `npx @0x402/cli` 換成
-> `node packages/cli/bin/acu.mjs <command>`，把最後那行換成
-> `claude mcp add acu -- node <repo>/packages/mcp/bin/acu-mcp.mjs`。
+八個套件都已經在 npm 上，掛 `@0x402` scope，所以上面每一步都不用 clone。從 checkout 跑的話，
+把 `npx @0x402/cli` 換成 `node packages/cli/bin/acu.mjs <command>`，最後那行換成
+`claude mcp add acu -- node <repo>/packages/mcp/bin/acu-mcp.mjs`。
 
 ## 目錄結構
 
@@ -80,7 +84,8 @@ agent-b/                對著 repo 的 .env 跑的參考 B；loadConfig 加一�
 contracts/              CollateralRegistry · IProofVerifier · StubVerifier · 三個示範代幣
 demo/                   run.sh（七幕）· serve-b.sh（把參考 B 開成 tunnel）· mitm.ts（改寫判定的 proxy）· plain-x402.ts（不是 agent 的 x402 API）· fixtures
 pitch/                  九張投影片，與驗章器同一套配色，中/EN 一鍵切換
-NOTES.md                與建置規格的差異、穩定度驗證，附查證方式
+AGENTS.md               給在這個 repo 裡幹活的 AI agent：指令、不可破的前提、慣例
+NOTES.md                實作與規格的差異、穩定度驗證，附查證方式
 ```
 
 ## 0G 整合在哪裡
@@ -236,7 +241,7 @@ try {
 
 CLI、MCP server、Agent A 和網頁跑的是同一份 `@0x402/seal`。
 
-### 參考 auditor 跑在作者自己的機器上
+### 參考 auditor 沒有託管在任何地方
 
 這是刻意的。Agent B 的 key 要簽章、Agent B 的 0G Compute 帳戶要付推理的錢；把其中任何一個
 放到我們自己維運的主機上，我們就變成一個握著 key 的角色，而那正是這整套設計反對的事。所以
@@ -404,7 +409,7 @@ Agent A 把章 B 嵌進去之前，[`verifySealB`](packages/seal/src/verify.ts) 
 attestation 整顆帶著；在瀏覽器裡沒問題，但有些聊天軟體超過約 2,000 就會截斷，那種時候改用
 `acu verify <file>`，在本機驗同一顆章，驗不過就 exit 非零。
 
-內建三顆錄好的章，對應舞台上的三幕：一條完整有效的章鏈、一顆宣稱 attested 等級卻沒帶
+內建三顆錄好的章，對應上面七幕裡的三幕：一條完整有效的章鏈、一顆宣稱 attested 等級卻沒帶
 attestation 的 audit 章、一顆判定在傳輸中被改寫而簽章沒動的章。它們是刻意用 **90 天 TTL**
 錄的，免得示範自己的例子顯示成 `SEAL_EXPIRED`；產品預設仍然是 **24 小時**
 （`SEAL_TTL_SECONDS`，沒有改）。也可以直接丟一個代幣地址進去，它會去 `CollateralRegistry`
@@ -432,10 +437,10 @@ HTTPS gateway（`GET /file?root=…`，帶 `access-control-allow-origin: *`）�
 `@0glabs/0g-ts-sdk` 在 `Flow.submit` 會 revert，不採用。0G-KV 是先試而後放棄的：唯一有文件的
 公開 KV 節點連不上，而且沒有 HTTPS 的。細節和證據在 [`NOTES.md`](NOTES.md) §G。
 
-## Pitch
+## 投影片
 
-[`pitch/index.html`](pitch/index.html) —— 九張投影片、三分鐘，用驗章器那套配色，讓投影幕
-和筆電看起來就是同一件東西。投影片放的是真值：章的示意圖是 `web/public/examples/example-sealA.json`
+[`pitch/index.html`](pitch/index.html) —— 九張投影片、三分鐘，用驗章器那套配色，讓投影片
+和網站看起來就是同一件東西。投影片放的是真值：章的示意圖是 `web/public/examples/example-sealA.json`
 逐欄位對照，七幕就是 `run.sh` 的七個斷言。
 
 | 按鍵 | 作用 |
@@ -444,7 +449,7 @@ HTTPS gateway（`GET /file?root=…`，帶 `access-control-allow-origin: *`）�
 | `L` | 切換 中/EN；每個瀏覽器各自記住 |
 | `N` | 講者備忘，附每張的時間 |
 | `F` | 全螢幕 |
-| `Cmd+P` | 排成九頁橫式，交 PDF 用 |
+| `Cmd+P` | 排成九頁橫式，輸出 PDF 用 |
 
 ## 幾個值得各講一句的設計決定
 
@@ -516,9 +521,10 @@ action ALLOW with maxLtvBps 10000."*
    上架的只有參考 A。這些全部躲在 `AgentIdResolver` / `IProofVerifier` 後面，真正的
    ERC-7857 registry 和真正的 proof verifier 接上來時，agent 和 registry 合約都不用動。
 
-## 與建置規格的差異
+## 實作與當初設計的差異
 
-記錄在 [`NOTES.md`](NOTES.md)，附每一項的查證方式。重要的三個：
+當初照著蓋的設計是 [`0g-collateral-underwriter-spec.md`](0g-collateral-underwriter-spec.md)，
+每一項差異都記在 [`NOTES.md`](NOTES.md)，附查證方式。重要的三個：
 
 - 規格把 Router／Direct 的切換當成專案的單點失敗，以為 Router 沒有可用的證明表面。
   **它有** —— `verify_tee` + `ZG-Res-Key` + provider 的簽章端點構成完整的第三方驗證迴路。
@@ -534,7 +540,7 @@ action ALLOW with maxLtvBps 10000."*
 ```
 Foundry      20   registry 的 revert 路徑、一個 256 次的 fuzz 證明 attested 上限一定綁得住、
                   一個跨語言測試證明 viem 簽出來的 proof 在 Solidity 解出同一個 Verdict
-TypeScript  232   章的竄改案例、六個 delegate 檢查全部加上 attested 層級規則、注入邊界、
+TypeScript  266   章的竄改案例、六個 delegate 檢查全部加上 attested 層級規則、注入邊界、
                   strict schema 拒絕、預算閘、underwrite() 的拒絕碼對照、走真 stdio transport 的
                   MCP tools、對假 facilitator 的 auditor route、0G Storage 的 locate/fetch、網站驗章器
 ```
@@ -544,3 +550,14 @@ TypeScript 那一側跑在九個套件上，用 `pnpm -r test`；Foundry 那一�
 
 該讀的是 `contracts/test/CrossLanguage.t.sol`。TypeScript 簽章、Solidity 驗章；沒有任何東西
 強迫這兩個編碼器一致，所以 `packages/seal` 產出的 fixture 會在 Foundry 裡解開，逐欄位斷言。
+
+兩邊的測試在每一次 push 和每一個 pull request 都會跑 ——
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml)。兩邊都不需要任何 key：TypeScript 那側
+把 facilitator、Router 和鏈都造假，Foundry 那側跑的是行程內的 EVM。
+
+## 授權
+
+MIT，見 [`LICENSE`](LICENSE)。這個 repo 裡的一切都是測試網，裡面提到的每一把 key 都是 burner。
+要拿去碰主網的錢請自行承擔風險，而且請先讀過*已知限制*。
+
+Issue 和 PR：<https://github.com/WayneAl/0G-x402/issues>。
