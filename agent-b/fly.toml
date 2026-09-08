@@ -1,0 +1,59 @@
+# The reference Agent B on Fly.
+#
+#   fly launch --no-deploy --copy-config --config agent-b/fly.toml
+#   fly secrets set AGENT_B_PRIVATE_KEY=0x… TESTNET_API_KEY=sk-…
+#   fly deploy --config agent-b/fly.toml --dockerfile agent-b/Dockerfile
+#
+# `app` decides the hostname, and the hostname is what goes into the website's
+# directory.json — so changing it later means editing that file and redeploying
+# the site. Pick it once.
+app = "acu-agent-b"
+primary_region = "nrt"
+
+# Run every fly command from the repo root: the build context has to be the
+# workspace, so both paths here are repo-root-relative and `--dockerfile` on the
+# command line says the same thing, whichever of the two flyctl decides to read.
+[build]
+  dockerfile = "agent-b/Dockerfile"
+
+# Never secrets. These two are visible in `fly config show` and in this file;
+# AGENT_B_PRIVATE_KEY and TESTNET_API_KEY go through `fly secrets set` instead,
+# which keeps them out of the config, the image and the build log.
+#
+# AGENT_B_PRICE is set here rather than left to the code default because the
+# repo's .env writes it as '$0.01' — quoted, so that `set -a; . ./.env` in
+# demo/run.sh does not treat $0 as a positional parameter. dotenv strips those
+# quotes; `docker run --env-file` does not, and the agent card then advertises a
+# price of '$0.01' with the quotes inside it. Naming it here ends the question.
+[env]
+  AGENT_B_PORT = "4021"
+  OG_NETWORK = "testnet"
+  AGENT_B_PRICE = "$0.01"
+
+[http_service]
+  internal_port = 4021
+  force_https = true
+
+  # Suspend rather than stop. The website's pill gives `GET /agent` four seconds
+  # (web/src/status.ts) and a stopped machine does not boot Node inside that; a
+  # suspended one resumes from memory in well under a second. Idle cost is the
+  # same either way.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # The agent card is the natural health check: free, unauthenticated, and it
+  # only answers once the route is actually mounted.
+  [[http_service.checks]]
+    method = "GET"
+    path = "/agent"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+
+# An audit is one Router call and a signature — no state, no disk, no second
+# machine. 0G testnet allows 10 requests a minute, so there is nothing here to
+# scale out to.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

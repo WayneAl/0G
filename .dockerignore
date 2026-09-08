@@ -1,0 +1,30 @@
+# The image needs the workspace, not the repo. Everything the reference Agent B
+# does not import is excluded — and `.env` is excluded first, because the build
+# context is the repo root and a secret that reaches a layer stays in the image.
+.env
+.env.*
+.npmrc
+
+.git
+.github
+.claude
+node_modules
+**/node_modules
+dist
+**/dist
+
+contracts
+web/public
+web/src
+web/index.html
+web/docs
+pitch
+demo/fixtures
+docs
+agent-a/scripts
+
+*.md
+*.png
+.DS_Store
+.playwright-mcp
+.budget-ledger.json
